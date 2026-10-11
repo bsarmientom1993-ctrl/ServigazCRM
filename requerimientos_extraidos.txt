@@ -1,0 +1,848 @@
+SISTEMA DE GESTIÓN DE SERVICIOS
+DE INSTALACIÓN Y EQUIPOS
+Requerimiento v12.0 — Documento Consolidado
+Fecha: 29 de marzo de 2026
+Versión: 12.0 — 99 fallos resueltos acumulados (18 nuevos en esta versión)
+CAMBIOS EN ESTA VERSIÓN (v11 → v12) — 18 correcciones. Total acumulado: 99.  · Formularios específicos del cotizador por subtipo recuperados (#82) · Tabla CONFIGURACION_PRECIOS definida (#83) · Estructura EGRESO_TRABAJO: 1 por trabajo, no editable (#84) · CONFIGURACION_MANO_OBRA definida (#85) · Sub-subtipos Gas restaurados: 1.1.1/1.1.2/1.1.3 (#86) · Sub-subtipos Calefacción restaurados: 1.2.1/1.2.2/1.2.3/1.2.4 (#87) · Equipos detallados 3.2–3.6 con garantías diferenciadas (#88) · Garantías por defecto pre-cargadas (#89) · Fase 18 completa: asistencia, permisos, descuentos (#90) · Privacidad egresos manuales (#91) · Validaciones globales como sección transversal (#92) · Material manual fuera de inventario en Fase 9 (#93) · Alerta bajo margen con umbral configurable (#94) · Sugerencia dificultad/instalador adicional (#95) · Registro proveedor en compras inventario (#96) · Vista detalle unificada por trabajo (#97) · Equipos: garantía diferenciada por subtipo (#98) · Integración cotizador-fidelización (#99)
+ÍNDICE GENERAL
+Estados posibles del trabajo
+Tipos de flujo y subtipos de servicio
+Formularios de cotización por subtipo ★NUEVO
+Tabla de precios configurables ★NUEVO
+Fase 0: Configuración inicial
+Fase 1: Estructura operativa
+Fase 2: Registro del cliente
+Fase 3: Creación del trabajo
+Fase 4: Agenda y asignación
+Fase 5: Visita técnica
+Fase 6: Cotización
+Fase 6-C: Corrección de cotización
+Fase 7: Decisión del cliente
+Fase 8: Registro de pago
+Fase 9: Ejecución del trabajo
+Fase 9-C: Cancelación
+Fase 10: Control y seguimiento
+Fase 11: Finalización técnica
+Fase 12: Cierre financiero
+Fase 13: Finalización total
+Fase 14: Garantía
+Fase 15: Entrega
+Fase 16: Archivo
+Fase 17: Post-venta y fidelización
+Fase 18: Control de personal ★RESTAURADO
+Fase 19: Finanzas generales
+Fase 20: Inventario
+Fase 21: Auditoría
+Fase 22: Dashboard
+Fase 22-B: Reclamos garantía
+Estructura egreso automático ★NUEVO
+Validaciones globales ★NUEVO
+Matriz de permisos
+Reglas de negocio definitivas
+Tabla correcciones (v1–v12)
+Resumen ejecutivo
+ESTADOS POSIBLES DEL TRABAJO
+Estado
+Descripción
+Borrador
+Creado, pendiente
+Evaluación pendiente
+Visita agendada
+Evaluado
+Visita completada
+Cotizado
+Cotización enviada
+Cotización vencida
+No respondida 15 días
+En negociación
+Revisión precio
+Aprobado
+Aceptado; anticipo solicitado
+Pago a cuenta recibido
+Dinero < anticipo mínimo
+Pago a cuenta vencido
+Plazo anticipo expiró
+Rechazado
+Rechazado definitivo
+Anticipo recibido
+Mínimo cumplido
+En proceso
+Técnico ejecutando
+En pausa
+Detenido (SLA/manual/material)
+Cancelado
+Cancelado
+Terminado técnico
+Pendiente validación
+Validado
+Calidad aprobada
+Finalizado financiero
+Saldo $0; bloqueado
+Archivado
+Documentación guardada
+Reclamo en garantía
+Reclamo activo; retorna a Archivado
+TIPOS DE FLUJO Y SUBTIPOS DE SERVICIO
+1️⃣ FLUJO COMPLETO
+Aplica a: Instalaciones de Gas, Calefacción, Plomería, HVAC
+Sub-subtipos de Gas (1.1)
+1.1.1 Instalación nueva — proyecto obligatorio, gabinete de medidores
+1.1.2 Modificación — proyecto opcional
+1.1.3 Ampliación — proyecto opcional
+Sub-subtipos Calefacción (1.2)
+1.2.1 Radiadores — por metros lineales/diámetro/material (PPR/PPH/PEX)
+1.2.2 Piso radiante — por m²
+1.2.3 HVAC — por proyecto
+Plomería (1.3) — por proyecto
+HVAC sistemas (1.4) — por proyecto
+Visita obligatoria · Cotización automática + snapshot · Anticipo obligatorio · Validación · Garantía configurada
+CORRECCIÓN v12 #86 + #87 — SUB-SUBTIPOS RESTAURADOS Gas (1.1.1/1.1.2/1.1.3) y Calefacción (1.2.1–1.2.4) recuperados del documento original. Cada uno tiene criterios de cotización y reglas propias.
+2️⃣ FLUJO SIMPLIFICADO
+2.1 Venta de material · 2.2 Trámite
+Borrador → Cotizado (manual) → Pago total → Entrega (2.1) o Archivado (2.2)
+Pago total en el acto · Sin visita · Sin garantía
+3️⃣ FLUJO POR PROYECTO
+3.1 Fabricación/Diseño
+Visita opcional → Cotización por proyecto → Anticipo → Ejecución → Garantía opcional
+3.2–3.6 Equipos
+Subtipo
+Criterio cotización
+Garantía defecto
+3.2 Equipo nuevo
+Provisión+montaje+puesta en marcha
+12–24 meses
+3.3 Revisión
+Mano obra + repuestos (lista)
+2 meses
+3.4 Mantenimiento
+Mano obra + repuestos (lista)
+3 meses
+3.5 Remplazo
+Provisión+montaje+accesorios
+12–24 meses
+3.6 Reglaje
+Solo mano de obra
+2 meses
+4️⃣ FLUJO LIBRE
+4.1 Otro — Encargado define pasos · Estados configurables · Checklist mínimo
+Mapeo BD
+tipo_flujo
+Códigos
+Nota
+completo
+1.1.x, 1.2.x, 1.3, 1.4
+Instalaciones (con sub-subtipos)
+simplificado
+2.1, 2.2
+Ventas y trámites
+proyecto
+3.1, 3.2–3.6
+Fabricación y 5 subtipos equipos
+libre
+4.1
+Otros
+FORMULARIOS DE COTIZACIÓN POR SUBTIPO
+CORRECCIÓN v12 #82 — FORMULARIOS ESPECÍFICOS RECUPERADOS Cada subtipo tiene campos específicos que alimentan la fórmula. El sistema muestra solo los campos relevantes según el subtipo.
+1.1.1 Gas — Nueva
+Gabinete: ¿de cuántos medidores? (mín. 1) → precio/medidor
+Metros tubo visto/empotrado/enterrado (cada uno por diámetro) → precio/metro según diámetro
+Proyecto: OBLIGATORIO → precio del proyecto
+Dificultad (1–5) → factor multiplicador · Alquiler herramientas (monto manual) · Equipos adicionales (lista)
+1.1.2 Gas — Modificación / 1.1.3 Ampliación
+Metros tubo empotrado + visto (por diámetro) · Proyecto: OPCIONAL
+1.2.2 Calefacción — Radiadores
+Metros lineales (por diámetro) · Material: PPR/PPH/PEX → precio diferenciado
+¿Provisión radiadores? cantidad + precio · ¿Caldera? precio + potencia
+1.2.3 Piso radiante
+m² del proyecto → precio/m² instalado · ¿Caldera? precio + potencia
+1.2.4 HVAC / 1.3 Plomería / 1.4 HVAC sistemas / 1.2.1 Central
+Cotización por proyecto: lista de ítems (descripción + cantidad + precio unitario)
+3.2 Equipo nuevo / 3.5 Remplazo
+Capacidad equipo · Precio equipo · Montaje+puesta en marcha · Accesorios (lista)
+3.3 Revisión / 3.4 Mantenimiento
+Mano de obra · Repuestos (lista dinámica: tipo + cantidad + precio)
+3.6 Reglaje
+Solo mano de obra
+2.1/2.2/3.1 (manual)
+Precio total ingresado por Encargado (sin fórmula)
+Regla PDF: El PDF enviado al cliente muestra precio total y trabajo a realizar, SIN detallar cantidad de material, dificultad ni costos internos.
+TABLA DE PRECIOS CONFIGURABLES
+CORRECCIÓN v12 #83 + #85 + #95 — CONFIGURACIÓN DE PRECIOS, MANO DE OBRA Y DIFICULTAD Tablas que alimentan el cotizador automático. Solo Admin modifica. Auditoría completa.
+CONFIGURACION_PRECIOS: id · id_subtipo · concepto ('tubo_visto','tubo_empotrado','medidor','m2_piso_radiante'...) · diametro (nullable) · material (nullable: PPR|PPH|PEX) · precio_unitario · unidad ('metro'|'unidad'|'m2'|'proyecto'|'hora') · activo · modificado_por  CONFIGURACION_MANO_OBRA: id · id_subtipo · tipo_calculo ('por_trabajo'|'por_hora'|'por_dia'|'por_metro') · tarifa_base · factor_dificultad (1.0–2.0) · activo · modificado_por  CONFIGURACION_DIFICULTAD: id · nivel (1–5) · factor_multiplicador (ej: 1.0, 1.1, 1.2, 1.4, 1.6) · descripcion · sugerencia_instalador_adicional (true si ≥4)  Regla inteligente: Si dificultad ≥4 o metros totales > umbral configurable → sistema sugiere: 'Se recomienda asignar un instalador adicional.'
+FASE 0: CONFIGURACIÓN INICIAL
+Actor: Administrador | SLA: Antes del primer usuario operativo
+Asistente de configuración · Personalización visual · Tipos y sub-subtipos de servicios
+CONFIGURACION_PRECIOS: precios por metro/diámetro/material
+CONFIGURACION_MANO_OBRA: tarifas por subtipo · CONFIGURACION_DIFICULTAD: factores
+Tope máximo descuento (solo completo/proyecto) · Margen mínimo + alerta bajo margen
+Intervalos mantenimiento · CONFIGURACION_GARANTIA con valores por defecto
+CONFIGURACION_ANTICIPO · Política cancelación · Moneda base · Fidelización · SLA garantía
+CONFIGURACION_PERSONAL: horarios, tolerancias, descuentos tardanza/falta, máx permisos/mes
+Inventario inicial · Alertas predefinidas
+GARANTÍAS POR DEFECTO (v12 #89): Gas/Calefacción/Plomería: 12 meses · Equipos nuevos: 12–24 meses (defecto fábrica) · Mantenimientos: 3 meses · Revisiones: 2 meses · Reglajes: 2 meses · Fabricación: configurable · Venta/Trámite/Otro: sin garantía.
+TABLAS DE CONFIGURACIÓN (Admin modifica; Encargado lectura): CONFIGURACION_GARANTIA · CONFIGURACION_ANTICIPO · CONFIGURACION_MANTENIMIENTO · CONFIGURACION_FIDELIZACION · CONFIGURACION_DESCUENTO · CONFIGURACION_SLA_GARANTIA · CONFIGURACION_PRECIOS · CONFIGURACION_MANO_OBRA · CONFIGURACION_DIFICULTAD · CONFIGURACION_PERSONAL  Todas con campo 'activo', 'modificado_por' y auditoría completa.
+FASE 1: ESTRUCTURA OPERATIVA
+Actor: Administrador
+Usuarios: Admin · Encargado · Técnico fijo · Catálogo Instaladores eventuales (sin cuenta)
+Permisos · Ubicaciones (Taller/Tienda/Sucursal) · Responsables
+FASE 2: REGISTRO DEL CLIENTE
+Actor: Encargado | SLA: 5 min
+Nombre · Teléfono(s) · Dirección · Google Maps · Sucursal auto · Validación duplicados
+FASE 3: CREACIÓN DEL TRABAJO
+Actor: Encargado | SLA: Inmediato
+Vincular cliente · Verificar trabajos activos (aviso) · Tipo + subtipo + sub-subtipo → tipo_flujo · Borrador
+FASE 4: AGENDA Y ASIGNACIÓN
+Encargado | 24h | Solo completo/proyecto
+Programar visita · Asignar técnico · Evaluación pendiente · Notificación
+FASE 5: VISITA TÉCNICA
+Técnico | 2h post-visita | Solo completo/proyecto
+Medidas · Condiciones · Dificultad (1–5) · Gas: Ventilación/VASA · Fotos mín. 3 · Evaluado
+FASE 6: COTIZACIÓN
+Encargado | 24h desde evaluación
+6-A: Automática (completo/proyecto)
+Formulario específico según sub-subtipo (ver sección Formularios)
+Cálculo: PRECIOS × cantidades + MANO_OBRA × DIFICULTAD + transporte + inventario + margen
+Fidelización (#99): Para cliente Frecuente/VIP, sistema muestra nivel y sugiere descuento
+Alerta bajo margen (#94): Si ganancia < margen mínimo → alerta con justificación obligatoria
+Descuento: ≤10% Encargado; >10% Admin; no supera tope · Snapshot · PDF · Cotizado · 15 días
+6-B: Manual (simplificado)
+Precio total manual · Sin snapshot · Sin vencimiento · Borrador → Cotizado
+FASE 6-C: CORRECCIÓN COTIZACIÓN
+Encargado + Admin | Solo Cotizado/En negociación | Máx 2 | Versión 'CORRECCIÓN'
+FASE 7: DECISIÓN DEL CLIENTE
+Encargado | Seguimiento 48h
+Vencimiento: Día 10 alerta, Día 15 vencida, +5d → Rechazado
+Rechaza: motivo + contrapropuesta · Acepta: Aprobado + anticipo
+Negociación: solo descuento · Tope acumulativo · 2 reglas 10% diferenciadas
+FASE 8: REGISTRO DE PAGO (ANTICIPO)
+Encargado | Mismo día
+Valida vs mínimo → Anticipo recibido o Pago a cuenta · Recibo PDF · Plazo vencimiento
+FASE 9: EJECUCIÓN DEL TRABAJO
+Técnico | Registro diario (solo alerta)
+Inicio → En proceso · Materiales catálogo → descuento stock
+Material manual (#93): Descripción + costo + proveedor. NO afecta inventario, SÍ afecta costo y egreso.
+Fotos · SLA 24h/48h · Ajuste ≤10% sin aprobación, >10% requiere cliente
+Pausa manual: motivo + reanudar con justificación · >7 días alerta Admin
+FASE 9-C: CANCELACIÓN
+A: Durante ejecución → % ejecutado + materiales consumidos/recuperables + devolución + egreso parcial
+B: Pre-ejecución → 0% ejecutado + devolución 80% pago a cuenta
+FASE 10: CONTROL Y SEGUIMIENTO
+Encargado/Admin | Revisión diaria
+Progreso real · Costos vs cotización · Alertas: margen bajo, retrasos, SLA, stock
+v12 #97 — VISTA DETALLE UNIFICADA POR TRABAJO Cada trabajo tiene página consolidada: datos cliente, tipo/subtipo, técnico, costos (inventario+manuales), mano obra, transporte, fotos, progreso, pagos, estado, alertas. Accesible por Encargado (sus clientes) y Admin (todos).
+FASE 11: FINALIZACIÓN TÉCNICA
+Técnico → Encargado | 4h
+Terminado técnico → Encargado valida → Validado o corrige
+FASE 12: CIERRE FINANCIERO
+Encargado | Mismo día
+Completo/Proyecto: Saldo = Total − Anticipos → pagos parciales → saldo $0 → Fase 13
+Simplificado: Pago total directo → Finalizado financiero
+FASE 13: FINALIZACIÓN TOTAL
+Precondiciones por flujo: Completo (Validado+$0) · Simplificado (Cotizado+Pago total) · Libre (checklist)
+Verifica costos → Genera EGRESO_TRABAJO (ver sección Egreso) → Finalizado financiero (BLOQUEO)
+Con garantía → Fase 14 · Sin garantía → Fase 15
+FASE 14: GARANTÍA
+Sistema automático | Precondición: Finalizado financiero
+CONFIGURACION_GARANTIA según subtipo → PDF+QR → Encargado revisa → Fase 15
+Equipos nuevos: 1 etiqueta · Reparados/mantenimiento: 2 etiquetas · Rota → inválida
+FASE 15: ENTREGA
+SLA: Completo/Proyecto = mismo día · Simplificado = inmediato · Libre = definido por Encargado
+Documentos + firma (presencial/WhatsApp) + mín 1 evidencia → Fase 16
+FASE 16: ARCHIVO
+Sistema automático → Archivado · Documentos diferenciados por flujo
+FASE 17: POST-VENTA Y FIDELIZACIÓN
+Alertas: mantenimiento + garantía por vencer (30d)
+Reclasificación: al archivar + cron mensual · Beneficios: descuento_vip_pct, prioridad_agenda, gestor_asignado, soporte_prioritario
+FASE 18: CONTROL DE PERSONAL (COMPLETO)
+CORRECCIÓN v12 #90 — FASE 18 RESTAURADA Sistema completo de asistencia, permisos y descuentos del documento original.
+Personal
+Personal
+Asistencia
+Nómina
+Nota
+Admin
+✅
+✅
+Fijo
+Encargado
+✅
+✅
+Fijo
+Técnico fijo
+✅
+✅
+Fijo
+Instalador eventual
+❌
+❌
+PAGOS_EVENTUALES
+Asistencia
+Entrada + Salida diaria · Presente/Tarde/Tarde grave/Falta/Incompleto
+Horarios configurables (CONFIGURACION_PERSONAL) · Sin registro = Falta automática
+Bloqueos: salida sin entrada, doble entrada, entrada > salida
+Descuentos automáticos
+Evento
+Descuento
+Falta
+Sueldo día × 100%
+Tardanza
+Sueldo día × % configurable
+Incompleto
+% parcial configurable
+Admin puede anular con justificación · Se registra como egreso ajustado en Fase 19
+Permisos
+Formulario: fecha + motivo + descripción + comprobante OBLIGATORIO
+Máx 2/mes · Flujo: solicita → Admin aprueba/rechaza · Aprobado = sin falta · Rechazado = falta + descuento
+Clasificación interna
+Responsable / Riesgo / Problemático · Alertas por abuso · Privacidad: usuario ve solo suya
+FASE 19: FINANZAS GENERALES
+Categorías: NÓMINA · ALQUILER · SERVICIOS · INVENTARIO_COMPRAS · TRANSPORTE · MANTENIMIENTO · OTROS
+Egresos recurrentes configurables · Notificación próximos
+v12 #91 — PRIVACIDAD EGRESOS MANUALES Egreso por trabajo: Encargado + Admin. Egreso manual: SOLO creador + Admin. Usuarios no ven egresos de otros.
+FASE 20: INVENTARIO
+Compras (con proveedor: nombre + contacto) · Ajustes stock · Traspasos (2h auto-confirma)
+Stock 0: alerta · Negativo: configurable · Búsqueda rápida de productos
+FASE 21: AUDITORÍA
+Quién · Cuándo · Qué cambió · Anterior/nuevo · Errores e intentos inválidos · Inaltenable · Solo Admin
+FASE 22: DASHBOARD
+Admin (completo) · Encargado (resumen)
+Métrica
+Descripción
+Ganancia neta
+Ingresos-Egresos
+Ingresos/Egresos
+Desglosados
+Trabajos activos
+Por estado
+Rendimiento técnico
+Completados, calidad, reclamos
+SLAs vencidos
+Por fase
+Ajustes >10%
+Superaron límite
+Stock negativo
+Materiales
+Garantías 30d
+Por vencer
+Reclamos
+Por técnico/tipo
+Sin anticipo
+Flujo libre 0%
+2+ trabajos
+Por cliente
+Pagos vencidos
+Anticipo pendiente
+Margen bajo (v12)
+Bajo umbral
+Asistencia (v12)
+%, faltas, tardanzas
+FASE 22-B: RECLAMOS BAJO GARANTÍA
+Dentro período: sin costo · Trabajo derivado · Técnico auto/manual · SLA 24h/7d (80%/100%)
+Resuelto → derivado Archivado → original retorna Archivado · No renueva garantía
+ESTRUCTURA DE EGRESO AUTOMÁTICO POR TRABAJO
+CORRECCIÓN v12 #84 — EGRESO_TRABAJO DEFINIDO Estructura generada automáticamente en Fase 13:
+EGRESO_TRABAJO: id · id_trabajo (FK) · materiales_inventario (JSON: [{id_producto, cantidad, costo_unitario, subtotal}]) · materiales_manuales (JSON: [{descripcion, costo, proveedor}]) · mano_obra_monto (CONFIGURACION_MANO_OBRA × factor_dificultad) · transporte_monto (manual de cotización) · total_egreso · generado_por (sistema) · fecha · bloqueado (siempre true)  REGLAS: · Solo 1 egreso por trabajo. · No editable después de generarse. · Total = materiales_inv + materiales_man + mano_obra + transporte. · Si total > cotizado → alerta Admin (margen negativo). · Utilidad neta = ingreso − egreso (visible en Dashboard).
+VALIDACIONES GLOBALES DEL SISTEMA
+CORRECCIÓN v12 #92 — REGLAS TRANSVERSALES Aplican en TODOS los módulos:
+Campos numéricos
+No negativo, no texto, no vacío (si obligatorio) · Protegidos: metros, precios, pagos, egresos, cantidades, %
+Cotizador
+Metros > 0 · Diámetro obligatorio · No filas vacías · Descuento 0%–tope
+Pagos
+Monto > 0 · Monto ≤ saldo · No pagar si saldo = 0 · No duplicados
+Egresos
+1 por trabajo, no editable · Manual: monto > 0, tipo obligatorio · No duplicados
+Mensajes inteligentes
+'Valor no puede ser negativo' · 'Número inválido' · 'Monto excede saldo' · 'Campo obligatorio'
+MATRIZ DE ACCESO Y PERMISOS
+Recurso
+Admin
+Encargado
+Técnico
+Instalador
+Trabajos
+✅ Todo
+✅ Sus clientes
+✅ Asignados
+❌
+Cotizaciones
+✅ Todo
+✅ Crear/editar
+❌ Lectura
+❌
+Pagos
+✅ Todo
+✅ Registrar
+❌
+❌
+Precios
+✅ Modificar
+❌ Lectura
+❌
+❌
+Inventario
+✅ Todo
+✅ Registrar
+❌ Consultar
+❌
+Garantías
+✅ Todo
+✅ Generar
+❌
+❌
+Dashboard
+✅ Completo
+⚠️ Resumen
+❌
+❌
+Auditoría
+✅
+❌
+❌
+❌
+Configuración
+✅
+❌ Lectura
+❌
+❌
+Asistencia
+✅ Todo
+❌ Solo suya
+✅ Solo suya
+❌
+Egresos manuales
+✅ Todo
+✅ Solo propios
+❌
+❌
+Reclamos
+✅ Todo
+✅ Gestionar
+✅ Ver propios
+❌
+REGLAS DE NEGOCIO DEFINITIVAS
+1️⃣ Versionado
+Historial completo · Sin reversión · Snapshot al cotizar
+2️⃣ Costos internos
+Saldo $0 → verifica costos → advertencia → Admin → auditoría
+3️⃣ Orden cierre
+Saldo$0 → EGRESO_TRABAJO → Fin.financiero → Garantía → Entrega → Archivado
+4️⃣ Reporte técnico
+Plantilla por flujo: Completo (eval+ejec+valid) · Simplificado (producto/trámite) · Libre (nota+fechas)
+5️⃣ Reclamos
+Sin costo, SLA propio, retorna Archivado, no renueva garantía
+6️⃣ Descuentos
+≤10% Encargado, >10% Admin, tope acumulativo, solo completo/proyecto, independiente ajuste ejecución
+7️⃣ Versiones cotización
+Negociación/corrección/reactivación · Secuencia continua con etiqueta
+8️⃣ SLAs
+80% alerta, 100% pausa. Excepción: Fase 9 solo alerta. Críticos con notif. cliente.
+9️⃣ Egreso automático
+1 por trabajo · No editable · Materiales inv+manuales + mano obra + transporte · Margen negativo → alerta
+🔟 Validaciones
+Campos protegidos · Mensajes inteligentes · No duplicados · Pagos ≤ saldo
+TABLA ACUMULADA DE CORRECCIONES (v1 a v12)
+#
+Fallo
+Estado
+Resolución
+1
+Flujo 'Otro'
+✅ v5
+Flujos definidos
+2
+VASA
+✅ v5
+Obligatorio+bloqueo
+3
+Negociación
+✅ v5
+Solo descuento
+4
+Costos internos
+✅ v5
+Bloqueo suave
+5
+Eventuales
+✅ v5→v11
+Supervisor registra
+6
+Carpeta
+✅ v5
+Enc lectura
+7
+Garantía/bloqueo
+✅ v5
+Garantía después
+8
+Traspasos
+✅ v5
+2h auto
+9
+Ajuste sin límite
+✅ v5
+10% acumulado
+10
+Reporte técnico
+✅ v5
+Automático
+11
+Versionado
+✅ v5
+Sin reversión
+12
+Mantenimiento
+✅ v5
+Intervalos
+13
+Rendimiento
+✅ v5
+6 indicadores
+14
+Libre sin mínimos
+✅ v6
+Checklist
+15
+Moneda
+✅ v6
+Base+cambio
+16
+Devolución
+✅ v6
+% configurable
+17
+Aceptación
+✅ v6
+Evidencia
+18
+Baja usuario
+✅ v6
+INACTIVO
+19
+SLAs
+✅ v6
+80%+pausa
+20
+Ajuste individual
+✅ v6
+10% acum
+21
+Vencimiento
+✅ v6
+15d hábiles
+22
+tipo_flujo 2.x
+✅ v6→v10
+2.x=simplificado
+23
+Fotos
+✅ v6
+JPG/PNG 5MB 20
+24
+Garantía duración
+✅ v7
+CONFIG_GARANTIA
+25
+Anticipo mínimo
+✅ v7
+CONFIG_ANTICIPO
+26
+Stock negativo
+✅ v7
+Advertencia+audit
+27
+Reclamos
+✅ v7
+Fase 22-B
+28
+Dashboard Enc
+✅ v7
+6 métricas
+29
+SLA diario
+✅ v7
+Solo alerta
+30
+Devolución fases
+✅ v7
+Base económica
+31
+Permisos config
+✅ v7
+Solo Admin
+32
+SLAs flujos
+✅ v7
+Completo/proyecto
+33
+Cotiz entre Enc
+✅ v7
+Por cliente
+34
+Numeración
+✅ v7
+Corregida
+35
+Anticipo 0%
+✅ v8
+Justificación
+36
+Descuentos tope
+✅ v8
+Configurable
+37
+Reclamos SLA
+✅ v8
+24h/7d
+38
+Pago a cuenta
+✅ v8
+Estado propio
+39
+Reporte por flujo
+✅ v8
+Plantilla
+40
+Garantía post-recl
+✅ v8
+No renueva
+41
+Fidelización
+✅ v8
+Configurable
+42
+22-B índice
+✅ v8
+Agregada
+43
+Téc reclamos
+✅ v8
+Lectura
+44
+Docs por flujo
+✅ v8
+Diferenciados
+45
+Téc INACTIVO
+✅ v9
+Manual
+46
+Tope por ronda
+✅ v9
+Acumulativo
+47
+Corrección cotiz
+✅ v9
+Fase 6-C
+48
+Mat no reponen
+✅ v9
+Consum/recup
+49
+Pago vencimiento
+✅ v9
+Plazo config
+50
+Desc todos flujos
+✅ v9
+Solo compl/proy
+51
+Reactivación num
+✅ v9
+Secuencia
+52
+Múlt trabajos
+✅ v9
+Aviso
+53
+Fideliz mecanismo
+✅ v9
+4 beneficios
+54
+Campo activo
+✅ v9
+Agregado
+55
+Num cruzada
+✅ v10
+Prefijos ok
+56
+F14 duplica F13
+✅ v10
+F13 única
+57
+Transición 14→16
+✅ v10
+13→14→15→16
+58
+Pausa manual
+✅ v10
+Proceso
+59
+9-C pre-ejec
+✅ v10
+Sub-proceso B
+60
+Dos 10%
+✅ v10
+Diferenciadas
+61
+Simpl estados
+✅ v10
+Borr→Cot→Fin→Arch
+62
+Cotiz manual
+✅ v10
+Definida
+63
+Reclass fidel
+✅ v10→v11
+Archivar+cron
+64
+Instalador rol
+✅ v10
+Sin acceso
+65
+SLA garantía 80
+✅ v10
+Aplicada
+66
+HVAC
+✅ v10
+1.4
+67
+reingresar
+✅ v10
+Corregido
+68
+Reclamo salida
+✅ v10
+Retorna Arch
+69
+CORRECIÓN
+✅ v10
+Corregido
+70
+Tabla mapeo
+✅ v10
+Actualizada
+71
+Errata #59
+✅ v11
+Corregido
+72
+#22 vs #55
+✅ v11
+Actualizada
+73
+#5 vs #64
+✅ v11
+Actualizada
+74
+Simpl sin F12
+✅ v11
+F12 simplif
+75
+Simpl sin F15
+✅ v11
+F15 simplif
+76
+Tabla personal
+✅ v11
+Corregida
+77
+Téc eventual
+✅ v11
+Catálogo
+78
+Libre estados
+✅ v11
+Configurables
+79
+F13 solo Valid
+✅ v11
+Por flujo
+80
+Fidel sin cron
+✅ v11
+Mensual
+81
+F15 SLA único
+✅ v11
+Diferenciado
+82
+Formularios cotiz perdidos
+✅ v12
+Restaurados por subtipo
+83
+Tabla precios
+✅ v12
+CONFIG_PRECIOS
+84
+Egreso sin estructura
+✅ v12
+EGRESO_TRABAJO definido
+85
+Mano obra
+✅ v12
+CONFIG_MANO_OBRA
+86
+Sub-subtipos Gas
+✅ v12
+1.1.1/1.1.2/1.1.3
+87
+Sub-subtipos Calef
+✅ v12
+1.2.1–1.2.4
+88
+Equipos bloque
+✅ v12
+5 subtipos detallados
+89
+Garantías defecto
+✅ v12
+Duraciones pre-cargadas
+90
+Fase 18 vacía
+✅ v12
+Completa restaurada
+91
+Privacidad egresos
+✅ v12
+Creador+Admin
+92
+Validaciones globales
+✅ v12
+Sección transversal
+93
+Material manual
+✅ v12
+Desc+costo, no inventario
+94
+Alerta margen
+✅ v12
+Umbral configurable
+95
+Sugerencia dificultad
+✅ v12
+Factor+instalador
+96
+Proveedor
+✅ v12
+Nombre+contacto
+97
+Vista detalle
+✅ v12
+Página consolidada
+98
+Equipos garantía
+✅ v12
+Diferenciada
+99
+Cotiz-fidelización
+✅ v12
+Descuento sugerido
+RESUMEN EJECUTIVO
+Versión 12.0 del Sistema de Gestión de Servicios de Instalación y Equipos:  ✅ 24 fases + 3 sub-fases completamente definidas con transiciones para todos los flujos ✅ 4 tipos de flujo con sub-subtipos detallados y formularios de cotización específicos ✅ 99 fallos resueltos (v5:13+v6:10+v7:11+v8:10+v9:10+v10:16+v11:11+v12:18) ✅ 10 tablas de configuración (incl. PRECIOS, MANO_OBRA, DIFICULTAD, PERSONAL) ✅ Formularios cotización por subtipo recuperados del documento original ✅ EGRESO_TRABAJO: 1 por trabajo, no editable, con materiales manuales ✅ Control personal completo: asistencia, permisos, descuentos automáticos ✅ Validaciones globales transversales ✅ Garantías con duraciones por defecto y diferenciadas por subtipo de equipo ✅ Integración cotizador-fidelización: descuento sugerido VIP/Frecuente ✅ Vista detalle unificada, privacidad egresos, proveedores, alerta margen bajo  Estado: Listo para revisión final con equipo técnico e inicio de desarrollo.
+Versión: 12.0 — 29 de marzo de 2026
+Próximo paso: Revisar con equipo técnico para iniciar desarrollo
