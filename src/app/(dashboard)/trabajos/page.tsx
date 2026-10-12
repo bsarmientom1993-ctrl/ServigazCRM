@@ -77,7 +77,7 @@ export default function TrabajosPage() {
     if (tabEstado === "PENDIENTES" && ["FINALIZADO_FINANCIERO", "CANCELADO", "ARCHIVADO"].includes(t.estado)) {
       return false;
     }
-    if (tabEstado === "FINALIZADO" || tabEstado === "FINALIZADOS") {
+    if (tabEstado === "FINALIZADOS") {
       if (!["FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(t.estado)) return false;
     }
     if (tabEstado === "CANCELADOS" && t.estado !== "CANCELADO") {

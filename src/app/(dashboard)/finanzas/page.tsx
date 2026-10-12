@@ -526,13 +526,13 @@ export default function FinanzasPage() {
                         {f.trabajo?.cliente?.nombreCompleto || "Cliente"}
                       </td>
                       <td className="py-3 px-4 text-right text-blue-700 font-bold">
-                        Bs. {Number(f.totalMaterialesReales).toLocaleString("es-CL")}
+                        Bs. {Number(f.totalMaterialesReales || Math.max(0, Number(f.totalEgreso || 0) - Number(f.manoObraMonto || 0) - Number(f.transporteMonto || 0))).toLocaleString("es-CL")}
                       </td>
                       <td className="py-3 px-4 text-right text-emerald-700 font-bold">
-                        Bs. {Number(f.costoManoObraReal).toLocaleString("es-CL")}
+                        Bs. {Number(f.costoManoObraReal || f.manoObraMonto || 0).toLocaleString("es-CL")}
                       </td>
                       <td className="py-3 px-4 text-right text-[#F06529] font-bold">
-                        Bs. {Number(f.costoTransporteReal).toLocaleString("es-CL")}
+                        Bs. {Number(f.costoTransporteReal || f.transporteMonto || 0).toLocaleString("es-CL")}
                       </td>
                       <td className="py-3 px-4 text-right font-black text-slate-900 text-sm">
                         Bs. {Number(f.totalEgreso).toLocaleString("es-CL")}

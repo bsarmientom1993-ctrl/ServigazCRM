@@ -56,8 +56,8 @@ export async function POST(
     const { costoManoObraReal, costoTransporteReal } = body;
 
     // Materiales clasificados
-    const matInventario = trabajo.materiales.filter((m) => m.esDeInventario);
-    const matManuales = trabajo.materiales.filter((m) => !m.esDeInventario);
+    const matInventario = trabajo.materiales.filter((m) => m.tipoOrigen === "INVENTARIO" || Boolean(m.productoId));
+    const matManuales = trabajo.materiales.filter((m) => m.tipoOrigen !== "INVENTARIO" && !m.productoId);
 
     const totalMat = trabajo.materiales.reduce((acc, m) => acc + Number(m.subtotalCosto), 0);
     const moReal = Number(costoManoObraReal || 0);

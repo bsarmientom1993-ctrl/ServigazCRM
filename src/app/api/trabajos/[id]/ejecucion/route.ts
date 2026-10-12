@@ -86,14 +86,15 @@ export async function POST(
       if (esDeInventario && productoId) {
         const prod = await prisma.productoInventario.findUnique({ where: { id: productoId } });
         if (prod) {
-          if (prod.stockActual < cantidadNum) {
+          const stockActualNum = Number(prod.stockActual);
+          if (stockActualNum < cantidadNum) {
             return NextResponse.json(
-              { error: `Stock insuficiente en almacén (Disponible: ${prod.stockActual} ${prod.unidadMedida || prod.unidad || "un"})` },
+              { error: `Stock insuficiente en almacén (Disponible: ${stockActualNum} ${prod.unidadMedida || "un"})` },
               { status: 400 }
             );
           }
 
-          const nuevoStock = prod.stockActual - cantidadNum;
+          const nuevoStock = stockActualNum - cantidadNum;
           await prisma.productoInventario.update({
             where: { id: productoId },
             data: { stockActual: nuevoStock },
@@ -105,8 +106,8 @@ export async function POST(
                 productoId,
                 tipoMovimiento: "CONSUMO_TRABAJO",
                 cantidad: cantidadNum,
-                costoUnitario: costoUnitarioNum,
-                trabajoId: id,
+                stockAnterior: stockActualNum,
+                stockNuevo: nuevoStock,
                 usuarioId: userId,
                 observaciones: `Consumo en trabajo ${trabajo.codigoCorrelativo}`,
               },

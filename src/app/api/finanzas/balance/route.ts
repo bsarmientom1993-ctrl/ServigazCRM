@@ -34,13 +34,13 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { fechaGeneracion: "desc" },
     });
 
     const totalEgresosFaenas = egresosTrabajos.reduce((acc, e) => acc + Number(e.totalEgreso), 0);
-    const totalMaterialesFaenas = egresosTrabajos.reduce((acc, e) => acc + Number(e.totalMaterialesReales), 0);
-    const totalManoObraFaenas = egresosTrabajos.reduce((acc, e) => acc + Number(e.costoManoObraReal), 0);
-    const totalTransporteFaenas = egresosTrabajos.reduce((acc, e) => acc + Number(e.costoTransporteReal), 0);
+    const totalManoObraFaenas = egresosTrabajos.reduce((acc, e) => acc + Number(e.manoObraMonto || 0), 0);
+    const totalTransporteFaenas = egresosTrabajos.reduce((acc, e) => acc + Number(e.transporteMonto || 0), 0);
+    const totalMaterialesFaenas = Math.max(0, totalEgresosFaenas - totalManoObraFaenas - totalTransporteFaenas);
 
     // 3. Total Egresos Generales / Operativos de Oficina (EgresoGeneralManual)
     const egresosGenerales = await prisma.egresoGeneralManual.findMany({

@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
         const mo = await prisma.configuracionManoObra.findFirst({
           where: { subtipoCodigo: { in: [subtipoCodigo, "3.3", "3.4", "3.6", "OTROS"] } },
         });
-        tarifaFija = mo ? mo.tarifaBase : 180; // Bs. 180 por defecto para revisión
+        tarifaFija = mo ? Number(mo.tarifaBase) : 180; // Bs. 180 por defecto para revisión
       }
 
       const fechaVencimiento = new Date();
