@@ -94,8 +94,14 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("Login error:", error);
+    let errorMsg = "Error interno del servidor";
+    if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
+      errorMsg = "La base de datos en la nube está vacía (tablas no creadas). Ejecuta npx prisma db push.";
+    } else if (error?.code === "P1001" || error?.message?.includes("Can't reach database server")) {
+      errorMsg = "No se puede conectar al servidor de base de datos. Verifica DATABASE_URL.";
+    }
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      { error: errorMsg },
       { status: 500 }
     );
   }
