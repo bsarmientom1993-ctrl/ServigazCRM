@@ -2,9 +2,10 @@
 
 ## Puesta en marcha
 
-1. Como administrador abre **Sucursales y ubicaciones**. Crea las sucursales con sus nombres, direcciones y teléfonos.
+1. Como administrador abre **Sucursales y ubicaciones**. Crea las sucursales con sus nombres, direcciones y teléfonos. Cada sucursal se crea junto con su tienda y su saldo de materiales.
 2. Crea un almacén tipo **Almacén** y elige **Central · compartido**. Puedes añadir más almacenes centrales o asociados a una sucursal.
-3. Crea las tiendas y selecciona su sucursal. Los nombres y direcciones se configuran en la aplicación, sin cambiar código.
+3. Si necesitas más ubicaciones, crea almacenes o tiendas adicionales y selecciona su sucursal. Los nombres y direcciones se configuran en la aplicación, sin cambiar código.
+   Para sucursales existentes sin tienda, crea una ubicación tipo Tienda y asígnala a la sucursal.
 4. Asigna a los encargados y técnicos existentes a su sucursal.
 5. En **Almacenes y tiendas**, selecciona **Inventario previo · por distribuir**. Envía sus existencias mediante traspasos a las ubicaciones físicas correspondientes y confirma su recepción.
 

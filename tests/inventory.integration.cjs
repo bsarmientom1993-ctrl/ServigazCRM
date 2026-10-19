@@ -212,3 +212,16 @@ test("branch receivers cannot see balances from a central warehouse", async () =
   const history = await body(await purchases.GET(req(managerA, undefined, undefined, "GET")));
   assert.ok(history.compras.every(m => m.producto.stockActual === undefined));
 });
+
+test("a new branch is also a store and can receive warehouse shipments", async () => {
+  const branch = await body(await branchRoutes.POST(req(admin, { nombre: "Sucursal tienda nueva", direccion: "Dirección de prueba", telefono: "12345678" })), 201);
+  assert.equal(branch.ubicaciones.length, 1);
+  const store = branch.ubicaciones[0];
+  assert.equal(store.tipo, "TIENDA"); assert.equal(store.sucursalId, branch.id);
+  assert.equal(store.nombre, branch.nombre); assert.equal(store.direccion, branch.direccion);
+  const p = await product(); await buy(p, 10);
+  const transfer = await body(await send(p, 4, central, store));
+  await body(await resolve(transfer, "RECIBIR", admin));
+  assert.equal(await balance(p, store), 4); await invariant(p);
+  await body(await branchRoutes.POST(req(managerA, { nombre: "No autorizada" })), 403);
+});

@@ -19,8 +19,9 @@ export async function POST(req: NextRequest) {
     const user = await requireSession(req, ["ADMIN"]);
     const data = z.object({ nombre: z.string().trim().min(2).max(150), direccion: z.string().trim().max(500).optional(), telefono: z.string().trim().max(40).optional() }).parse(await req.json());
     const branch = await prisma.$transaction(async tx => {
-      const result = await tx.sucursal.create({ data });
+      const result = await tx.sucursal.create({ data: { ...data, ubicaciones: { create: { nombre: data.nombre, tipo: "TIENDA", direccion: data.direccion || null } } }, include: { ubicaciones: true } });
       await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: "SUCURSALES", accion: "CREATE", entidadTipo: "Sucursal", entidadId: result.id, valoresNuevos: data } });
+      await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: "UBICACIONES", accion: "CREATE", entidadTipo: "UbicacionInventario", entidadId: result.ubicaciones[0].id, valoresNuevos: { nombre: data.nombre, tipo: "TIENDA", sucursalId: result.id } } });
       return result;
     });
     return NextResponse.json(branch, { status: 201 });
