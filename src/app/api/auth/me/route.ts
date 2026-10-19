@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
         rol: user.rol,
         telefono: user.telefono,
         sucursal: user.sucursal?.nombre,
+        sucursalId: user.sucursal?.id || null,
       },
     });
   } catch (error) {

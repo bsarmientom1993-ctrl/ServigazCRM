@@ -72,6 +72,7 @@ export default function TrabajoDetallePage({
 
   const [trabajo, setTrabajo] = useState<any>(null);
   const [tecnicos, setTecnicos] = useState<any[]>([]);
+  const [ubicacionesInventario, setUbicacionesInventario] = useState<any[]>([]);
   const [productosInventario, setProductosInventario] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -125,6 +126,7 @@ export default function TrabajoDetallePage({
     costoUnitario: 0,
     esDeInventario: false,
     productoId: "",
+    ubicacionId: "",
     proveedorNombre: "",
     numeroDocumento: "",
   });
@@ -166,9 +168,9 @@ export default function TrabajoDetallePage({
 
       // 3. Cargar Inventario (Opcional seguro)
       try {
-        const resProd = await fetch("/api/inventario");
+        const resProd = await fetch("/api/ubicaciones");
         const dataProd = await resProd.json();
-        setProductosInventario(Array.isArray(dataProd) ? dataProd : []);
+        setUbicacionesInventario((dataProd.ubicaciones || []).filter((l: any) => !l.esInicial));
       } catch (e) {
         console.warn("No se pudo cargar inventario:", e);
       }
@@ -191,6 +193,16 @@ export default function TrabajoDetallePage({
   useEffect(() => {
     cargarDatos();
   }, [id]);
+
+  useEffect(() => {
+    if (!materialData.ubicacionId) { setProductosInventario([]); return; }
+    const controller = new AbortController();
+    fetch("/api/inventario?ubicacionId=" + encodeURIComponent(materialData.ubicacionId), { signal: controller.signal })
+      .then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo cargar el stock."); return data; })
+      .then(data => setProductosInventario(Array.isArray(data) ? data : []))
+      .catch(error => { if (error.name !== "AbortError") setErrorMsg(error.message); });
+    return () => controller.abort();
+  }, [materialData.ubicacionId]);
 
   // Fase 4
   const handleAgendarVisita = async (e: React.FormEvent) => {
@@ -346,6 +358,7 @@ export default function TrabajoDetallePage({
           costoUnitario: 0,
           esDeInventario: false,
           productoId: "",
+          ubicacionId: "",
           proveedorNombre: "",
           numeroDocumento: "",
         });
@@ -1002,6 +1015,7 @@ export default function TrabajoDetallePage({
                         costoUnitario: 0,
                         esDeInventario: true,
                         productoId: "",
+          ubicacionId: "",
                         proveedorNombre: "",
                         numeroDocumento: "",
                       });
@@ -1237,6 +1251,12 @@ export default function TrabajoDetallePage({
                 </button>
               </div>
 
+              {materialData.esDeInventario && <label className="block font-bold text-secondary">Almacén o tienda de origen
+                <select required className="module-input mt-2" value={materialData.ubicacionId} onChange={e => setMaterialData({ ...materialData, ubicacionId: e.target.value, productoId: "", descripcion: "", costoUnitario: 0 })}>
+                  <option value="">Seleccionar ubicación</option>
+                  {ubicacionesInventario.map(l => <option key={l.id} value={l.id}>{l.nombre}</option>)}
+                </select>
+              </label>}
               {materialData.esDeInventario ? (
                 <div className="space-y-2">
                   <label className="block font-bold text-secondary">

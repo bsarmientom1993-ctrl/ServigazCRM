@@ -1,3 +1,4 @@
+import { locationScope } from "@/lib/inventory";
 import { requireSession, workScope } from "@/lib/auth";
 import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -24,12 +25,11 @@ export async function GET(req: NextRequest) {
     const totalProductos = await prisma.productoInventario.count({ where: { activo: true } });
     
     // Alertas stock bajo
-    const productosStockBajo = await prisma.productoInventario.count({
-      where: {
-        activo: true,
-        stockActual: { lte: prisma.productoInventario.fields.stockMinimo },
-      },
+    const inventoryAlerts = await prisma.existenciaInventario.findMany({
+      where: { ubicacion: { AND: [locationScope(session), { activo: true }] }, stockMinimo: { gt: 0 } },
+      select: { productoId: true, stockActual: true, stockMinimo: true },
     });
+    const productosStockBajo = new Set(inventoryAlerts.filter(item => item.stockActual.lte(item.stockMinimo)).map(item => item.productoId)).size;
 
     // Últimos trabajos
     const ultimosTrabajos = await prisma.trabajo.findMany({

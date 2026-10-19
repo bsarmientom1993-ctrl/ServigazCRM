@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
         rol: user.rol,
         telefono: user.telefono,
         sucursal: user.sucursal?.nombre,
+        sucursalId: user.sucursalId,
       },
     });
 

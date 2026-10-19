@@ -1,0 +1,723 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------------------------
+// ENUMS
+// --------------------------------------------------------
+
+enum RolUsuario {
+  ADMIN
+  ENCARGADO
+  TECNICO_FIJO
+}
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+}
+
+enum NivelFidelizacion {
+  NUEVO
+  REGULAR
+  FRECUENTE
+  VIP
+}
+
+enum TipoFlujo {
+  COMPLETO
+  SIMPLIFICADO
+  PROYECTO
+  LIBRE
+}
+
+enum EstadoTrabajo {
+  BORRADOR
+  EVALUACION_PENDIENTE
+  EVALUADO
+  COTIZADO
+  COTIZACION_VENCIDA
+  EN_NEGOCIACION
+  APROBADO
+  PAGO_A_CUENTA_RECIBIDO
+  PAGO_A_CUENTA_VENCIDO
+  RECHAZADO
+  ANTICIPO_RECIBIDO
+  EN_PROCESO
+  EN_PAUSA
+  CANCELADO
+  TERMINADO_TECNICO
+  VALIDADO
+  FINALIZADO_FINANCIERO
+  ARCHIVADO
+  RECLAMO_GARANTIA
+}
+
+enum TipoVersionCotizacion {
+  ORIGINAL
+  CORRECCION
+  NEGOCIACION
+  REACTIVACION
+}
+
+enum EstadoCotizacion {
+  VIGENTE
+  VENCIDA
+  APROBADA
+  RECHAZADA
+  SUPERADA
+}
+
+enum TipoPago {
+  ANTICIPO
+  PAGO_A_CUENTA
+  SALDO_FINAL
+  PAGO_TOTAL
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  QR
+  TARJETA
+  CHEQUE
+  OTRO
+}
+
+enum TipoOrigenMaterial {
+  INVENTARIO
+  MANUAL_FUERA_INVENTARIO
+}
+
+enum EstadoAsistencia {
+  PRESENTE
+  TARDE
+  TARDE_GRAVE
+  FALTA
+  INCOMPLETO
+}
+
+enum EstadoPermiso {
+  SOLICITADO
+  APROBADO
+  RECHAZADO
+}
+
+enum CategoriaEgreso {
+  NOMINA
+  ALQUILER
+  SERVICIOS
+  INVENTARIO_COMPRAS
+  TRANSPORTE
+  MANTENIMIENTO
+  OTROS
+}
+
+enum TipoMovimientoInventario {
+  COMPRA
+  CONSUMO_TRABAJO
+  AJUSTE_POSITIVO
+  AJUSTE_NEGATIVO
+  TRASPASO
+}
+
+enum EstadoReclamo {
+  PENDIENTE
+  EN_PROCESO
+  RESUELTO
+  RECHAZADO
+}
+
+enum AccionAuditoria {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  INTENTO_INVALIDO
+  BLOQUEO
+}
+
+// --------------------------------------------------------
+// MÓDULO 1: USUARIOS, SUCURSALES Y PERSONAL
+// --------------------------------------------------------
+
+model Usuario {
+  id            String        @id @default(uuid())
+  nombre        String
+  email         String        @unique
+  passwordHash  String
+  telefono      String?
+  rol           RolUsuario
+  estado        EstadoUsuario @default(ACTIVO)
+  sucursalId    String?
+  sucursal      Sucursal?     @relation(fields: [sucursalId], references: [id])
+
+  // Relaciones operativas
+  trabajosEncargados  Trabajo[]  @relation("TrabajosEncargado")
+  trabajosAsignados   Trabajo[]  @relation("TrabajosTecnico")
+  visitasAsignadas    VisitaTecnica[]
+  pagosRegistrados    Pago[]
+  asistencias         AsistenciaPersonal[]
+  permisosSolicitados PermisoPersonal[]    @relation("PermisosUsuario")
+  permisosAprobados   PermisoPersonal[]    @relation("PermisosAprobador")
+  egresosRegistrados  EgresoGeneralManual[]
+  auditorias          AuditoriaLog[]
+  movimientosInv      MovimientoInventario[]
+  reclamosAsignados   ReclamoGarantia[]    @relation("ReclamoTecnico")
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([rol, estado])
+}
+
+model InstaladorEventual {
+  id            String   @id @default(uuid())
+  nombre        String
+  telefono      String
+  especialidad  String?
+  activo        Boolean  @default(true)
+  notas         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Sucursal {
+  id              String   @id @default(uuid())
+  nombre          String   // Taller, Tienda, Sucursal Centro, etc.
+  direccion       String?
+  telefono        String?
+  activo          Boolean  @default(true)
+
+  usuarios        Usuario[]
+  clientes        Cliente[]
+  trabajos        Trabajo[]
+  movimientosOrigen  MovimientoInventario[] @relation("MovOrigen")
+  movimientosDestino MovimientoInventario[] @relation("MovDestino")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// --------------------------------------------------------
+// MÓDULO 2: CLIENTES Y FIDELIZACIÓN
+// --------------------------------------------------------
+
+model Cliente {
+  id                  String             @id @default(uuid())
+  nombreCompleto      String
+  telefonos           Json               // Array de strings ["+569...", "+562..."]
+  email               String?
+  direccion           String
+  ubicacionMapsUrl    String?
+  sucursalId          String?
+  sucursal            Sucursal?          @relation(fields: [sucursalId], references: [id])
+  nivelFidelizacion   NivelFidelizacion  @default(NUEVO)
+  descuentoVipPct     Decimal            @default(0.0) @db.Decimal(5, 2)
+
+  trabajos            Trabajo[]
+  historialNivel      HistorialFidelizacion[]
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([nombreCompleto])
+}
+
+model HistorialFidelizacion {
+  id             String            @id @default(uuid())
+  clienteId      String
+  cliente        Cliente           @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  nivelAnterior  NivelFidelizacion
+  nivelNuevo     NivelFidelizacion
+  motivo         String
+  fecha          DateTime          @default(now())
+}
+
+// --------------------------------------------------------
+// MÓDULO 3: TABLAS DE CONFIGURACIÓN (FASE 0)
+// --------------------------------------------------------
+
+model ConfiguracionPrecio {
+  id             String   @id @default(uuid())
+  subtipoCodigo  String   // 1.1.1, 1.1.2, 1.2.1, 1.2.2, etc.
+  concepto       String   // tubo_visto, tubo_empotrado, medidor, m2_piso_radiante, etc.
+  diametro       String?  // 1/2", 3/4", 1", etc.
+  material       String?  // PPR, PPH, PEX, COBRE, HIERRO
+  precioUnitario Decimal  @db.Decimal(12, 2)
+  unidad         String   // metro, unidad, m2, proyecto, hora
+  activo         Boolean  @default(true)
+  modificadoPor  String   // User ID de Admin
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  @@index([subtipoCodigo, concepto, activo])
+}
+
+model ConfiguracionManoObra {
+  id               String   @id @default(uuid())
+  subtipoCodigo    String   // 1.1.1, 1.1.2, 1.2.2, 3.3, etc.
+  tipoCalculo      String   // por_trabajo, por_hora, por_dia, por_metro
+  tarifaBase       Decimal  @db.Decimal(12, 2)
+  factorDificultad Decimal  @default(1.0) @db.Decimal(4, 2)
+  activo           Boolean  @default(true)
+  modificadoPor    String
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
+}
+
+model ConfiguracionDificultad {
+  id                         String   @id @default(uuid())
+  nivel                      Int      @unique // 1 a 5
+  factorMultiplicador        Decimal  @db.Decimal(4, 2) // Ej: 1.0, 1.1, 1.2, 1.4, 1.6
+  descripcion                String
+  sugerenciaInstaladorExtra  Boolean  @default(false) // true si nivel >= 4
+  activo                     Boolean  @default(true)
+  modificadoPor              String
+  updatedAt                  DateTime @updatedAt
+}
+
+model ConfiguracionGarantia {
+  id             String   @id @default(uuid())
+  subtipoCodigo  String   @unique // 1.1.x (12m), 3.2 (12-24m), 3.3 (2m), 3.4 (3m), 3.6 (2m), etc.
+  mesesDefecto   Int      // Duración por defecto
+  condiciones    String?
+  activo         Boolean  @default(true)
+  modificadoPor  String
+  updatedAt      DateTime @updatedAt
+}
+
+model ConfiguracionAnticipo {
+  id               String   @id @default(uuid())
+  subtipoCodigo    String   @unique
+  porcentajeMinimo Decimal  @default(50.0) @db.Decimal(5, 2)
+  diasVencimiento  Int      @default(5)
+  activo           Boolean  @default(true)
+  modificadoPor    String
+  updatedAt        DateTime @updatedAt
+}
+
+model ConfiguracionDescuento {
+  id               String   @id @default(uuid())
+  topeMaximoPct    Decimal  @default(20.0) @db.Decimal(5, 2) // Máximo acumulativo
+  pctMaxEncargado  Decimal  @default(10.0) @db.Decimal(5, 2) // <= 10% Encargado, > 10% Admin
+  activo           Boolean  @default(true)
+  modificadoPor    String
+  updatedAt        DateTime @updatedAt
+}
+
+model ConfiguracionPersonal {
+  id                    String   @id @default(uuid())
+  horaEntrada           String   @default("08:30")
+  horaSalida            String   @default("18:00")
+  toleranciaMinutos     Int      @default(15)
+  descuentoFaltaPct     Decimal  @default(100.0) @db.Decimal(5, 2)
+  descuentoTardanzaPct  Decimal  @default(25.0) @db.Decimal(5, 2)
+  maxPermisosMes        Int      @default(2)
+  activo                Boolean  @default(true)
+  modificadoPor         String
+  updatedAt             DateTime @updatedAt
+}
+
+model CatalogoCategoria {
+  id             String            @id @default(uuid())
+  codigo         String            @unique // GAS, CALEFACCION, PLOMERIA, EQUIPOS, OFICINA_TRAMITES, TIENDA
+  nombre         String            // Nombre editable: "Instalaciones de Gas", etc.
+  descripcion    String?
+  icono          String            @default("Flame")
+  color          String            @default("orange")
+  requiereVisita Boolean           @default(true)
+  orden          Int               @default(0)
+  activo         Boolean           @default(true)
+  subtipos       CatalogoSubtipo[]
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model CatalogoSubtipo {
+  id             String            @id @default(uuid())
+  categoriaId    String
+  categoria      CatalogoCategoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  codigo         String            @unique // 1.1.1, 1.1.2, 3.2, O.1, etc.
+  nombre         String            // Nombre editable: "Instalación Nueva (Proyecto SEC Obligatorio)"
+  descripcion    String?
+  orden          Int               @default(0)
+  activo         Boolean           @default(true)
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([categoriaId, activo])
+}
+
+model ConfiguracionGeneral {
+  id                       String   @id @default(uuid())
+  monedaBase               String   @default("CLP")
+  margenMinimoPct          Decimal  @default(25.0) @db.Decimal(5, 2)
+  alertaBajoMargenUmbralPct Decimal @default(20.0) @db.Decimal(5, 2)
+  slaGarantiaHorasAlerta   Int      @default(24)
+  slaGarantiaHorasLimite   Int      @default(168) // 7 días
+  activo                   Boolean  @default(true)
+  modificadoPor            String
+  updatedAt                DateTime @updatedAt
+}
+
+// --------------------------------------------------------
+// MÓDULO 4: TRABAJOS Y CICLO DE VIDA
+// --------------------------------------------------------
+
+model Trabajo {
+  id                       String          @id @default(uuid())
+  codigoCorrelativo        String          @unique // Ej: TRB-2026-0001
+  clienteId                String
+  cliente                  Cliente         @relation(fields: [clienteId], references: [id])
+  sucursalId               String?
+  sucursal                 Sucursal?       @relation(fields: [sucursalId], references: [id])
+  encargadoId              String
+  encargado                Usuario         @relation("TrabajosEncargado", fields: [encargadoId], references: [id])
+  tecnicoId                String?
+  tecnico                  Usuario?        @relation("TrabajosTecnico", fields: [tecnicoId], references: [id])
+
+  tipoFlujo                TipoFlujo
+  subtipoCodigo            String          // 1.1.1, 1.1.2, 1.2.1, 2.1, 3.2, 4.1, etc.
+  subtipoNombre            String          // Gas Nueva, Modificación, Radiadores, etc.
+  estado                   EstadoTrabajo   @default(BORRADOR)
+
+  dificultadNivel          Int?            @default(1)
+  requiereInstaladorExtra  Boolean         @default(false)
+  porcentajeAvance         Int             @default(0)
+  motivoPausa              String?
+  observaciones            String?
+
+  // Checklist configurable para Flujo Libre
+  checklistLibre           Json?           // [{ item: string, completado: boolean }]
+
+  // Fechas SLA y control
+  fechasSla                Json?           // { visitaLimite: string, cotizacionLimite: string, ... }
+  fechaInicioEjecucion     DateTime?
+  fechaFinEjecucion        DateTime?
+
+  // Relaciones
+  visitas                  VisitaTecnica[]
+  cotizaciones             Cotizacion[]
+  pagos                    Pago[]
+  materiales               MaterialEjecucion[]
+  egreso                   EgresoTrabajo?
+  garantia                 CertificadoGarantia?
+  reclamosDerivados        ReclamoGarantia[] @relation("TrabajoOriginalReclamo")
+  reclamosGenerados        ReclamoGarantia[] @relation("TrabajoDerivadoReclamo")
+
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+
+  @@index([clienteId, estado, tipoFlujo])
+  @@index([encargadoId, tecnicoId])
+}
+
+// --------------------------------------------------------
+// MÓDULO 5: VISITAS, COTIZACIONES Y PAGOS
+// --------------------------------------------------------
+
+model VisitaTecnica {
+  id                 String    @id @default(uuid())
+  trabajoId          String
+  trabajo            Trabajo   @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  tecnicoId          String
+  tecnico            Usuario   @relation(fields: [tecnicoId], references: [id])
+
+  fechaProgramada    DateTime
+  fechaEjecutada     DateTime?
+  medidasJson        Json?     // Metros lineales, diámetros, m2, etc.
+  condicionesJson    Json?     // Estado del recinto, accesos, etc.
+  ventilacionVasaOk  Boolean?  // Para Gas: Ventilación y VASA obligatorios
+  fotosUrls          Json?     // Array de URLs de fotos (mínimo 3)
+  dificultadSugerida Int       @default(1)
+  observaciones      String?
+  completada         Boolean   @default(false)
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([trabajoId, tecnicoId])
+}
+
+model Cotizacion {
+  id                     String                @id @default(uuid())
+  trabajoId              String
+  trabajo                Trabajo               @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  numeroVersion          Int                   @default(1)
+  tipoVersion            TipoVersionCotizacion @default(ORIGINAL)
+
+  // Snapshot inmutable de la cotización calculada
+  datosFormularioJson    Json                  // Inputs específicos del formulario por subtipo
+  snapshotCalculoJson    Json                  // Precios unitarios y factores usados en el cálculo
+
+  subtotalMateriales     Decimal               @db.Decimal(12, 2)
+  subtotalManoObra       Decimal               @db.Decimal(12, 2)
+  montoTransporte        Decimal               @default(0.0) @db.Decimal(12, 2)
+  montoAlquilerHerram    Decimal               @default(0.0) @db.Decimal(12, 2)
+
+  porcentajeDescuento    Decimal               @default(0.0) @db.Decimal(5, 2)
+  montoDescuento         Decimal               @default(0.0) @db.Decimal(12, 2)
+  descuentoAprobadoPor   String?               // Admin si > 10%
+
+  totalCotizado          Decimal               @db.Decimal(12, 2)
+  anticipoMinimoRequerido Decimal              @db.Decimal(12, 2)
+
+  alertaBajoMargen       Boolean               @default(false)
+  justificacionMargenBajo String?
+
+  fechaEmision           DateTime              @default(now())
+  fechaVencimiento       DateTime              // 15 días hábiles
+  estado                 EstadoCotizacion      @default(VIGENTE)
+  pdfUrl                 String?
+
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  @@unique([trabajoId, numeroVersion])
+  @@index([trabajoId, estado])
+}
+
+model Pago {
+  id              String     @id @default(uuid())
+  trabajoId       String
+  trabajo         Trabajo    @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  tipoPago        TipoPago
+  monto           Decimal    @db.Decimal(12, 2)
+  metodoPago      MetodoPago @default(TRANSFERENCIA)
+  comprobanteUrl  String?
+  numeroReferencia String?
+  registradoPorId String
+  registradoPor   Usuario    @relation(fields: [registradoPorId], references: [id])
+  fechaPago       DateTime   @default(now())
+  reciboPdfUrl    String?
+
+  createdAt       DateTime   @default(now())
+
+  @@index([trabajoId, tipoPago])
+}
+
+// --------------------------------------------------------
+// MÓDULO 6: EJECUCIÓN, MATERIALES Y EGRESO INMUTABLE
+// --------------------------------------------------------
+
+model MaterialEjecucion {
+  id                String             @id @default(uuid())
+  trabajoId         String
+  trabajo           Trabajo            @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  tipoOrigen        TipoOrigenMaterial @default(INVENTARIO)
+
+  productoId        String?
+  producto          ProductoInventario? @relation(fields: [productoId], references: [id])
+  descripcion       String
+  cantidad          Decimal            @db.Decimal(10, 2)
+  costoUnitario     Decimal            @db.Decimal(12, 2)
+  subtotalCosto     Decimal            @db.Decimal(12, 2)
+
+  // Proveedor para compras manuales (#93, #96)
+  proveedorNombre   String?
+  proveedorContacto String?
+
+  consumido         Boolean            @default(true)
+  recuperable       Boolean            @default(false)
+
+  createdAt         DateTime           @default(now())
+
+  @@index([trabajoId, tipoOrigen])
+}
+
+model EgresoTrabajo {
+  id                     String   @id @default(uuid())
+  trabajoId              String   @unique
+  trabajo                Trabajo  @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  // Detalle congelado generado automáticamente en Fase 13 (#84)
+  materialesInventarioJson Json   // [{ id_producto, cantidad, costo_unitario, subtotal }]
+  materialesManualesJson   Json   // [{ descripcion, costo, proveedor }]
+  manoObraMonto          Decimal  @db.Decimal(12, 2)
+  transporteMonto        Decimal  @db.Decimal(12, 2)
+  totalEgreso            Decimal  @db.Decimal(12, 2)
+
+  totalIngreso           Decimal  @db.Decimal(12, 2)
+  utilidadNeta           Decimal  @db.Decimal(12, 2) // Ingreso - Egreso
+  alertaMargenNegativo   Boolean  @default(false)
+
+  bloqueado              Boolean  @default(true) // Regla inmutable: 1 por trabajo, no editable
+  generadoPor            String   @default("SISTEMA_FASE_13")
+  fechaGeneracion        DateTime @default(now())
+
+  @@index([trabajoId])
+}
+
+// --------------------------------------------------------
+// MÓDULO 7: GARANTÍAS, POST-VENTA Y RECLAMOS
+// --------------------------------------------------------
+
+model CertificadoGarantia {
+  id                String   @id @default(uuid())
+  trabajoId         String   @unique
+  trabajo           Trabajo  @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  codigoCertificado String   @unique // Ej: GAR-2026-0001
+  mesesCobertura    Int
+  fechaInicio       DateTime
+  fechaFin          DateTime
+  qrCodeData        String
+  etiquetasCantidad Int      @default(1) // 1 nuevo, 2 reparado
+  pdfUrl            String?
+  activo            Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+}
+
+model ReclamoGarantia {
+  id                 String        @id @default(uuid())
+  trabajoOriginalId  String
+  trabajoOriginal    Trabajo       @relation("TrabajoOriginalReclamo", fields: [trabajoOriginalId], references: [id])
+  trabajoDerivadoId  String?       @unique
+  trabajoDerivado    Trabajo?      @relation("TrabajoDerivadoReclamo", fields: [trabajoDerivadoId], references: [id])
+
+  descripcionFalla   String
+  tecnicoAsignadoId  String?
+  tecnicoAsignado    Usuario?      @relation("ReclamoTecnico", fields: [tecnicoAsignadoId], references: [id])
+
+  fechaReclamo       DateTime      @default(now())
+  slaLimiteFecha     DateTime      // 24h primera atención / 7d resolución
+  estado             EstadoReclamo @default(PENDIENTE)
+  solucionDetalle    String?
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([trabajoOriginalId, estado])
+}
+
+// --------------------------------------------------------
+// MÓDULO 8: PERSONAL, FINANZAS GENERALES, INVENTARIO Y AUDITORÍA
+// --------------------------------------------------------
+
+model AsistenciaPersonal {
+  id                    String           @id @default(uuid())
+  usuarioId             String
+  usuario               Usuario          @relation(fields: [usuarioId], references: [id])
+  fecha                 DateTime         @db.Date
+  horaEntrada           DateTime?
+  horaSalida            DateTime?
+  estado                EstadoAsistencia @default(PRESENTE)
+  descuentoAplicadoMonto Decimal         @default(0.0) @db.Decimal(12, 2)
+  anuladoPorAdmin       Boolean          @default(false)
+  motivoAnulacion       String?
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@unique([usuarioId, fecha])
+  @@index([fecha, estado])
+}
+
+model PermisoPersonal {
+  id              String        @id @default(uuid())
+  usuarioId       String
+  usuario         Usuario       @relation("PermisosUsuario", fields: [usuarioId], references: [id])
+  fechaSolicitud  DateTime      @default(now())
+  fechaPermiso    DateTime      @db.Date
+  motivo          String
+  descripcion     String
+  comprobanteUrl  String        // Obligatorio según Fase 18
+  estado          EstadoPermiso @default(SOLICITADO)
+  aprobadoPorId   String?
+  aprobadoPor     Usuario?      @relation("PermisosAprobador", fields: [aprobadoPorId], references: [id])
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([usuarioId, estado])
+}
+
+model EgresoGeneralManual {
+  id             String          @id @default(uuid())
+  categoria      CategoriaEgreso
+  monto          Decimal         @db.Decimal(12, 2)
+  descripcion    String
+  proveedorInfo  String?
+  comprobanteUrl String?
+  creadoPorId    String          // Privacidad #91: solo creador + Admin
+  creadoPor      Usuario         @relation(fields: [creadoPorId], references: [id])
+  esRecurrente   Boolean         @default(false)
+  fechaEgreso    DateTime        @default(now())
+
+  createdAt      DateTime        @default(now())
+
+  @@index([categoria, fechaEgreso])
+  @@index([creadoPorId])
+}
+
+model ProductoInventario {
+  id            String   @id @default(uuid())
+  codigoSku     String   @unique
+  nombre        String
+  categoria     String   // Tubos, Accesorios, Válvulas, Calderas, Radiadores, etc.
+  unidadMedida  String   // metro, unidad, rollo, etc.
+  stockActual   Decimal  @default(0.0) @db.Decimal(10, 2)
+  stockMinimo   Decimal  @default(0.0) @db.Decimal(10, 2)
+  costoPromedio Decimal  @default(0.0) @db.Decimal(12, 2)
+  precioVenta   Decimal  @default(0.0) @db.Decimal(12, 2)
+  activo        Boolean  @default(true)
+
+  movimientos   MovimientoInventario[]
+  materialesUso MaterialEjecucion[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([codigoSku, categoria, activo])
+}
+
+model MovimientoInventario {
+  id               String                   @id @default(uuid())
+  productoId       String
+  producto         ProductoInventario       @relation(fields: [productoId], references: [id])
+  tipoMovimiento   TipoMovimientoInventario
+  cantidad         Decimal                  @db.Decimal(10, 2)
+  stockAnterior    Decimal                  @db.Decimal(10, 2)
+  stockNuevo       Decimal                  @db.Decimal(10, 2)
+
+  origenSucursalId String?
+  origenSucursal   Sucursal?                @relation("MovOrigen", fields: [origenSucursalId], references: [id])
+  destinoSucursalId String?
+  destinoSucursal  Sucursal?                @relation("MovDestino", fields: [destinoSucursalId], references: [id])
+  autoConfirmado   Boolean                  @default(false) // 2h traspaso auto-confirma
+
+  usuarioId        String
+  usuario          Usuario                  @relation(fields: [usuarioId], references: [id])
+  proveedorNombre  String?
+  proveedorContacto String?
+  observaciones    String?
+  fecha            DateTime                 @default(now())
+
+  @@index([productoId, tipoMovimiento, fecha])
+}
+
+model AuditoriaLog {
+  id                 String          @id @default(uuid())
+  usuarioId          String?
+  usuario            Usuario?        @relation(fields: [usuarioId], references: [id])
+  modulo             String          // TRABAJOS, COTIZACIONES, PAGOS, PRECIOS, PERSONAL, etc.
+  accion             AccionAuditoria
+  entidadTipo        String          // 'Trabajo', 'Cotizacion', 'ConfiguracionPrecio', etc.
+  entidadId          String?
+  valoresAnteriores  Json?
+  valoresNuevos      Json?
+  ipAddress          String?
+  userAgent          String?
+  timestamp          DateTime        @default(now())
+
+  @@index([modulo, accion, timestamp])
+  @@index([usuarioId])
+}

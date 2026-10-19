@@ -207,7 +207,10 @@ test("all internal handlers reject missing sessions before accessing business da
     ["configuracion/precios", ["GET", "POST"]], ["cotizador/calcular", ["POST"]],
     ["dashboard/stats", ["GET"]], ["finanzas", ["GET", "POST"]], ["finanzas/balance", ["GET"]],
     ["garantias", ["GET"]], ["garantias/[codigo]", ["POST"]], ["garantias/reclamo/[id]", ["PATCH"]],
-    ["inventario", ["GET"]], ["inventario/compras", ["GET", "POST"]], ["tecnicos", ["GET"]],
+    ["ubicaciones", ["GET", "POST"]], ["ubicaciones/[id]", ["PATCH"]],
+    ["sucursales", ["GET", "POST"]], ["sucursales/[id]", ["PATCH"]],
+    ["inventario/traspasos", ["GET", "POST", "PATCH"]], ["inventario/movimientos", ["GET"]], ["inventario/minimos", ["PATCH"]],
+    ["inventario", ["GET", "POST"]], ["inventario/compras", ["GET", "POST"]], ["tecnicos", ["GET"]],
     ["trabajos", ["GET", "POST"]], ["trabajos/[id]", ["GET"]],
     ...["pagos", "decision", "ejecucion", "cierre-financiero", "visita", "cotizacion"].map(name => ["trabajos/[id]/" + name, ["POST"]]),
   ];
@@ -224,15 +227,15 @@ test("all internal handlers reject missing sessions before accessing business da
 test("inventory consumption uses server cost and a conditional decrement", async () => {
   work.estado = "EN_PROCESO";
   let condition;
-  tx.productoInventario = {
-    findUnique: async () => ({ id: "product-1", activo: true }),
-    updateMany: async args => { condition = args; return { count: 1 }; },
-    findUniqueOrThrow: async () => ({ stockActual: decimal(8), costoPromedio: decimal(12.50) }),
-  };
+  tx.ubicacionInventario = { findUnique: async () => ({ id: "location-1", activo: true, esInicial: false, sucursalId: user.sucursalId }) };
+  tx.existenciaInventario = { aggregate: async () => ({ _sum: { stockActual: decimal(10) } }), upsert: async () => ({ id: "stock-1", stockActual: decimal(10) }),
+    updateMany: async args => { condition = args; return { count: 1 }; } };
+  tx.traspasoInventario = { aggregate: async () => ({ _sum: { cantidad: decimal(0) } }) };
+  tx.productoInventario = { findUniqueOrThrow: async () => ({ id: "product-1", activo: true, stockActual: decimal(10), costoPromedio: decimal(12.50) }), update: async () => ({}) };
   tx.movimientoInventario = { create: async ({ data }) => { writes.push(["movement", data]); return data; } };
   tx.materialEjecucion = { create: async ({ data }) => { writes.push(["material", data]); return { id: "material-1", ...data }; } };
   const response = await execution.POST(request({ accion: "REGISTRAR_MATERIAL", data: {
-    descripcion: "Tubo", cantidad: 2, costoUnitario: 0.01, esDeInventario: true, productoId: "product-1",
+    descripcion: "Tubo", ubicacionId: "location-1", cantidad: 2, costoUnitario: 0.01, esDeInventario: true, productoId: "product-1",
   } }), context);
   assert.equal(response.status, 200);
   assert.equal(String(condition.where.stockActual.gte), "2");
@@ -243,9 +246,12 @@ test("inventory consumption uses server cost and a conditional decrement", async
 });
 test("insufficient stock never creates a material or inventory movement", async () => {
   work.estado = "EN_PROCESO";
-  tx.productoInventario = { findUnique: async () => ({ id: "product-1", activo: true }), updateMany: async () => ({ count: 0 }) };
+  tx.ubicacionInventario = { findUnique: async () => ({ id: "location-1", activo: true, esInicial: false, sucursalId: user.sucursalId }) };
+  tx.existenciaInventario = { aggregate: async () => ({ _sum: { stockActual: decimal(10) } }), upsert: async () => ({ id: "stock-1", stockActual: decimal(10) }), updateMany: async () => ({ count: 0 }) };
+  tx.traspasoInventario = { aggregate: async () => ({ _sum: { cantidad: decimal(0) } }) };
+  tx.productoInventario = { findUniqueOrThrow: async () => ({ id: "product-1", activo: true, stockActual: decimal(10), costoPromedio: decimal(10) }) };
   const response = await execution.POST(request({ accion: "REGISTRAR_MATERIAL", data: {
-    descripcion: "Tubo", cantidad: 2, costoUnitario: 10, esDeInventario: true, productoId: "product-1",
+    descripcion: "Tubo", ubicacionId: "location-1", cantidad: 2, costoUnitario: 10, esDeInventario: true, productoId: "product-1",
   } }), context);
   assert.equal(response.status, 409); assert.equal(writes.length, 0);
 });

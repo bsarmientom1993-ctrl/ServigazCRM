@@ -196,3 +196,24 @@ input, textarea, select { scroll-margin-top: 100px; }
 .sidebar-nav { scrollbar-color: #354b66 transparent; scrollbar-width: thin; }
 .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: #354b66; }
+
+/* Inventory and branch management share the application's light/dark tokens. */
+.module-card { padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--card-shadow); }
+.module-eyebrow { font-size: 10px; font-weight: 650; letter-spacing: .14em; color: var(--muted-text); margin-bottom: 8px; }
+.module-input { width: 100%; min-height: 42px; padding: 10px 12px; background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-size: 12px; font-weight: 400; }
+.module-input:focus { outline: 2px solid #f06529; outline-offset: 2px; }
+.module-error, .module-success, .module-note { padding: 15px 18px; border-radius: 13px; font-size: 13px; line-height: 1.7; }
+.module-error { color: #ad2929; background: #e9444410; border: 1px solid #e9444433; }
+.module-success { color: #1b7254; background: #20a07810; border: 1px solid #20a07833; }
+.dark .module-error { color: #ffb0b0; }
+.dark .module-success { color: #94dfc3; }
+.module-note { color: var(--secondary); background: var(--muted-surface); border: 1px solid var(--line); }
+.module-table { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.module-table table { width: 100%; text-align: left; font-size: 12px; }
+.module-table th { padding: 15px 18px; background: var(--muted-surface); color: var(--secondary); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.module-table td { padding: 16px 18px; border-top: 1px solid var(--line-soft); color: var(--ink); }
+.module-table small { display: block; margin-top: 4px; color: var(--muted-text); font-size: 10px; }
+.module-table tbody tr:hover { background: var(--canvas); }
+
+
+.module-input.pl-9 { padding-left: 36px; }

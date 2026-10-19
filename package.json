@@ -14,7 +14,9 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "test": "node --require ./tests/register.cjs --test tests/*.test.cjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:inventory": "node --require ./tests/register.cjs --test tests/inventory.integration.cjs",
+    "db:inventory": "node scripts/migrate-inventory.cjs"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

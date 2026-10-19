@@ -1,3 +1,4 @@
+import { lockLocations, locationForOperation, lockProduct, takeStock } from "@/lib/inventory";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -13,6 +14,7 @@ const materialSchema = z.object({
   costoUnitario: z.number().finite().nonnegative(),
   esDeInventario: z.boolean(),
   productoId: z.string().optional(),
+  ubicacionId: z.string().optional(),
   proveedorNombre: z.string().trim().max(300).optional(),
   proveedorContacto: z.string().trim().max(300).optional(),
 });
@@ -46,20 +48,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         let unitCost = new Prisma.Decimal(cents(data.costoUnitario)).div(100);
         if (data.esDeInventario) {
           if (!data.productoId) throw new ApiError(400, "Selecciona un producto.");
-          const product = await tx.productoInventario.findUnique({ where: { id: data.productoId } });
-          if (!product?.activo) throw new ApiError(404, "Producto no disponible.");
-          // Conditional decrement handles two different orders consuming the same product.
-          const changed = await tx.productoInventario.updateMany({
-            where: { id: product.id, stockActual: { gte: quantity }, activo: true },
-            data: { stockActual: { decrement: quantity } },
-          });
-          if (changed.count !== 1) throw new ApiError(409, "Stock insuficiente. Actualiza el inventario.");
-          const current = await tx.productoInventario.findUniqueOrThrow({ where: { id: product.id } });
-          unitCost = current.costoPromedio;
+          if (!data.ubicacionId) throw new ApiError(400, "Selecciona el almacén o tienda de origen.");
+          await lockLocations(tx, [data.ubicacionId]);
+          const location = await locationForOperation(tx, user, data.ubicacionId);
+          if (location.esInicial) throw new ApiError(409, "Distribuye primero el inventario previo.");
+          if (user.rol !== "ADMIN" && work.sucursalId !== location.sucursalId) throw new ApiError(403, "El material debe salir de la sucursal de la orden.");
+          const product = await lockProduct(tx, data.productoId);
+          const balance = await takeStock(tx, product.id, location.id, quantity);
+          await tx.productoInventario.update({ where: { id: product.id }, data: { stockActual: { decrement: quantity } } });
+          unitCost = product.costoPromedio;
           await tx.movimientoInventario.create({ data: {
             productoId: product.id, tipoMovimiento: "CONSUMO_TRABAJO", cantidad: quantity,
-            stockAnterior: current.stockActual.add(quantity), stockNuevo: current.stockActual, usuarioId: user.id,
-            observaciones: "Consumo en trabajo " + work.codigoCorrelativo,
+            stockAnterior: balance.before, stockNuevo: balance.after, usuarioId: user.id,
+            ubicacionOrigenId: location.id, origenSucursalId: location.sucursalId, evento: "CONSUMO",
+            costoUnitario: unitCost, observaciones: "Consumo en trabajo " + work.codigoCorrelativo,
           } });
         }
         const material = await tx.materialEjecucion.create({ data: {

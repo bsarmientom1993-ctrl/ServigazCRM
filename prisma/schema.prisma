@@ -167,6 +167,8 @@ model Usuario {
   permisosAprobados   PermisoPersonal[]    @relation("PermisosAprobador")
   egresosRegistrados  EgresoGeneralManual[]
   auditorias          AuditoriaLog[]
+  traspasosEnviados   TraspasoInventario[] @relation("TraspasoEnviado")
+  traspasosResueltos  TraspasoInventario[] @relation("TraspasoResuelto")
   movimientosInv      MovimientoInventario[]
   reclamosAsignados   ReclamoGarantia[]    @relation("ReclamoTecnico")
   
@@ -197,6 +199,7 @@ model Sucursal {
   usuarios        Usuario[]
   clientes        Cliente[]
   trabajos        Trabajo[]
+  ubicaciones     UbicacionInventario[]
   movimientosOrigen  MovimientoInventario[] @relation("MovOrigen")
   movimientosDestino MovimientoInventario[] @relation("MovDestino")
   
@@ -670,6 +673,8 @@ model ProductoInventario {
   precioVenta   Decimal  @default(0.0) @db.Decimal(12, 2)
   activo        Boolean  @default(true)
   
+  existencias   ExistenciaInventario[]
+  traspasos     TraspasoInventario[]
   movimientos   MovimientoInventario[]
   materialesUso MaterialEjecucion[]
   
@@ -692,6 +697,15 @@ model MovimientoInventario {
   origenSucursal   Sucursal?                @relation("MovOrigen", fields: [origenSucursalId], references: [id])
   destinoSucursalId String?
   destinoSucursal  Sucursal?                @relation("MovDestino", fields: [destinoSucursalId], references: [id])
+  ubicacionOrigenId String?
+  ubicacionOrigen UbicacionInventario? @relation("UbicacionMovOrigen", fields: [ubicacionOrigenId], references: [id])
+  ubicacionDestinoId String?
+  ubicacionDestino UbicacionInventario? @relation("UbicacionMovDestino", fields: [ubicacionDestinoId], references: [id])
+  traspasoId String?
+  traspaso TraspasoInventario? @relation(fields: [traspasoId], references: [id])
+  evento String?
+  huellaOperacion String?
+  costoUnitario Decimal? @db.Decimal(12, 2)
   autoConfirmado   Boolean                  @default(false) // 2h traspaso auto-confirma
   
   usuarioId        String
@@ -720,4 +734,61 @@ model AuditoriaLog {
 
   @@index([modulo, accion, timestamp])
   @@index([usuarioId])
+}
+
+model UbicacionInventario {
+  id String @id @default(uuid())
+  nombre String
+  tipo String // ALMACEN | TIENDA
+  sucursalId String?
+  sucursal Sucursal? @relation(fields: [sucursalId], references: [id])
+  direccion String?
+  activo Boolean @default(true)
+  esInicial Boolean @default(false)
+  existencias ExistenciaInventario[]
+  salidas TraspasoInventario[] @relation("TraspasoOrigen")
+  entradas TraspasoInventario[] @relation("TraspasoDestino")
+  movimientosOrigen MovimientoInventario[] @relation("UbicacionMovOrigen")
+  movimientosDestino MovimientoInventario[] @relation("UbicacionMovDestino")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sucursalId, activo])
+}
+model ExistenciaInventario {
+  id String @id @default(uuid())
+  productoId String
+  producto ProductoInventario @relation(fields: [productoId], references: [id])
+  ubicacionId String
+  ubicacion UbicacionInventario @relation(fields: [ubicacionId], references: [id])
+  stockActual Decimal @default(0) @db.Decimal(10, 2)
+  stockMinimo Decimal @default(0) @db.Decimal(10, 2)
+  updatedAt DateTime @updatedAt
+
+  @@unique([productoId, ubicacionId])
+  @@index([ubicacionId])
+}
+model TraspasoInventario {
+  id String @id @default(uuid()) // UUID supplied by the client to deduplicate retries
+  productoId String
+  producto ProductoInventario @relation(fields: [productoId], references: [id])
+  origenId String
+  origen UbicacionInventario @relation("TraspasoOrigen", fields: [origenId], references: [id])
+  destinoId String
+  destino UbicacionInventario @relation("TraspasoDestino", fields: [destinoId], references: [id])
+  cantidad Decimal @db.Decimal(10, 2)
+  costoUnitario Decimal @db.Decimal(12, 2)
+  estado String @default("EN_TRANSITO") // EN_TRANSITO | RECIBIDO | CANCELADO
+  enviadoPorId String
+  enviadoPor Usuario @relation("TraspasoEnviado", fields: [enviadoPorId], references: [id])
+  resueltoPorId String?
+  resueltoPor Usuario? @relation("TraspasoResuelto", fields: [resueltoPorId], references: [id])
+  observaciones String?
+  motivoCancelacion String?
+  createdAt DateTime @default(now())
+  resueltoAt DateTime?
+  movimientos MovimientoInventario[]
+
+  @@index([origenId, estado])
+  @@index([destinoId, estado])
 }

@@ -8,7 +8,7 @@ import { ThemeToggle } from "./ThemeToggle";
 export function Header({ title, onMenu }: { title?: string; onMenu?: () => void }) {
   const { user } = useAuth();
   const pathname = usePathname();
-  const sections: Record<string, string> = { dashboard: "Resumen general", trabajos: "Trabajos y órdenes", clientes: "Clientes", cotizador: "Cotizador", inventario: "Inventario", garantias: "Garantías", configuracion: "Precios y tarifas", asistencia: "Asistencia", finanzas: "Finanzas" };
+  const sections: Record<string, string> = { dashboard: "Resumen general", trabajos: "Trabajos y órdenes", clientes: "Clientes", cotizador: "Cotizador", inventario: "Almacenes y tiendas", sucursales: "Sucursales y ubicaciones", garantias: "Garantías", configuracion: "Precios y tarifas", asistencia: "Asistencia", finanzas: "Finanzas" };
   return <header className="app-header">
     <div className="flex items-center gap-3 min-w-0">
       <button type="button" onClick={onMenu} className="theme-toggle mobile-menu-toggle" aria-label="Abrir menú" aria-controls="main-navigation"><Menu size={20} /></button>

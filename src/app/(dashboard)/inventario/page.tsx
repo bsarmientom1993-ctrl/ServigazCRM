@@ -1,173 +1,131 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  Package,
-  PlusCircle,
-  Search,
-  Truck,
-  AlertTriangle,
-  ArrowDownUp,
-  Tag,
-  CheckCircle,
-  Building,
-  DollarSign,
-} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Package, Plus, ArrowRightLeft, Warehouse, Store, Settings2, Search, Truck, Check, X, AlertTriangle, History } from "lucide-react";
+
+type Location = { id: string; nombre: string; tipo: string; sucursalId: string | null; esInicial: boolean; sucursal?: { nombre: string } | null };
+type Product = { id: string; nombre: string; codigoSku: string; categoria: string; unidadMedida: string; stockActual: number; stockGlobal?: string;
+  stockMinimo: number; bajoMinimo: boolean; costoPromedio: string; precioVenta: string; existencias: { stockActual: string; stockMinimo: string; ubicacion: Location }[] };
+type Transfer = { id: string; producto: Product; origen: Location; destino: Location; cantidad: string; estado: string; createdAt: string; enviadoPor: { nombre: string } };
+const emptyProduct = { codigoSku: "", nombre: "", categoria: "", unidadMedida: "unidad", precioVenta: "" };
 
 export default function InventarioPage() {
-  const [productos, setProductos] = useState<any[]>([]);
+  const { user } = useAuth();
+  const admin = user?.rol === "ADMIN";
+  const [products, setProducts] = useState<Product[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [directory, setDirectory] = useState<Location[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [movements, setMovements] = useState<any[]>([]);
+  const [locationId, setLocationId] = useState("");
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState("stock");
   const [loading, setLoading] = useState(true);
-  const [busqueda, setBusqueda] = useState("");
-
-  const cargarProductos = async () => {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [newProduct, setNewProduct] = useState(false);
+  const [productData, setProductData] = useState(emptyProduct);
+  const [transferData, setTransferData] = useState({ productoId: "", origenId: "", destinoId: "", cantidad: "", observaciones: "" });
+  const [minimum, setMinimum] = useState({ productoId: "", stockMinimo: "" });
+  const [cancelId, setCancelId] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const transferKey = useRef("");
+  const busy = useRef(false);
+  const loadSequence = useRef(0);
+  useEffect(() => { const id = new URLSearchParams(window.location.search).get("ubicacionId"); if (id) setLocationId(id); }, []);
+  const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     setLoading(true);
     try {
-      const res = await fetch("/api/inventario");
-      if (res.ok) {
-        const data = await res.json();
-        setProductos(data.productos || []);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    cargarProductos();
-  }, []);
-
-  const filtered = productos.filter(
-    (p) =>
-      p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.codigoSku?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.categoria?.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-5 rounded-2xl border border-line shadow-xs">
-        <div>
-          <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
-            <Package className="h-5 w-5 text-[#F06529]" />
-            Inventario & Stock de Materiales
-          </h2>
-          <p className="text-xs text-muted mt-0.5">
-            Control de existencias, costeo promedio ponderado y registro de compras a proveedores oficiales (#96).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            href="/inventario/compras"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#F06529] hover:bg-[#D94E15] text-white rounded-xl text-xs font-black shadow-md transition-all cursor-pointer"
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span>+ Registrar Compra a Proveedor (#96)</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Search and stats */}
-      <div className="bg-surface p-4 rounded-2xl border border-line shadow-xs flex items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="h-4 w-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Buscar por SKU, nombre o categoría..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-canvas border border-line rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
-          />
-        </div>
-
-        <div className="hidden sm:flex items-center gap-4 text-xs font-semibold text-secondary">
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-300">
-            <CheckCircle className="h-4 w-4" /> {productos.length} Productos Registrados
-          </span>
-          <span className="flex items-center gap-1.5 text-faint">
-            <Truck className="h-4 w-4" /> Moneda Oficial: Bolivianos (Bs.)
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-canvas border-b border-line text-muted font-bold uppercase tracking-wider text-[10px]">
-              <tr>
-                <th className="py-3 px-4">SKU / Producto</th>
-                <th className="py-3 px-4">Categoría</th>
-                <th className="py-3 px-4 text-center">Stock Actual</th>
-                <th className="py-3 px-4 text-right">Costo Promedio</th>
-                <th className="py-3 px-4 text-right">Precio Venta</th>
-                <th className="py-3 px-4 text-center">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-ink">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-faint">
-                    {loading ? "Cargando inventario..." : "No se encontraron productos en el inventario."}
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((p) => {
-                  const stockNum = Number(p.stockActual || 0);
-                  const minNum = Number(p.stockMinimo || 5);
-                  const esBajo = stockNum <= minNum;
-
-                  return (
-                    <tr key={p.id} className="hover:bg-canvas/80 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <p className="font-bold text-ink">{p.nombre}</p>
-                        <span className="font-mono text-[10px] text-faint">{p.codigoSku}</span>
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-secondary">
-                        <span className="px-2 py-0.5 rounded-md bg-wash text-secondary">
-                          {p.categoria}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`font-black px-2.5 py-1 rounded-full text-xs border ${
-                            esBajo
-                              ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900"
-                              : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900"
-                          }`}
-                        >
-                          {stockNum} {p.unidadMedida || "un"}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-medium text-secondary">
-                        Bs. {Number(p.costoPromedio || 0).toLocaleString("es-CL")}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-black text-ink">
-                        Bs. {Number(p.precioVenta || 0).toLocaleString("es-CL")}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {esBajo ? (
-                          <span className="text-[10px] font-bold text-red-600 dark:text-red-300 bg-red-100/60 dark:bg-red-950/40 px-2 py-0.5 rounded-full">
-                            ⚠️ Stock Crítico
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                            ✅ Disponible
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      const urls = ["/api/inventario" + (locationId ? "?ubicacionId=" + encodeURIComponent(locationId) : ""), "/api/ubicaciones",
+        "/api/ubicaciones?directorio=1", "/api/inventario/traspasos", "/api/inventario/movimientos" + (locationId ? "?ubicacionId=" + encodeURIComponent(locationId) : "")];
+      const results = await Promise.all(urls.map(async url => {
+        const response = await fetch(url); const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "No se pudo cargar el inventario.");
+        return data;
+      }));
+      if (sequence !== loadSequence.current) return;
+      setProducts(Array.isArray(results[0]) ? results[0] : results[0].productos || []);
+      setLocations(results[1].ubicaciones); setDirectory(results[2].ubicaciones); setTransfers(results[3].traspasos); setMovements(results[4].movimientos);
+    } catch (err: any) { if (sequence === loadSequence.current) setError(err.message); } finally { if (sequence === loadSequence.current) setLoading(false); }
+  }, [locationId]);
+  useEffect(() => { load(); }, [load]);
+  async function mutate(url: string, method: string, body: unknown, key?: string) {
+    if (busy.current) return false;
+    busy.current = true; setSaving(true); setError(""); setMessage("");
+    try {
+      const response = await fetch(url, { method, headers: { "Content-Type": "application/json", ...(key ? { "Idempotency-Key": key } : {}) }, body: JSON.stringify(body) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo guardar.");
+      await load(); return true;
+    } catch (err: any) { setError(err.message); return false; } finally { busy.current = false; setSaving(false); }
+  }
+  const filtered = products.filter(p => (p.nombre + " " + p.codigoSku + " " + p.categoria).toLowerCase().includes(search.toLowerCase()));
+  const selected = locations.find(l => l.id === locationId);
+  const pending = transfers.filter(t => t.estado === "EN_TRANSITO");
+  const low = products.filter(p => p.bajoMinimo).length;
+  return <div className="space-y-6">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div><p className="module-eyebrow">ABASTECIMIENTO Y DISTRIBUCIÓN</p><h2 className="text-2xl font-semibold text-ink">Almacenes y tiendas</h2><p className="text-sm text-muted mt-2">Existencias por ubicación y traspasos con recepción confirmada.</p></div>
+      <div className="flex flex-wrap gap-2"><Link className="theme-toggle" href="/sucursales"><Settings2 size={16} />Ubicaciones</Link><Link className="primary-action" href="/inventario/compras"><Plus size={16} />Registrar compra</Link></div>
     </div>
-  );
+    {error && <p role="alert" className="module-error">{error}</p>}
+    {message && <p role="status" className="module-success">{message}</p>}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {[{ title: "Almacenes", value: locations.filter(l => l.tipo === "ALMACEN" && !l.esInicial).length, icon: Warehouse },
+        { title: "Tiendas", value: locations.filter(l => l.tipo === "TIENDA").length, icon: Store },
+        { title: "Traspasos en tránsito", value: pending.length, icon: Truck }, { title: "Stock bajo en esta vista", value: low, icon: AlertTriangle }].map(item =>
+        <div className="module-card flex items-center justify-between gap-2" key={item.title}><div><p className="text-xs text-muted">{item.title}</p><p className="text-2xl font-semibold text-ink mt-2">{item.value}</p></div><item.icon size={22} className="text-[#F06529]" strokeWidth={1.5} /></div>)}
+    </div>
+    {locations.some(l => l.esInicial) && <div className="module-note">El stock anterior está en <strong>Inventario previo · por distribuir</strong>. Distribúyelo mediante traspasos a las ubicaciones reales antes de utilizarlo en trabajos.</div>}
+    <div className="module-card flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+      <div className="flex flex-wrap gap-2">{[{ id: "stock", name: "Existencias", icon: Package }, { id: "transfers", name: "Traspasos", icon: ArrowRightLeft }, { id: "history", name: "Movimientos", icon: History }].map(item =>
+        <button type="button" aria-pressed={tab === item.id} key={item.id} className={tab === item.id ? "primary-action" : "theme-toggle"} onClick={() => setTab(item.id)}><item.icon size={15} />{item.name}</button>)}</div>
+      <label className="text-xs text-muted">Ubicación<select className="module-input mt-1" value={locationId} onChange={e => { setLocationId(e.target.value); setMinimum({ productoId: "", stockMinimo: "" }); }}>
+        <option value="">Todas mis ubicaciones</option>{locations.map(l => <option key={l.id} value={l.id}>{l.nombre}{l.sucursal ? " · " + l.sucursal.nombre : ""}</option>)}</select></label>
+    </div>
+    {tab === "stock" && <>
+      <div className="flex flex-wrap items-center justify-between gap-3"><label className="relative flex-1 max-w-md"><Search size={16} className="absolute left-3 top-3 text-faint" /><input aria-label="Buscar productos" className="module-input pl-9" placeholder="Buscar producto, SKU o categoría" value={search} onChange={e => setSearch(e.target.value)} /></label><button type="button" className="theme-toggle" onClick={() => setNewProduct(!newProduct)}><Plus size={16} />Nuevo producto</button></div>
+      {newProduct && <form className="module-card space-y-4" onSubmit={async e => { e.preventDefault(); if (await mutate("/api/inventario", "POST", { ...productData, precioVenta: Number(productData.precioVenta) })) { setNewProduct(false); setProductData(emptyProduct); setMessage("Producto creado. Registra una compra para ingresar existencias."); } }}>
+        <h3 className="font-semibold text-ink">Nuevo producto del catálogo</h3><fieldset disabled={saving} className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {[{ name: "codigoSku", label: "SKU" }, { name: "nombre", label: "Nombre" }, { name: "categoria", label: "Categoría" }, { name: "unidadMedida", label: "Unidad" }, { name: "precioVenta", label: "Precio de venta (Bs.)" }].map(f =>
+            <label key={f.name} className="form-label">{f.label}<input required type={f.name === "precioVenta" ? "number" : "text"} min="0" step="0.01" className="module-input mt-2" value={productData[f.name as keyof typeof productData]} onChange={e => setProductData({ ...productData, [f.name]: e.target.value })} /></label>)}
+          <button className="primary-action sm:col-span-2 lg:col-span-5 justify-self-end">Crear producto</button></fieldset></form>}
+      <div className="module-table"><table><thead><tr><th>Producto</th><th>Ubicación</th><th>Disponible</th><th>Mínimo</th><th>Costo promedio</th><th>Precio de venta</th></tr></thead><tbody>
+        {filtered.map(p => <tr key={p.id}><td><strong>{p.nombre}</strong><small>{p.codigoSku} · {p.categoria}</small></td><td>{selected?.nombre || <div className="space-y-1">{p.existencias.filter(s => Number(s.stockActual) > 0).map(s => <small key={s.ubicacion.id}>{s.ubicacion.nombre}: {Number(s.stockActual)}</small>)}</div>}</td>
+          <td><strong className={p.bajoMinimo ? "text-red-600 dark:text-red-300" : "text-ink"}>{p.stockActual} {p.unidadMedida}</strong>{admin && !locationId && <small>Total con tránsito: {Number(p.stockGlobal || 0)}</small>}</td>
+          <td>{selected && !selected.esInicial ? <button type="button" className="text-[#F06529] underline" onClick={() => setMinimum({ productoId: p.id, stockMinimo: String(p.stockMinimo) })}>{p.stockMinimo} · Editar</button> : <span>{locationId ? p.stockMinimo : "Por ubicación"}</span>}</td><td>Bs. {Number(p.costoPromedio).toLocaleString("es-BO")}</td><td>Bs. {Number(p.precioVenta).toLocaleString("es-BO")}</td></tr>)}
+        {!filtered.length && <tr><td colSpan={6} className="text-center text-muted">{loading ? "Cargando..." : "No hay productos para esta búsqueda."}</td></tr>}
+      </tbody></table></div>
+      {minimum.productoId && locationId && <form className="module-card flex flex-wrap items-end gap-3" onSubmit={async e => { e.preventDefault(); if (await mutate("/api/inventario/minimos", "PATCH", { ...minimum, ubicacionId: locationId, stockMinimo: Number(minimum.stockMinimo) })) { setMinimum({ productoId: "", stockMinimo: "" }); setMessage("Mínimo de la ubicación actualizado."); } }}>
+        <label className="form-label">Mínimo para {products.find(p => p.id === minimum.productoId)?.nombre}<input required min="0" step="0.01" type="number" className="module-input mt-2" value={minimum.stockMinimo} onChange={e => setMinimum({ ...minimum, stockMinimo: e.target.value })} /></label><button disabled={saving} className="primary-action">Guardar mínimo</button><button type="button" className="theme-toggle" onClick={() => setMinimum({ productoId: "", stockMinimo: "" })}>Volver</button></form>}
+    </>}
+    {tab === "transfers" && <>
+      <form className="module-card space-y-4" onSubmit={async e => {
+        e.preventDefault(); if (!transferKey.current) transferKey.current = crypto.randomUUID();
+        if (await mutate("/api/inventario/traspasos", "POST", { ...transferData, cantidad: Number(transferData.cantidad) }, transferKey.current)) {
+          transferKey.current = ""; setTransferData({ productoId: "", origenId: "", destinoId: "", cantidad: "", observaciones: "" }); setMessage("Envío registrado. El destino deberá confirmar la recepción."); }
+      }}><h3 className="font-semibold text-ink">Enviar material a otra ubicación</h3><p className="text-sm text-muted">Sale del disponible del origen y permanece en tránsito hasta que el destino lo reciba.</p>
+        <fieldset disabled={saving} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <label className="form-label">Producto<select required className="module-input mt-2" value={transferData.productoId} onChange={e => setTransferData({ ...transferData, productoId: e.target.value })}><option value="">Seleccionar</option>{products.map(p => <option key={p.id} value={p.id}>{p.codigoSku} · {p.nombre}</option>)}</select></label>
+          <label className="form-label">Origen<select required className="module-input mt-2" value={transferData.origenId} onChange={e => setTransferData({ ...transferData, origenId: e.target.value })}><option value="">Seleccionar</option>{locations.map(l => <option key={l.id} value={l.id}>{l.nombre}</option>)}</select></label>
+          <label className="form-label">Destino<select required className="module-input mt-2" value={transferData.destinoId} onChange={e => setTransferData({ ...transferData, destinoId: e.target.value })}><option value="">Seleccionar</option>{directory.filter(l => l.id !== transferData.origenId).map(l => <option key={l.id} value={l.id}>{l.nombre}{l.sucursal ? " · " + l.sucursal.nombre : ""}</option>)}</select></label>
+          <label className="form-label">Cantidad<input required min="0.01" step="0.01" type="number" className="module-input mt-2" value={transferData.cantidad} onChange={e => setTransferData({ ...transferData, cantidad: e.target.value })} /></label>
+          <label className="form-label sm:col-span-2 lg:col-span-3">Referencia u observaciones<input className="module-input mt-2" maxLength={1000} value={transferData.observaciones} onChange={e => setTransferData({ ...transferData, observaciones: e.target.value })} /></label><button className="primary-action self-end"><ArrowRightLeft size={16} />Registrar envío</button>
+        </fieldset>
+      </form>
+      <div className="module-table"><table><thead><tr><th>Producto / fecha</th><th>Recorrido</th><th>Cantidad</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{transfers.filter(t => !locationId || t.origen.id === locationId || t.destino.id === locationId).map(t =>
+        <tr key={t.id}><td><strong>{t.producto.nombre}</strong><small>{new Date(t.createdAt).toLocaleString("es-BO")}</small></td><td>{t.origen.nombre}<small>→ {t.destino.nombre}</small></td><td>{Number(t.cantidad)} {t.producto.unidadMedida}</td><td><span className="text-xs font-semibold">{t.estado === "EN_TRANSITO" ? "En tránsito" : t.estado === "RECIBIDO" ? "Recibido" : "Devuelto al origen"}</span></td><td><div className="flex flex-wrap gap-2">
+          {t.estado === "EN_TRANSITO" && (admin || t.destino.sucursalId === user?.sucursalId) && <button disabled={saving} className="theme-toggle" onClick={async () => { if (await mutate("/api/inventario/traspasos", "PATCH", { id: t.id, accion: "RECIBIR" })) setMessage("Recepción confirmada y stock del destino actualizado."); }}><Check size={15} />Recibir</button>}
+          {t.estado === "EN_TRANSITO" && (admin || t.origen.sucursalId === user?.sucursalId) && <button disabled={saving} className="theme-toggle" onClick={() => { setCancelId(t.id); setCancelReason(""); }}><X size={15} />Devolver</button>}
+        </div></td></tr>)}
+        {!transfers.length && <tr><td colSpan={5} className="text-center text-muted">Aún no hay traspasos.</td></tr>}</tbody></table></div><p className="text-xs text-muted">Se muestran los últimos 200 traspasos de tu ámbito.</p>
+      {cancelId && <form className="module-card space-y-3" onSubmit={async e => { e.preventDefault(); if (await mutate("/api/inventario/traspasos", "PATCH", { id: cancelId, accion: "CANCELAR", motivo: cancelReason })) { setCancelId(""); setMessage("Traspaso anulado y material devuelto al origen."); } }}>
+        <h3 className="font-semibold text-ink">Anular y devolver al origen</h3><label className="form-label">Motivo<input required minLength={5} maxLength={1000} className="module-input mt-2" value={cancelReason} onChange={e => setCancelReason(e.target.value)} /></label><label className="flex gap-2 text-sm text-secondary"><input type="checkbox" required />Confirmo que el material sigue o ha regresado al origen.</label><div className="flex gap-2"><button disabled={saving} className="primary-action">Confirmar devolución</button><button type="button" className="theme-toggle" onClick={() => setCancelId("")}>Volver</button></div></form>}
+    </>}
+    {tab === "history" && <div className="module-table"><table><thead><tr><th>Fecha / responsable</th><th>Producto</th><th>Movimiento</th><th>Ubicaciones</th><th>Cantidad</th><th>Saldo de ubicación</th></tr></thead><tbody>{movements.map(m =>
+      <tr key={m.id}><td>{new Date(m.fecha).toLocaleString("es-BO")}<small>{m.usuario.nombre}</small></td><td>{m.producto.nombre}</td><td>{m.evento || m.tipoMovimiento}</td><td>{m.ubicacionOrigen?.nombre || "—"}<small>→ {m.ubicacionDestino?.nombre || "—"}</small></td><td>{Number(m.cantidad)}</td><td>{m.stockAnterior === null ? "—" : Number(m.stockAnterior)} → {m.stockNuevo === null ? "—" : Number(m.stockNuevo)}</td></tr>)}{!movements.length && <tr><td colSpan={6} className="text-center text-muted">No hay movimientos para esta vista.</td></tr>}</tbody></table><p className="p-4 text-xs text-muted">Últimos 200 movimientos. Los movimientos históricos sin ubicación conservan su registro original.</p></div>}
+  </div>;
 }

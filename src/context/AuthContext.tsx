@@ -10,6 +10,7 @@ export interface UserSession {
   rol: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO";
   telefono?: string;
   sucursal?: string;
+  sucursalId?: string | null;
 }
 
 interface AuthContextType {

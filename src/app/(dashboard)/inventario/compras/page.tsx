@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Package,
@@ -20,6 +20,8 @@ import {
 
 export default function ComprasProveedoresPage() {
   const [productos, setProductos] = useState<any[]>([]);
+  const [ubicaciones, setUbicaciones] = useState<any[]>([]);
+  const purchaseKey = useRef("");
   const [compras, setCompras] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,6 +29,7 @@ export default function ComprasProveedoresPage() {
   const [successMsg, setSuccessMsg] = useState("");
 
   const [formCompra, setFormCompra] = useState({
+    ubicacionId: "",
     productoId: "",
     cantidad: "",
     precioCompraUnitario: "",
@@ -40,16 +43,20 @@ export default function ComprasProveedoresPage() {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [resProd, resComp] = await Promise.all([
+      const [resProd, resComp, resLocations] = await Promise.all([
         fetch("/api/inventario"),
         fetch("/api/inventario/compras"),
+        fetch("/api/ubicaciones"),
       ]);
 
       if (resProd.ok) {
         const dataP = await resProd.json();
-        setProductos(dataP.productos || []);
+        setProductos(Array.isArray(dataP) ? dataP : dataP.productos || []);
       }
 
+      const locationBody = await resLocations.json();
+      if (resLocations.ok) setUbicaciones((locationBody.ubicaciones || []).filter((l: any) => !l.esInicial));
+      else setErrorMsg(locationBody.error || "No se pudieron cargar las ubicaciones.");
       if (resComp.ok) {
         const dataC = await resComp.json();
         setCompras(dataC.compras || []);
@@ -67,7 +74,8 @@ export default function ComprasProveedoresPage() {
 
   // Producto seleccionado y cálculo de costo promedio ponderado en vivo
   const productoSeleccionado = productos.find((p) => p.id === formCompra.productoId);
-  const stockAnterior = Number(productoSeleccionado?.stockActual || 0);
+  const stockAnterior = Number(productoSeleccionado?.stockGlobal ?? productoSeleccionado?.stockActual ?? 0);
+  const stockUbicacion = Number(productoSeleccionado?.existencias?.find((item: any) => item.ubicacionId === formCompra.ubicacionId)?.stockActual || 0);
   const costoAnterior = Number(productoSeleccionado?.costoPromedio || 0);
   const cantComprada = Number(formCompra.cantidad || 0);
   const precioUnitario = Number(formCompra.precioCompraUnitario || 0);
@@ -87,12 +95,13 @@ export default function ComprasProveedoresPage() {
     setErrorMsg("");
     setSuccessMsg("");
     setSaving(true);
+    if (!purchaseKey.current) purchaseKey.current = crypto.randomUUID();
 
     try {
       const res = await fetch("/api/inventario/compras", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formCompra),
+        headers: { "Content-Type": "application/json", "Idempotency-Key": purchaseKey.current },
+        body: JSON.stringify({ ...formCompra, cantidad: Number(formCompra.cantidad), precioCompraUnitario: Number(formCompra.precioCompraUnitario) }),
       });
 
       const data = await res.json();
@@ -102,11 +111,13 @@ export default function ComprasProveedoresPage() {
       }
 
       setSuccessMsg(
-        `Compra registrada: Stock actualizado a ${data.resumen.stockNuevo} y Costo Promedio ajustado a Bs. ${data.resumen.nuevoCostoPromedio}`
+        `Compra registrada: Stock de la ubicación actualizado a ${data.resumen.stockNuevo} y Costo Promedio ajustado a Bs. ${data.resumen.nuevoCostoPromedio}`
       );
 
+      purchaseKey.current = "";
       setFormCompra({
-        productoId: "",
+        ubicacionId: "",
+    productoId: "",
         cantidad: "",
         precioCompraUnitario: "",
         proveedorNombre: "",
@@ -141,7 +152,7 @@ export default function ComprasProveedoresPage() {
                 Compras a Proveedores Oficiales
               </h1>
               <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
-                Fase 20 • Regla #96
+                Ingreso a ubicación
               </span>
             </div>
             <p className="text-xs text-muted mt-0.5">
@@ -187,6 +198,13 @@ export default function ComprasProveedoresPage() {
           </div>
 
           <form onSubmit={handleRegistrarCompra} className="space-y-4 text-xs">
+              <label className="block form-label mb-4">Almacén o tienda que recibe la compra
+                <select required className="module-input mt-2" value={formCompra.ubicacionId} onChange={e => setFormCompra({ ...formCompra, ubicacionId: e.target.value })}>
+                  <option value="">Seleccionar destino</option>
+                  {ubicaciones.map(l => <option key={l.id} value={l.id}>{l.nombre}{l.sucursal ? " · " + l.sucursal.nombre : ""}</option>)}
+                </select>
+              </label>
+
             {/* 1. Selección de Producto */}
             <div>
               <label className="block font-bold text-secondary mb-1">
@@ -201,7 +219,7 @@ export default function ComprasProveedoresPage() {
                 <option value="">-- Elige un producto a reabastecer --</option>
                 {productos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.nombre} (SKU: {p.codigoSku}) — Stock actual: {p.stockActual} {p.unidadMedida}
+                    {p.nombre} (SKU: {p.codigoSku}) — Disponible aquí: {Number(p.existencias?.find((item: any) => item.ubicacionId === formCompra.ubicacionId)?.stockActual || 0)} {p.unidadMedida}
                   </option>
                 ))}
               </select>
@@ -342,9 +360,9 @@ export default function ComprasProveedoresPage() {
 
                 <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-white/5 border border-white/10">
                   <div>
-                    <span className="text-faint text-[10px] block">Stock Anterior:</span>
+                    <span className="text-faint text-[10px] block">Stock en destino:</span>
                     <strong className="text-slate-200">
-                      {stockAnterior} {productoSeleccionado.unidadMedida}
+                      {stockUbicacion} {productoSeleccionado.unidadMedida}
                     </strong>
                   </div>
                   <div>
@@ -369,15 +387,15 @@ export default function ComprasProveedoresPage() {
                 {/* Nuevo Costo y Nuevo Stock */}
                 <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-emerald-300 font-bold text-[11px]">Nuevo Stock Total:</span>
+                    <span className="text-emerald-300 font-bold text-[11px]">Stock tras la compra:</span>
                     <strong className="text-white font-black text-sm">
-                      {stockNuevo} {productoSeleccionado.unidadMedida}
+                      {stockUbicacion + cantComprada} {productoSeleccionado.unidadMedida}
                     </strong>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-emerald-300 font-bold text-[11px]">Nuevo Costo Promedio:</span>
                     <strong className="text-[#FF7B42] font-black text-base">
-                      Bs. {nuevoCostoPromedioCalculado.toLocaleString("es-CL")}
+                      {productoSeleccionado.stockGlobal !== undefined ? "Bs. " + nuevoCostoPromedioCalculado.toLocaleString("es-CL") : "Se calcula al guardar"}
                     </strong>
                   </div>
                 </div>
