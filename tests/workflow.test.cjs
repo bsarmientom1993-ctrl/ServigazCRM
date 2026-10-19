@@ -269,3 +269,25 @@ test("public warranty verification does not query private customer or user field
   assert.equal(query.include, undefined);
 });
 
+
+test("login reports Prisma initialization codes without leaking connection details", async () => {
+  const login = require("../src/app/api/auth/login/route.ts");
+  db.usuario.findUnique = async () => { throw Object.assign(new Error("private-database-connection-details"), { errorCode: "P1012" }); };
+  const response = await login.POST(request({ email: "test@example.invalid", password: "test-only" }, { auth: false }));
+  assert.equal(response.status, 503);
+  const data = await response.json();
+  assert.equal(data.code, "P1012"); assert.equal(data.stage, "ACCOUNT_LOOKUP");
+  assert.equal(JSON.stringify(data).includes("private-database"), false);
+});
+test("nonexistent login account returns invalid credentials without audit writes", async () => {
+  const login = require("../src/app/api/auth/login/route.ts");
+  db.usuario.findUnique = async () => null;
+  const response = await login.POST(request({ email: "test@example.invalid", password: "test-only" }, { auth: false }));
+  assert.equal(response.status, 401); assert.equal(writes.length, 0);
+});
+test("invalid login input is rejected before consulting storage", async () => {
+  const login = require("../src/app/api/auth/login/route.ts");
+  db.usuario.findUnique = async () => { throw new Error("must not be queried"); };
+  assert.equal((await login.POST(request({ email: {}, password: [] }, { auth: false }))).status, 400);
+});
+

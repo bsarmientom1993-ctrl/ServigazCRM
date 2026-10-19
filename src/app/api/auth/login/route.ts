@@ -1,3 +1,5 @@
+import { loginFailure } from "@/lib/login-failure";
+import { z } from "zod";
 import { jwtSecret } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -7,8 +9,12 @@ import * as jwt from "jsonwebtoken";
 
 
 export async function POST(req: NextRequest) {
+  let stage: "REQUEST" | "ACCOUNT_LOOKUP" | "PASSWORD_CHECK" | "TOKEN_SIGNING" | "AUDIT" = "REQUEST";
   try {
-    const { email, password } = await req.json();
+    const { email, password } = z.object({
+      email: z.string().trim().email().max(320),
+      password: z.string().min(1).max(1000),
+    }).parse(await req.json());
 
     if (!email || !password) {
       return NextResponse.json(
@@ -17,6 +23,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    stage = "ACCOUNT_LOOKUP";
     const user = await prisma.usuario.findUnique({
       where: { email },
       include: { sucursal: true },
@@ -29,8 +36,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    stage = "PASSWORD_CHECK";
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
+      stage = "AUDIT";
       // Registrar en auditoría intento inválido
       await prisma.auditoriaLog.create({
         data: {
@@ -49,6 +58,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    stage = "TOKEN_SIGNING";
     const token = jwt.sign(
       {
         id: user.id,
@@ -61,6 +71,7 @@ export async function POST(req: NextRequest) {
       { expiresIn: "7d" }
     );
 
+    stage = "AUDIT";
     // Auditoría de login exitoso
     await prisma.auditoriaLog.create({
       data: {
@@ -94,18 +105,10 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
-    if (error instanceof ApiError) return apiError(error);
-    console.error("Login error:", error);
-    let errorMsg = "Error interno del servidor";
-    if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
-      errorMsg = "La base de datos en la nube está vacía (tablas no creadas). Ejecuta npx prisma db push.";
-    } else if (error?.code === "P1001" || error?.message?.includes("Can't reach database server")) {
-      errorMsg = "No se puede conectar al servidor de base de datos. Verifica DATABASE_URL.";
-    }
-    return NextResponse.json(
-      { error: errorMsg },
-      { status: 500 }
-    );
+  } catch (error) {
+    if (error instanceof ApiError || error instanceof z.ZodError || error instanceof SyntaxError) return apiError(error);
+    const failure = loginFailure(error, stage);
+    console.error("Login failure", { ...failure, name: error instanceof Error ? error.name : "Unknown" });
+    return NextResponse.json(failure, { status: 503 });
   }
 }
