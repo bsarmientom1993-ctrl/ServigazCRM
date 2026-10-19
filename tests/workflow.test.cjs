@@ -291,3 +291,19 @@ test("invalid login input is rejected before consulting storage", async () => {
   assert.equal((await login.POST(request({ email: {}, password: [] }, { auth: false }))).status, 400);
 });
 
+
+test("database URL resolution supports production aliases and skips unrelated storage", () => {
+  const { resolveDatabaseUrl } = require("../src/lib/database-url.ts");
+  assert.equal(resolveDatabaseUrl({ STORAGE_URL: "redis://storage.invalid", POSTGRES_URL_NON_POOLING: "postgresql://database.invalid/app" }), "postgresql://database.invalid/app");
+  assert.equal(resolveDatabaseUrl({ VERCEL: "1", DATABASE_URL: "postgresql://localhost/app", NEON_DATABASE_URL: "postgresql://database.invalid/app" }), "postgresql://database.invalid/app");
+  assert.equal(resolveDatabaseUrl({ DATABASE_URL: "postgresql://localhost/app" }), "postgresql://localhost/app");
+  assert.equal(resolveDatabaseUrl({ DATABASE_URL: "https://storage.invalid" }), undefined);
+  assert.equal(resolveDatabaseUrl({ DATABASE_URL: "prisma+postgres://database.invalid/app" }), "prisma+postgres://database.invalid/app");
+});
+test("Prisma initialization failures without codes identify missing configuration safely", () => {
+  const { loginFailure } = require("../src/lib/login-failure.ts");
+  const result = loginFailure(new Error("Environment variable not found: DATABASE_URL."), "ACCOUNT_LOOKUP");
+  assert.equal(result.code, "DATABASE_URL_MISSING");
+  assert.equal(loginFailure(new Error("the URL must start with the protocol postgresql://"), "ACCOUNT_LOOKUP").code, "DATABASE_URL_INVALID");
+});
+
