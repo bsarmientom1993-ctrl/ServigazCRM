@@ -1,9 +1,10 @@
+import { jwtSecret } from "@/lib/auth";
+import { ApiError, apiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
         rol: user.rol,
         sucursalId: user.sucursalId,
       },
-      JWT_SECRET,
+      jwtSecret(),
       { expiresIn: "7d" }
     );
 
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
 
     response.cookies.set("servigaz_token", token, {
       httpOnly: true,
+      sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -93,6 +95,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Login error:", error);
     let errorMsg = "Error interno del servidor";
     if (error?.code === "P2021" || error?.message?.includes("does not exist")) {

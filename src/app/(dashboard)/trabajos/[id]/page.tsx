@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -44,6 +44,31 @@ export default function TrabajoDetallePage({
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.rol === "ADMIN";
+  const canManage = isAdmin || user?.rol === "ENCARGADO";
+  const [saving, setSaving] = useState(false);
+  const busy = useRef(false);
+  const paymentKey = useRef("");
+  const [modalTermino, setModalTermino] = useState(false);
+  const [terminoData, setTerminoData] = useState({ fotos: "", observaciones: "" });
+
+  const mutate = async (url: string, init: RequestInit) => {
+    if (busy.current) throw new Error("Espera a que termine la operación.");
+    busy.current = true;
+    setSaving(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const response = await fetch(url, init);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo guardar. Intenta nuevamente.");
+      }
+      return response;
+    } finally {
+      busy.current = false;
+      setSaving(false);
+    }
+  };
 
   const [trabajo, setTrabajo] = useState<any>(null);
   const [tecnicos, setTecnicos] = useState<any[]>([]);
@@ -67,24 +92,20 @@ export default function TrabajoDetallePage({
 
   // Fase 5: Visita state
   const [fase5Data, setFase5Data] = useState({
-    metrosVisto: 10,
-    metrosEmpotrado: 6,
-    condiciones: "Recinto ventilado, acceso despejado por patio lateral",
-    ventilacionVasaOk: true,
+    metrosVisto: "",
+    metrosEmpotrado: "",
+    condiciones: "",
+    ventilacionVasaOk: false,
     dificultadSugerida: 1,
-    observaciones: "Trazado estándar sin obstáculos",
-    fotosUrls: [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
-    ],
+    observaciones: "",
+    fotosUrls: [] as string[],
   });
 
   // Fase 6: Cotizador embebido
   const [fase6Calculo, setFase6Calculo] = useState({
-    subtotalMateriales: 245000,
-    subtotalManoObra: 136000,
-    montoTransporte: 25000,
+    subtotalMateriales: "",
+    subtotalManoObra: "",
+    montoTransporte: "",
     porcentajeDescuento: 0,
     justificacionMargenBajo: "",
   });
@@ -110,10 +131,10 @@ export default function TrabajoDetallePage({
 
   // Fase 13: Cierre Financiero state
   const [cierreData, setCierreData] = useState({
-    costoManoObraReal: 95000,
-    costoTransporteReal: 20000,
+    costoManoObraReal: "",
+    costoTransporteReal: "",
     otrosEgresosDirectos: 0,
-    observacionesCierre: "Trabajo concluido a conformidad",
+    observacionesCierre: "",
   });
 
   const cargarDatos = async () => {
@@ -137,7 +158,7 @@ export default function TrabajoDetallePage({
         const tecs = Array.isArray(dataTec) ? dataTec : [];
         setTecnicos(tecs);
         if (tecs.length > 0) {
-          setFase4Data((prev) => ({ ...prev, tecnicoId: dataTrb.tecnicoId || tecs[0].id }));
+          setFase4Data((prev) => ({ ...prev, tecnicoId: dataTrb.tecnicoId || "" }));
         }
       } catch (e) {
         console.warn("No se pudieron cargar técnicos:", e);
@@ -175,10 +196,10 @@ export default function TrabajoDetallePage({
   const handleAgendarVisita = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/trabajos/${id}/visita`, {
+      const res = await mutate(`/api/trabajos/${id}/visita`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accion: "AGENDAR_VISITA", ...fase4Data }),
+        body: JSON.stringify({ accion: "AGENDAR_VISITA", ...fase4Data, fechaProgramada: new Date(fase4Data.fechaProgramada).toISOString() }),
       });
       if (res.ok) {
         setSuccessMsg("✅ Fase 4 completada: Visita agendada.");
@@ -194,16 +215,16 @@ export default function TrabajoDetallePage({
     e.preventDefault();
     const visitaActiva = trabajo?.visitas?.[0];
     try {
-      const res = await fetch(`/api/trabajos/${id}/visita`, {
+      const res = await mutate(`/api/trabajos/${id}/visita`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accion: "COMPLETAR_VISITA",
           visitaId: visitaActiva?.id,
-          medidasJson: { metrosVisto: fase5Data.metrosVisto, metrosEmpotrado: fase5Data.metrosEmpotrado },
+          medidasJson: { metrosVisto: Number(fase5Data.metrosVisto), metrosEmpotrado: Number(fase5Data.metrosEmpotrado) },
           condicionesJson: { condiciones: fase5Data.condiciones },
           ventilacionVasaOk: fase5Data.ventilacionVasaOk,
-          fotosUrls: fase5Data.fotosUrls,
+          fotosUrls: fase5Data.fotosUrls.map(url => url.trim()).filter(Boolean),
           dificultadSugerida: fase5Data.dificultadSugerida,
           observaciones: fase5Data.observaciones,
         }),
@@ -221,20 +242,20 @@ export default function TrabajoDetallePage({
   const handleEmitirCotizacion = async (e: React.FormEvent) => {
     e.preventDefault();
     const subtotalBruto =
-      fase6Calculo.subtotalMateriales + fase6Calculo.subtotalManoObra + fase6Calculo.montoTransporte;
+      Number(fase6Calculo.subtotalMateriales) + Number(fase6Calculo.subtotalManoObra) + Number(fase6Calculo.montoTransporte);
     const montoDescuento = (subtotalBruto * fase6Calculo.porcentajeDescuento) / 100;
     const totalCotizado = subtotalBruto - montoDescuento;
 
     try {
-      const res = await fetch(`/api/trabajos/${id}/cotizacion`, {
+      const res = await mutate(`/api/trabajos/${id}/cotizacion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           datosFormulario: { trabajo: trabajo.subtipoNombre },
-          snapshotCalculo: { subtotalMateriales: fase6Calculo.subtotalMateriales, subtotalManoObra: fase6Calculo.subtotalManoObra },
-          subtotalMateriales: fase6Calculo.subtotalMateriales,
-          subtotalManoObra: fase6Calculo.subtotalManoObra,
-          montoTransporte: fase6Calculo.montoTransporte,
+          snapshotCalculo: { subtotalMateriales: Number(fase6Calculo.subtotalMateriales), subtotalManoObra: Number(fase6Calculo.subtotalManoObra) },
+          subtotalMateriales: Number(fase6Calculo.subtotalMateriales),
+          subtotalManoObra: Number(fase6Calculo.subtotalManoObra),
+          montoTransporte: Number(fase6Calculo.montoTransporte),
           porcentajeDescuento: fase6Calculo.porcentajeDescuento,
           montoDescuento,
           totalCotizado,
@@ -254,10 +275,10 @@ export default function TrabajoDetallePage({
   // Fase 7
   const handleDecisionCliente = async (decision: "APROBAR" | "RECHAZAR") => {
     try {
-      const res = await fetch(`/api/trabajos/${id}/decision`, {
+      const res = await mutate(`/api/trabajos/${id}/decision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
+        body: JSON.stringify({ decision, cotizacionId: trabajo.cotizaciones?.[0]?.id }),
       });
       if (res.ok) {
         setSuccessMsg(decision === "APROBAR" ? "✅ Fase 7: Cliente Aceptó la cotización." : "❌ Trabajo Rechazado.");
@@ -271,15 +292,17 @@ export default function TrabajoDetallePage({
   // Fase 8
   const handleRegistrarPago = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!paymentKey.current) paymentKey.current = crypto.randomUUID();
     try {
-      const res = await fetch(`/api/trabajos/${id}/pagos`, {
+      const res = await mutate(`/api/trabajos/${id}/pagos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": paymentKey.current },
         body: JSON.stringify(pagoData),
       });
       if (res.ok) {
         setSuccessMsg("✅ Fase 8: Pago registrado exitosamente.");
         setModalPago(false);
+        paymentKey.current = "";
         cargarDatos();
       }
     } catch (e: any) {
@@ -290,7 +313,7 @@ export default function TrabajoDetallePage({
   // Fase 9: Iniciar Ejecución
   const handleIniciarEjecucion = async () => {
     try {
-      const res = await fetch(`/api/trabajos/${id}/ejecucion`, {
+      const res = await mutate(`/api/trabajos/${id}/ejecucion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "INICIAR_EJECUCION" }),
@@ -308,7 +331,7 @@ export default function TrabajoDetallePage({
   const handleRegistrarMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/trabajos/${id}/ejecucion`, {
+      const res = await mutate(`/api/trabajos/${id}/ejecucion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "REGISTRAR_MATERIAL", data: materialData }),
@@ -334,35 +357,27 @@ export default function TrabajoDetallePage({
   };
 
   // Fase 11: Término Técnico
-  const handleFinalizarTecnico = async () => {
+  const handleFinalizarTecnico = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const res = await fetch(`/api/trabajos/${id}/ejecucion`, {
+      await mutate("/api/trabajos/" + id + "/ejecucion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          accion: "FINALIZAR_TECNICO",
-          data: {
-            fotosTermino: [
-              "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
-            ],
-            observacionesTermino: "Instalación completada y probada bajo presión reglamentaria",
-          },
-        }),
+        body: JSON.stringify({ accion: "FINALIZAR_TECNICO", data: {
+          fotosTermino: terminoData.fotos.split("\n").map(url => url.trim()).filter(Boolean),
+          observacionesTermino: terminoData.observaciones,
+        } }),
       });
-      if (res.ok) {
-        setSuccessMsg("✅ Trabajo técnico terminado. Listo para aprobación de calidad.");
-        cargarDatos();
-      }
-    } catch (e: any) {
-      setErrorMsg(e.message);
-    }
+      setModalTermino(false);
+      setSuccessMsg("Término registrado con evidencia. Falta la revisión del encargado.");
+      cargarDatos();
+    } catch (error: any) { setErrorMsg(error.message); }
   };
 
   // Fase 12: Validación Encargado
   const handleValidarEncargado = async () => {
     try {
-      const res = await fetch(`/api/trabajos/${id}/ejecucion`, {
+      const res = await mutate(`/api/trabajos/${id}/ejecucion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "VALIDAR_ENCARGADO" }),
@@ -380,15 +395,15 @@ export default function TrabajoDetallePage({
   const handleCierreFinanciero = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/trabajos/${id}/cierre-financiero`, {
+      const res = await mutate(`/api/trabajos/${id}/cierre-financiero`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cierreData),
+        body: JSON.stringify({ costoManoObraReal: Number(cierreData.costoManoObraReal), costoTransporteReal: Number(cierreData.costoTransporteReal) }),
       });
       const data = await res.json();
       if (res.ok) {
         setErrorMsg("");
-        setSuccessMsg(`✅ Trabajo finalizado con éxito. Certificado de Garantía con QR emitido. Ganancia Real: Bs. ${Number(data.utilidadReal || 0).toLocaleString("es-CL")}`);
+        setSuccessMsg(`✅ Trabajo finalizado con éxito. Certificado de garantía emitido. Ganancia Real: Bs. ${Number(data.utilidadReal || 0).toLocaleString("es-CL")}`);
         setModalCierreFinanciero(false);
         cargarDatos();
       } else {
@@ -402,7 +417,7 @@ export default function TrabajoDetallePage({
   if (loading) return <div className="p-8 text-center text-slate-500 font-semibold text-xs">Cargando orden de trabajo...</div>;
   if (!trabajo) return <div className="p-8 text-center text-red-600 font-bold">{errorMsg || "Trabajo no encontrado"}</div>;
 
-  const isGas = trabajo.subtipoCodigo?.toLowerCase().includes("gas") || trabajo.subtipoNombre?.toLowerCase().includes("gas");
+  const isGas = trabajo.subtipoCodigo?.startsWith("1.1.") || trabajo.subtipoCodigo?.toLowerCase().includes("gas") || trabajo.subtipoNombre?.toLowerCase().includes("gas");
   const estado = trabajo.estado;
   const cotizacionVigente = trabajo.cotizaciones?.[0];
   const garantia = trabajo.garantia;
@@ -415,22 +430,36 @@ export default function TrabajoDetallePage({
   const totalMaterialesReales = trabajo.materiales?.reduce((acc: number, m: any) => acc + Number(m.subtotalCosto), 0) || 0;
 
   const esSimplificado = trabajo.tipoFlujo === "SIMPLIFICADO";
+  const anticipoRequerido = Number(cotizacionVigente?.anticipoMinimoRequerido ?? 0);
+  const anticipoPendiente = Math.max(0, anticipoRequerido - totalPagado);
+  const listoParaIniciar = Boolean(trabajo.tecnicoId) && cotizacionVigente?.estado === "APROBADA" && anticipoPendiente === 0;
+  const proximaAccion = estado === "BORRADOR" ? "Programar la visita de evaluación" :
+    estado === "EVALUACION_PENDIENTE" ? "Registrar evaluación y fotos de la visita" :
+    estado === "EVALUADO" ? "Preparar y emitir el presupuesto" :
+    estado === "COTIZADO" ? "Registrar la respuesta del cliente a esta versión" :
+    ["APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(estado) ?
+      (anticipoPendiente > 0 ? "Completar anticipo: Bs. " + anticipoPendiente.toLocaleString("es-BO") : !trabajo.tecnicoId ? "Asignar técnico y programar atención" : "Iniciar ejecución") :
+    estado === "EN_PROCESO" ? "Registrar consumos y completar el trabajo con evidencia" :
+    estado === "TERMINADO_TECNICO" ? "El encargado debe aprobar la calidad" :
+    estado === "VALIDADO" ? (saldoPendiente > 0 ? "Cobrar saldo: Bs. " + saldoPendiente.toLocaleString("es-BO") : "Registrar costos reales y cerrar") :
+    estado === "RECHAZADO" ? "Cotización rechazada por el cliente" :
+    estado === "FINALIZADO_FINANCIERO" ? "Cierre completado; entregar documentación al cliente" : "Revisar la situación de la orden";
 
   const steps = esSimplificado
     ? [
         { label: "1. Recepción & Tarifa", done: true },
-        { label: "2. Presupuesto", done: !["BORRADOR"].includes(estado) },
+        { label: "2. Presupuesto", done: Boolean(cotizacionVigente) },
         { label: "3. Pago / Cobro", done: ["ANTICIPO_RECIBIDO", "EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
         { label: "4. Realización del Trabajo", done: ["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
         { label: "5. Finalización & Garantía", done: ["FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
       ]
     : [
         { label: "1. Registro", done: true },
-        { label: "2. Agenda de Visita", done: estado !== "BORRADOR" },
-        { label: "3. Medición en Terreno", done: !["BORRADOR", "EVALUACION_PENDIENTE"].includes(estado) },
-        { label: "4. Presupuesto (Bs.)", done: !["BORRADOR", "EVALUACION_PENDIENTE", "EVALUADO"].includes(estado) },
+        { label: "2. Agenda de Visita", done: Boolean(trabajo.visitas?.length) },
+        { label: "3. Medición en Terreno", done: trabajo.visitas?.some((v: any) => v.completada) || false },
+        { label: "4. Presupuesto (Bs.)", done: Boolean(cotizacionVigente) },
         { label: "5. Aceptación del Cliente", done: ["APROBADO", "ANTICIPO_RECIBIDO", "EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
-        { label: "6. Anticipo (50%)", done: ["ANTICIPO_RECIBIDO", "EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
+        { label: "6. Anticipo requerido", done: ["ANTICIPO_RECIBIDO", "EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
         { label: "7. En Trabajo", done: ["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
         { label: "8. Finalización & Garantía", done: ["FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
       ];
@@ -438,7 +467,14 @@ export default function TrabajoDetallePage({
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-busy={saving}>
+      {saving && <p role="status" className="p-3 bg-blue-50 text-blue-800 rounded-xl">Guardando operación...</p>}
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+        <p className="text-xs font-bold text-blue-700">Próximo paso</p>
+        <p className="font-bold text-slate-900">{proximaAccion}</p>
+        <p className="text-xs text-slate-600 mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"} · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</p>
+      </div>
+      <fieldset disabled={saving} className="contents">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-center gap-3">
@@ -470,7 +506,7 @@ export default function TrabajoDetallePage({
             </button>
           )}
 
-          {["COTIZADO", "APROBADO", "ANTICIPO_RECIBIDO", "EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO"].includes(estado) && (
+          {canManage && saldoPendiente > 0 && ["COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO", "EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO"].includes(estado) && (
             <button
               onClick={() => setModalPago(true)}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
@@ -496,6 +532,14 @@ export default function TrabajoDetallePage({
         </div>
       )}
 
+      {trabajo.evidenciasTermino && (
+        <div className="bg-white p-4 border rounded-xl space-y-2 text-sm">
+          <p className="font-bold">Evidencia de término técnico</p>
+          <p>{trabajo.evidenciasTermino.valoresNuevos?.observacionesTermino}</p>
+          {trabajo.evidenciasTermino.valoresNuevos?.fotosTermino?.map((url: string, index: number) =>
+            <a key={index} href={url} target="_blank" rel="noopener noreferrer" className="inline-block mr-4 text-blue-700 underline">Foto {index + 1}</a>)}
+        </div>
+      )}
       {/* Timeline */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs overflow-x-auto">
         <div className="flex items-center justify-between min-w-[750px] gap-2">
@@ -563,10 +607,10 @@ export default function TrabajoDetallePage({
         {/* Right Column (8 cols) */}
         <div className="lg:col-span-8 space-y-5">
           {/* FASE 4 */}
-          {estado === "BORRADOR" && (
+          {canManage && (estado === "BORRADOR" || (!trabajo.tecnicoId && ["EVALUADO", "COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(estado))) && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
               <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-[#F06529]" /> Fase 4: Agenda y Asignación de Visita Técnica
+                <Calendar className="h-4 w-4 text-[#F06529]" /> Asignar técnico y programar atención
               </h3>
               <form onSubmit={handleAgendarVisita} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -621,6 +665,12 @@ export default function TrabajoDetallePage({
               </div>
 
               <form onSubmit={handleCompletarVisita} className="space-y-4 text-xs">
+                <label className="block font-bold">Condiciones observadas
+                  <textarea required minLength={5} value={fase5Data.condiciones} onChange={e => setFase5Data({ ...fase5Data, condiciones: e.target.value })} className="w-full border rounded-xl p-3 mt-1" />
+                </label>
+                <label className="block font-bold">Fotos de la visita: mínimo tres enlaces, uno por línea
+                  <textarea required value={fase5Data.fotosUrls.join("\n")} onChange={e => setFase5Data({ ...fase5Data, fotosUrls: e.target.value.split("\n") })} className="w-full border rounded-xl p-3 mt-1" placeholder="https://..." />
+                </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
@@ -630,8 +680,9 @@ export default function TrabajoDetallePage({
                       type="number"
                       min="0"
                       step="any"
+                      required
                       value={fase5Data.metrosVisto}
-                      onChange={(e) => setFase5Data({ ...fase5Data, metrosVisto: Number(e.target.value) })}
+                      onChange={(e) => setFase5Data({ ...fase5Data, metrosVisto: e.target.value })}
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
                     />
                     <span className="text-[10px] text-slate-400 mt-0.5 block">Tubería que va con abrazaderas o grampas</span>
@@ -645,8 +696,9 @@ export default function TrabajoDetallePage({
                       type="number"
                       min="0"
                       step="any"
+                      required
                       value={fase5Data.metrosEmpotrado}
-                      onChange={(e) => setFase5Data({ ...fase5Data, metrosEmpotrado: Number(e.target.value) })}
+                      onChange={(e) => setFase5Data({ ...fase5Data, metrosEmpotrado: e.target.value })}
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
                     />
                     <span className="text-[10px] text-slate-400 mt-0.5 block">Tubería oculta bajo revoque o piso</span>
@@ -697,7 +749,7 @@ export default function TrabajoDetallePage({
           )}
 
           {/* FASE 6: EMISIÓN DE COTIZACIÓN POR EL ENCARGADO */}
-          {estado === "EVALUADO" && (
+          {canManage && estado === "EVALUADO" && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
@@ -705,7 +757,7 @@ export default function TrabajoDetallePage({
                     <DollarSign className="h-4 w-4 text-[#F06529]" /> 📄 Presupuesto Oficial para el Cliente
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    El técnico terminó de medir. Revisa los costos calculados en Bolivianos (Bs.) y genera el presupuesto final.
+                    Revisa el alcance y los importes en Bolivianos (Bs.) antes de emitir el presupuesto.
                   </p>
                 </div>
                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
@@ -719,8 +771,11 @@ export default function TrabajoDetallePage({
                     <label className="block font-bold text-slate-700 mb-1">Costo de Materiales (Bs.)</label>
                     <input
                       type="number"
+                      min="0"
+                      step="0.01"
+                      required
                       value={fase6Calculo.subtotalMateriales}
-                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalMateriales: Number(e.target.value) })}
+                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalMateriales: e.target.value })}
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none"
                     />
                   </div>
@@ -728,8 +783,11 @@ export default function TrabajoDetallePage({
                     <label className="block font-bold text-slate-700 mb-1">Costo de Mano de Obra (Bs.)</label>
                     <input
                       type="number"
+                      min="0"
+                      step="0.01"
+                      required
                       value={fase6Calculo.subtotalManoObra}
-                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalManoObra: Number(e.target.value) })}
+                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalManoObra: e.target.value })}
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none"
                     />
                   </div>
@@ -737,8 +795,11 @@ export default function TrabajoDetallePage({
                     <label className="block font-bold text-slate-700 mb-1">Transporte / Movilidad (Bs.)</label>
                     <input
                       type="number"
+                      min="0"
+                      step="0.01"
+                      required
                       value={fase6Calculo.montoTransporte}
-                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, montoTransporte: Number(e.target.value) })}
+                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, montoTransporte: e.target.value })}
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none"
                     />
                   </div>
@@ -758,7 +819,7 @@ export default function TrabajoDetallePage({
           )}
 
           {/* FASE 7: ENVÍO AL CLIENTE (WHATSAPP / PDF) & DECISIÓN */}
-          {estado === "COTIZADO" && (
+          {canManage && estado === "COTIZADO" && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
@@ -782,7 +843,7 @@ export default function TrabajoDetallePage({
                     href={`https://api.whatsapp.com/send?phone=${encodeURIComponent(
                       (Array.isArray(trabajo.cliente?.telefonos) ? trabajo.cliente?.telefonos[0] : trabajo.cliente?.telefonos) || "+59170000000"
                     )}&text=${encodeURIComponent(
-                      `Hola ${trabajo.cliente?.nombreCompleto}, le saludamos de SERVIGAZ. Le enviamos la cotización oficial para su servicio de ${trabajo.subtipoNombre} por un total de Bs. ${totalCotizado.toLocaleString("es-CL")}. Anticipo requerido (50%): Bs. ${(totalCotizado * 0.5).toLocaleString("es-CL")}. Quedamos atentos a su confirmación.`
+                      `Hola ${trabajo.cliente?.nombreCompleto}, le saludamos de SERVIGAZ. Le enviamos la cotización oficial para su servicio de ${trabajo.subtipoNombre} por un total de Bs. ${totalCotizado.toLocaleString("es-CL")}. Anticipo requerido: Bs. ${anticipoRequerido.toLocaleString("es-BO")}. Quedamos atentos a su confirmación.`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -826,7 +887,7 @@ export default function TrabajoDetallePage({
           )}
 
           {/* ESTADO APROBADO: REGISTRAR PAGO O INICIAR DIRECTAMENTE */}
-          {estado === "APROBADO" && (
+          {canManage && ["APROBADO", "PAGO_A_CUENTA_RECIBIDO"].includes(estado) && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
@@ -858,10 +919,11 @@ export default function TrabajoDetallePage({
 
                   <button
                     onClick={handleIniciarEjecucion}
+                    disabled={!listoParaIniciar}
                     className="px-5 py-2.5 bg-[#0F2C59] hover:bg-[#1A3E72] text-white font-bold rounded-xl flex items-center gap-2 shadow-xs cursor-pointer"
                   >
                     <Wrench className="h-4 w-4 text-[#F06529]" />
-                    <span>▶️ Comenzar el Trabajo / Entrega Directa</span>
+                    <span>▶️ Iniciar trabajo (anticipo y técnico requeridos)</span>
                   </button>
                 </div>
               </div>
@@ -874,7 +936,7 @@ export default function TrabajoDetallePage({
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-black text-emerald-900 uppercase tracking-wider flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Anticipo Confirmado (50%)
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Anticipo confirmado
                   </h3>
                   <p className="text-xs text-emerald-700 mt-0.5">
                     El cliente pagó el anticipo requerido. El trabajo está listo para realizarse.
@@ -885,6 +947,7 @@ export default function TrabajoDetallePage({
               <div className="flex justify-end pt-2">
                 <button
                   onClick={handleIniciarEjecucion}
+                    disabled={!listoParaIniciar}
                   className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer"
                 >
                   <Wrench className="h-4 w-4" />
@@ -1041,7 +1104,7 @@ export default function TrabajoDetallePage({
 
                 {estado === "EN_PROCESO" && (
                   <button
-                    onClick={handleFinalizarTecnico}
+                    onClick={() => setModalTermino(true)}
                     className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0"
                   >
                     <Camera className="h-4 w-4" />
@@ -1049,7 +1112,7 @@ export default function TrabajoDetallePage({
                   </button>
                 )}
 
-                {estado === "TERMINADO_TECNICO" && (
+                {canManage && estado === "TERMINADO_TECNICO" && (
                   <button
                     onClick={handleValidarEncargado}
                     className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0"
@@ -1059,9 +1122,10 @@ export default function TrabajoDetallePage({
                   </button>
                 )}
 
-                {estado === "VALIDADO" && (
+                {canManage && estado === "VALIDADO" && (
                   <button
                     onClick={() => setModalCierreFinanciero(true)}
+                    disabled={saldoPendiente > 0}
                     className="px-6 py-2.5 bg-[#0F2C59] hover:bg-[#1A3E72] text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0"
                   >
                     <Lock className="h-4 w-4 text-[#F06529]" />
@@ -1081,6 +1145,24 @@ export default function TrabajoDetallePage({
         </div>
       </div>
 
+      {modalTermino && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <form onSubmit={handleFinalizarTecnico} className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-4">
+              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
+            <h3 className="font-bold">Registrar término técnico</h3>
+            <label className="block text-sm">Trabajo realizado y resultado de pruebas
+              <textarea required minLength={5} maxLength={3000} value={terminoData.observaciones} onChange={e => setTerminoData({ ...terminoData, observaciones: e.target.value })} className="w-full border rounded-xl p-3 mt-1" />
+            </label>
+            <label className="block text-sm">Fotos del resultado: mínimo dos enlaces, uno por línea
+              <textarea required value={terminoData.fotos} onChange={e => setTerminoData({ ...terminoData, fotos: e.target.value })} className="w-full border rounded-xl p-3 mt-1" placeholder="https://..." />
+            </label>
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setModalTermino(false)}>Volver</button>
+              <button type="submit" className="px-4 py-2 bg-blue-700 text-white rounded-xl">Guardar término</button>
+            </div>
+          </form>
+        </div>
+      )}
       {/* MODAL DE MATERIALES / REPUESTOS CON DESCUENTO DE STOCK EN TIENDA */}
       {modalMaterial && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
@@ -1117,6 +1199,7 @@ export default function TrabajoDetallePage({
             </div>
 
             <form onSubmit={handleRegistrarMaterial} className="space-y-4 text-xs">
+              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
               {/* Selector de Origen en 2 Tarjetas */}
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -1231,6 +1314,7 @@ export default function TrabajoDetallePage({
                     min="0"
                     step="any"
                     required
+                    readOnly={materialData.esDeInventario}
                     value={materialData.costoUnitario}
                     onChange={(e) => setMaterialData({ ...materialData, costoUnitario: Number(e.target.value) })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
@@ -1285,6 +1369,7 @@ export default function TrabajoDetallePage({
             </div>
 
             <form onSubmit={handleCierreFinanciero} className="space-y-3 text-xs">
+              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
               <div className="p-3 rounded-xl bg-slate-50 border space-y-1">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Total Cobrado al Cliente:</span>
@@ -1301,9 +1386,10 @@ export default function TrabajoDetallePage({
                 <input
                   type="number"
                   min="0"
+                  step="0.01"
                   required
                   value={cierreData.costoManoObraReal}
-                  onChange={(e) => setCierreData({ ...cierreData, costoManoObraReal: Number(e.target.value) })}
+                  onChange={(e) => setCierreData({ ...cierreData, costoManoObraReal: e.target.value })}
                   className="w-full p-2.5 bg-slate-50 border rounded-xl font-bold outline-none"
                 />
               </div>
@@ -1313,9 +1399,10 @@ export default function TrabajoDetallePage({
                 <input
                   type="number"
                   min="0"
+                  step="0.01"
                   required
                   value={cierreData.costoTransporteReal}
-                  onChange={(e) => setCierreData({ ...cierreData, costoTransporteReal: Number(e.target.value) })}
+                  onChange={(e) => setCierreData({ ...cierreData, costoTransporteReal: e.target.value })}
                   className="w-full p-2.5 bg-slate-50 border rounded-xl font-bold outline-none"
                 />
               </div>
@@ -1352,12 +1439,13 @@ export default function TrabajoDetallePage({
             </div>
 
             <form onSubmit={handleRegistrarPago} className="space-y-4 text-xs">
+              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
               {/* Resumen de Saldo */}
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="text-slate-500 block text-[10px]">Saldo Pendiente:</span>
                   <strong className="text-sm font-black text-slate-900">
-                    Bs. {saldoPendiente > 0 ? saldoPendiente.toLocaleString("es-CL") : totalCotizado.toLocaleString("es-CL")}
+                    Bs. {saldoPendiente.toLocaleString("es-BO")}
                   </strong>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
@@ -1464,6 +1552,7 @@ export default function TrabajoDetallePage({
           </div>
         </div>
       )}
+      </fieldset>
     </div>
   );
 }

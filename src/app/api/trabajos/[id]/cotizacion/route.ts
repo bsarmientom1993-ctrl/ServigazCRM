@@ -1,135 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
+import { z } from "zod";
+import { Prisma } from "@prisma/client";
+import { requireSession, managers } from "@/lib/auth";
+import { ApiError, apiError } from "@/lib/api";
+import { withWork } from "@/lib/workflow";
+import { cents, money } from "@/lib/workflow-policy";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
-
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const user = await requireSession(req, managers);
     const { id } = await params;
-    const token = req.cookies.get("servigaz_token")?.value;
-    let userId: string | null = null;
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        const userExists = await prisma.usuario.findUnique({ where: { id: decoded.id } });
-        if (userExists) userId = decoded.id;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      const admin = await prisma.usuario.findFirst({ where: { rol: { in: ["ENCARGADO", "ADMIN"] } } });
-      if (admin) userId = admin.id;
-    }
-
-    const trabajo = await prisma.trabajo.findUnique({
-      where: { id },
-      include: { cotizaciones: true },
+    const body = z.object({
+      subtotalMateriales: z.number().finite().nonnegative(), subtotalManoObra: z.number().finite().nonnegative(),
+      montoTransporte: z.number().finite().nonnegative(), porcentajeDescuento: z.number().finite().min(0).max(100).default(0),
+      datosFormulario: z.record(z.any()).default({}),
+    }).parse(await req.json());
+    const material = cents(body.subtotalMateriales), labor = cents(body.subtotalManoObra), transport = cents(body.montoTransporte);
+    const result = await withWork(id, user, async (tx) => {
+      const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: {
+        cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 }, pagos: true, egreso: true,
+      } });
+      if (!["EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado) || work.egreso ||
+        work.pagos.length > 0 || work.cotizaciones[0]?.estado === "APROBADA") throw new ApiError(409, "No puede reemplazarse el presupuesto de una orden aceptada, cobrada o cerrada.");
+      const discountConfig = await tx.configuracionDescuento.findFirst({ where: { activo: true } });
+      const limit = user.rol === "ADMIN" ? Number(discountConfig?.topeMaximoPct ?? 20) : Number(discountConfig?.pctMaxEncargado ?? 10);
+      if (body.porcentajeDescuento > limit) throw new ApiError(403, "El descuento supera el límite autorizado para tu rol.");
+      const gross = material + labor + transport;
+      const discount = new Prisma.Decimal(gross).mul(body.porcentajeDescuento).div(100).toDecimalPlaces(0).toNumber();
+      const total = gross - discount;
+      if (total <= 0 || total > 999999999999) throw new ApiError(400, "Revisa el importe total de la cotización.");
+      const deposit = await tx.configuracionAnticipo.findUnique({ where: { subtipoCodigo: work.subtipoCodigo } });
+      const percentage = deposit?.activo ? Number(deposit.porcentajeMinimo) : work.tipoFlujo === "SIMPLIFICADO" ? 100 : 50;
+      if (percentage < 0 || percentage > 100) throw new ApiError(409, "Revisa la configuración del anticipo.");
+      const minimum = new Prisma.Decimal(total).mul(percentage).div(100).toDecimalPlaces(0, Prisma.Decimal.ROUND_CEIL).toNumber();
+      const expiry = new Date(); expiry.setDate(expiry.getDate() + 15);
+      const version = (work.cotizaciones[0]?.numeroVersion || 0) + 1;
+      await tx.cotizacion.updateMany({ where: { trabajoId: id, estado: "VIGENTE" }, data: { estado: "SUPERADA" } });
+      const cotizacion = await tx.cotizacion.create({ data: {
+        trabajoId: id, numeroVersion: version, tipoVersion: version === 1 ? "ORIGINAL" : "CORRECCION",
+        datosFormularioJson: body.datosFormulario,
+        snapshotCalculoJson: { origen: "PRESUPUESTO_MANUAL", subtotalMateriales: money(material), subtotalManoObra: money(labor), montoTransporte: money(transport), porcentajeDescuento: body.porcentajeDescuento, porcentajeAnticipo: percentage },
+        subtotalMateriales: money(material), subtotalManoObra: money(labor), montoTransporte: money(transport),
+        porcentajeDescuento: body.porcentajeDescuento, montoDescuento: money(discount),
+        descuentoAprobadoPor: user.rol === "ADMIN" && body.porcentajeDescuento > Number(discountConfig?.pctMaxEncargado ?? 10) ? user.id : null,
+        totalCotizado: money(total), anticipoMinimoRequerido: money(minimum), fechaVencimiento: expiry, estado: "VIGENTE",
+      } });
+      const trabajo = await tx.trabajo.update({ where: { id }, data: { estado: "COTIZADO" } });
+      await tx.auditoriaLog.create({ data: {
+        usuarioId: user.id, modulo: "COTIZACIONES", accion: "CREATE", entidadTipo: "Cotizacion", entidadId: cotizacion.id,
+        valoresNuevos: { trabajoId: id, numeroVersion: version, totalCotizado: money(total) },
+      } });
+      return { success: true, cotizacion, trabajo };
     });
-
-    if (!trabajo) {
-      return NextResponse.json({ error: "Trabajo no encontrado" }, { status: 404 });
-    }
-
-    const body = await req.json();
-    let {
-      datosFormulario,
-      snapshotCalculo,
-      subtotalMateriales,
-      subtotalManoObra,
-      montoTransporte,
-      porcentajeDescuento,
-      montoDescuento,
-      totalCotizado,
-      anticipoMinimo,
-      alertaBajoMargen,
-      justificacionMargenBajo,
-    } = body;
-
-    const subMat = Number(subtotalMateriales || 0);
-    const subMo = Number(subtotalManoObra || 0);
-    const mTrans = Number(montoTransporte || 0);
-    const descPct = Number(porcentajeDescuento || 0);
-    const subBruto = subMat + subMo + mTrans;
-    const descMonto = Number(montoDescuento || (subBruto * descPct) / 100);
-    const totalFinal = Number(totalCotizado || subBruto - descMonto);
-    const anticipoReq = Number(anticipoMinimo || totalFinal * 0.5);
-
-    // Validación regla #94: justificación obligatoria si bajo margen
-    if (alertaBajoMargen && (!justificacionMargenBajo || justificacionMargenBajo.trim().length < 5)) {
-      return NextResponse.json(
-        { error: "Regla #94: Margen inferior al 20%. La justificación comercial es obligatoria." },
-        { status: 400 }
-      );
-    }
-
-    // Calcular fecha de vencimiento (15 días corridos)
-    const fechaVencimiento = new Date();
-    fechaVencimiento.setDate(fechaVencimiento.getDate() + 15);
-
-    const numeroVersion = (trabajo.cotizaciones?.length || 0) + 1;
-
-    // Crear Cotización con Snapshot Inmutable
-    const cotizacion = await prisma.cotizacion.create({
-      data: {
-        trabajoId: id,
-        numeroVersion,
-        tipoVersion: numeroVersion === 1 ? "ORIGINAL" : "CORRECCION",
-        datosFormularioJson: datosFormulario || {},
-        snapshotCalculoJson: snapshotCalculo || {},
-        subtotalMateriales: subMat,
-        subtotalManoObra: subMo,
-        montoTransporte: mTrans,
-        porcentajeDescuento: descPct,
-        montoDescuento: descMonto,
-        descuentoAprobadoPor: descPct > 10 ? userId : null,
-        totalCotizado: totalFinal,
-        anticipoMinimoRequerido: anticipoReq,
-        alertaBajoMargen: Boolean(alertaBajoMargen),
-        justificacionMargenBajo,
-        fechaVencimiento,
-        estado: "VIGENTE",
-      },
-    });
-
-    // Actualizar estado del trabajo a COTIZADO
-    const updatedTrabajo = await prisma.trabajo.update({
-      where: { id },
-      data: {
-        estado: "COTIZADO",
-      },
-    });
-
-    // Auditoría
-    await prisma.auditoriaLog.create({
-      data: {
-        usuarioId: userId,
-        modulo: "COTIZACIONES",
-        accion: "CREATE",
-        entidadTipo: "Cotizacion",
-        entidadId: cotizacion.id,
-        valoresNuevos: {
-          trabajoId: id,
-          totalCotizado: totalFinal,
-          numeroVersion,
-          descuento: descPct,
-        },
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      cotizacion,
-      totalCotizado: totalFinal,
-      anticipoMinimoRequerido: anticipoReq,
-      trabajo: updatedTrabajo,
-    });
-  } catch (error: any) {
-    console.error("Error guardando cotización:", error);
-    return NextResponse.json({ error: "Error al emitir cotización: " + error.message }, { status: 500 });
-  }
+    return NextResponse.json(result);
+  } catch (error) { return apiError(error); }
 }

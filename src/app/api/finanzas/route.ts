@@ -1,31 +1,15 @@
+import { requireSession } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
 
 // GET /api/finanzas — Listar egresos generales con regla de privacidad #91
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("servigaz_token")?.value;
-    let userId: string | null = null;
-    let userRole = "ADMIN";
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        userId = decoded.id;
-        userRole = decoded.rol;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      const admin = await prisma.usuario.findFirst({ where: { rol: "ADMIN" } });
-      if (admin) {
-        userId = admin.id;
-        userRole = admin.rol;
-      }
-    }
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
+    const userId = session.id;
+    const userRole = session.rol;
 
     // Regla #91: Admin ve todos los egresos; Encargado ve solo los creados por él
     const whereClause: any = {};
@@ -66,6 +50,7 @@ export async function GET(req: NextRequest) {
       totalRegistros: egresos.length,
     });
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Error al listar egresos:", error);
     return NextResponse.json({ error: "Error al consultar egresos" }, { status: 500 });
   }
@@ -74,29 +59,8 @@ export async function GET(req: NextRequest) {
 // POST /api/finanzas — Registrar nuevo egreso general
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get("servigaz_token")?.value;
-    let userId: string | null = null;
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        const userExists = await prisma.usuario.findUnique({ where: { id: decoded.id } });
-        if (userExists) userId = decoded.id;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      const admin = await prisma.usuario.findFirst({ where: { rol: "ADMIN" } });
-      if (admin) userId = admin.id;
-      else {
-        const anyUser = await prisma.usuario.findFirst();
-        if (anyUser) userId = anyUser.id;
-      }
-    }
-
-    if (!userId) {
-      return NextResponse.json({ error: "Usuario no autorizado" }, { status: 401 });
-    }
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
+    const userId = session.id;
 
     const body = await req.json();
     const { categoria, monto, descripcion, proveedorInfo, comprobanteUrl, esRecurrente, fechaEgreso } = body;
@@ -147,6 +111,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, egreso: nuevoEgreso }, { status: 201 });
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Error al registrar egreso:", error);
     return NextResponse.json({ error: "Error al registrar gasto: " + error.message }, { status: 500 });
   }

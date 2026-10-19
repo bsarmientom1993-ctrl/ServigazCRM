@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { requireSession } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = await requireSession(req);
     const tecnicos = await prisma.usuario.findMany({
       where: {
+        ...(session.rol === "ADMIN" ? {} : { sucursalId: session.sucursalId }),
         rol: "TECNICO_FIJO",
         estado: "ACTIVO",
       },
@@ -16,7 +20,8 @@ export async function GET() {
       },
     });
     return NextResponse.json(tecnicos);
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     return NextResponse.json({ error: "Error al obtener técnicos" }, { status: 500 });
   }
 }

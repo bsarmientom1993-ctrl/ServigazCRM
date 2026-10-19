@@ -17,7 +17,6 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  switchDemoRole: (role: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO") => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,16 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const switchDemoRole = async (role: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO") => {
-    const creds = {
-      ADMIN: { email: "admin@servigaz.cl", pass: "Admin123!" },
-      ENCARGADO: { email: "encargado@servigaz.cl", pass: "Admin123!" },
-      TECNICO_FIJO: { email: "tecnico@servigaz.cl", pass: "Tecnico123!" },
-    };
-    const c = creds[role];
-    await login(c.email, c.pass);
-  };
-
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
@@ -85,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, switchDemoRole }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

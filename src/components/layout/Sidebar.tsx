@@ -24,7 +24,7 @@ import {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, logout, switchDemoRole } = useAuth();
+  const { user, logout } = useAuth();
 
   if (!user) return null;
 
@@ -50,7 +50,7 @@ export function Sidebar() {
       name: "Finanzas & Balance",
       href: "/finanzas",
       icon: DollarSign,
-      show: isAdmin || isEncargado,
+      show: isAdmin,
       badge: "Fase 19",
     },
     {
@@ -83,7 +83,7 @@ export function Sidebar() {
       name: "Garantías & Reclamos",
       href: "/garantias",
       icon: Award,
-      show: true,
+      show: isAdmin || isEncargado,
     },
     {
       name: "Precios & Tarifas",
@@ -194,50 +194,7 @@ export function Sidebar() {
           })}
       </nav>
 
-      {/* Role Quick Switcher for Testing */}
       <div className="p-3 bg-[#0A1F3F] border-t border-[#1A3E72]">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-[#F06529]" />
-            Cambiar Rol Activo
-          </span>
-        </div>
-        <div className="grid grid-cols-3 gap-1">
-          <button
-            onClick={() => switchDemoRole("ADMIN")}
-            title="Ver como Administrador"
-            className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-              user.rol === "ADMIN"
-                ? "bg-[#F06529] text-white"
-                : "bg-[#1A3E72] text-slate-200 hover:bg-[#255498]"
-            }`}
-          >
-            Admin
-          </button>
-          <button
-            onClick={() => switchDemoRole("ENCARGADO")}
-            title="Ver como Encargado"
-            className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-              user.rol === "ENCARGADO"
-                ? "bg-[#F06529] text-white"
-                : "bg-[#1A3E72] text-slate-200 hover:bg-[#255498]"
-            }`}
-          >
-            Encargado
-          </button>
-          <button
-            onClick={() => switchDemoRole("TECNICO_FIJO")}
-            title="Ver como Técnico Fijo"
-            className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-              user.rol === "TECNICO_FIJO"
-                ? "bg-[#F06529] text-white"
-                : "bg-[#1A3E72] text-slate-200 hover:bg-[#255498]"
-            }`}
-          >
-            Técnico
-          </button>
-        </div>
-
         <button
           onClick={logout}
           className="w-full mt-3 py-2 px-3 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer border border-red-500/20"

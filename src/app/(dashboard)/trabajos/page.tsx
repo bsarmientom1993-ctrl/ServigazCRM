@@ -48,6 +48,8 @@ export default function TrabajosPage() {
     TERMINADO_TECNICO: { label: "🏁 Físico Terminado", color: "bg-sky-50 text-sky-800 border-sky-200" },
     VALIDADO: { label: "✅ Calidad Aprobada", color: "bg-teal-50 text-teal-800 border-teal-200" },
     FINALIZADO_FINANCIERO: { label: "🎉 Finalizado con Garantía", color: "bg-green-100 text-green-900 border-green-300 font-black" },
+    RECHAZADO: { label: "Rechazado", color: "bg-red-50 text-red-800 border-red-200" },
+    PAGO_A_CUENTA_RECIBIDO: { label: "Anticipo parcial", color: "bg-amber-50 text-amber-800 border-amber-200" },
     CANCELADO: { label: "❌ Cancelado", color: "bg-red-50 text-red-800 border-red-200" },
     ARCHIVADO: { label: "📁 Archivado", color: "bg-slate-100 text-slate-500 border-slate-200" },
   };
@@ -63,24 +65,24 @@ export default function TrabajosPage() {
 
   // Contadores
   const pendientesCount = trabajos.filter(
-    (t) => !["FINALIZADO_FINANCIERO", "CANCELADO", "ARCHIVADO"].includes(t.estado)
+    (t) => !["FINALIZADO_FINANCIERO", "CANCELADO", "RECHAZADO", "ARCHIVADO"].includes(t.estado)
   ).length;
 
   const finalizadosCount = trabajos.filter(
     (t) => ["FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(t.estado)
   ).length;
 
-  const canceladosCount = trabajos.filter((t) => t.estado === "CANCELADO").length;
+  const canceladosCount = trabajos.filter((t) => ["CANCELADO", "RECHAZADO"].includes(t.estado)).length;
 
   const filtered = trabajos.filter((t) => {
     // 1. Filtro por Pestaña de Estado
-    if (tabEstado === "PENDIENTES" && ["FINALIZADO_FINANCIERO", "CANCELADO", "ARCHIVADO"].includes(t.estado)) {
+    if (tabEstado === "PENDIENTES" && ["FINALIZADO_FINANCIERO", "CANCELADO", "RECHAZADO", "ARCHIVADO"].includes(t.estado)) {
       return false;
     }
     if (tabEstado === "FINALIZADOS") {
       if (!["FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(t.estado)) return false;
     }
-    if (tabEstado === "CANCELADOS" && t.estado !== "CANCELADO") {
+    if (tabEstado === "CANCELADOS" && !["CANCELADO", "RECHAZADO"].includes(t.estado)) {
       return false;
     }
 
@@ -119,7 +121,7 @@ export default function TrabajosPage() {
         </Link>
       </div>
 
-      {/* Pestañas Principales de Estado (Pendientes / Finalizados / Cancelados) */}
+      {/* Pestañas Principales de Estado (Pendientes / Finalizados / Rechazados / Cancelados) */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-1 overflow-x-auto">
         <button
           onClick={() => setTabEstado("PENDIENTES")}
@@ -311,4 +313,3 @@ export default function TrabajosPage() {
     </div>
   );
 }
-

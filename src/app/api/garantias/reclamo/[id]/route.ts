@@ -1,8 +1,8 @@
+import { requireSession, assertWorkAccess } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
 
 // PATCH: Dictamen y Resolución de Reclamo de Garantía
 export async function PATCH(
@@ -10,24 +10,16 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
     const { id } = await params;
-    const token = req.cookies.get("servigaz_token")?.value;
-    let userId: string | null = null;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        userId = decoded.id;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      const admin = await prisma.usuario.findFirst({ where: { rol: "ADMIN" } });
-      if (admin) userId = admin.id;
-    }
+    const userId = session.id;
 
     const body = await req.json();
     const { solucionDetalle, estado, tecnicoAsignadoId, trabajoDerivadoId } = body;
 
+    const existing = await prisma.reclamoGarantia.findUnique({ where: { id }, include: { trabajoOriginal: true } });
+    if (!existing) throw new ApiError(404, "Reclamo no encontrado.");
+    assertWorkAccess(session, existing.trabajoOriginal);
     const updated = await prisma.reclamoGarantia.update({
       where: { id },
       data: {
@@ -54,6 +46,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, reclamo: updated });
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Error resolviendo reclamo:", error);
     return NextResponse.json({ error: "Error al actualizar reclamo: " + error.message }, { status: 500 });
   }

@@ -1,9 +1,12 @@
+import { requireSession } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/finanzas/balance — Estado de Resultados Consolidado en Bs.
 export async function GET(req: NextRequest) {
   try {
+    const session = await requireSession(req, ["ADMIN"]);
     // 1. Total Ingresos Recibidos en Caja/Banco (Pagos)
     const pagos = await prisma.pago.findMany({
       select: {
@@ -83,6 +86,7 @@ export async function GET(req: NextRequest) {
       ultimasFaenasCerradas: egresosTrabajos.slice(0, 5),
     });
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Error al calcular balance:", error);
     return NextResponse.json({ error: "Error al generar estado de resultados" }, { status: 500 });
   }

@@ -1,29 +1,26 @@
+import { requireSession, workScope } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
 
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get("servigaz_token")?.value;
-    if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const userRole = decoded.rol;
-    const userId = decoded.id;
+    const session = await requireSession(req);
+    const scope = workScope(session);
 
     // Métricas globales
-    const totalTrabajos = await prisma.trabajo.count();
+    const totalTrabajos = await prisma.trabajo.count({ where: scope });
     const trabajosActivos = await prisma.trabajo.count({
       where: {
+        AND: [scope],
         estado: {
           in: ["EN_PROCESO", "ANTICIPO_RECIBIDO", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "APROBADO"],
         },
       },
     });
 
-    const totalClientes = await prisma.cliente.count();
+    const totalClientes = session.rol === "TECNICO_FIJO" ? 0 : await prisma.cliente.count({ where: session.rol === "ADMIN" ? {} : { sucursalId: session.sucursalId } });
     const totalProductos = await prisma.productoInventario.count({ where: { activo: true } });
     
     // Alertas stock bajo
@@ -36,6 +33,7 @@ export async function GET(req: NextRequest) {
 
     // Últimos trabajos
     const ultimosTrabajos = await prisma.trabajo.findMany({
+      where: scope,
       take: 6,
       orderBy: { createdAt: "desc" },
       include: {
@@ -49,7 +47,7 @@ export async function GET(req: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const asistenciasHoy = await prisma.asistenciaPersonal.count({
-      where: { fecha: { gte: today } },
+      where: { fecha: { gte: today }, ...(session.rol === "ADMIN" ? {} : { usuarioId: session.id }) },
     });
 
     return NextResponse.json({
@@ -64,6 +62,7 @@ export async function GET(req: NextRequest) {
       ultimosTrabajos,
     });
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Dashboard stats error:", error);
     return NextResponse.json({ error: "Error al cargar estadísticas" }, { status: 500 });
   }

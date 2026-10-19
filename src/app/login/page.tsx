@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ShieldCheck, UserCheck, Wrench, Lock, Mail, ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
-  const { login, switchDemoRole } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,13 +22,6 @@ export default function LoginPage() {
       setError(res.error || "Error al iniciar sesión");
       setLoading(false);
     }
-  };
-
-  const handleQuickLogin = async (role: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO") => {
-    setLoading(true);
-    setError("");
-    await switchDemoRole(role);
-    setLoading(false);
   };
 
   return (
@@ -116,56 +109,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Quick Demo Access Switcher */}
-        <div className="mt-8 pt-6 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3 text-[#F06529]" />
-              Acceso Rápido de Prueba (Roles)
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("ADMIN")}
-              disabled={loading}
-              className="p-2.5 rounded-xl border border-slate-200 hover:border-[#0F2C59] bg-slate-50 hover:bg-[#0F2C59]/5 flex flex-col items-center gap-1 transition-all group cursor-pointer text-center"
-            >
-              <div className="p-1.5 rounded-lg bg-[#0F2C59]/10 group-hover:bg-[#0F2C59] text-[#0F2C59] group-hover:text-white transition-colors">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <span className="text-[11px] font-bold text-slate-700">Admin</span>
-              <span className="text-[9px] text-slate-400">Total</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("ENCARGADO")}
-              disabled={loading}
-              className="p-2.5 rounded-xl border border-slate-200 hover:border-[#F06529] bg-slate-50 hover:bg-[#F06529]/5 flex flex-col items-center gap-1 transition-all group cursor-pointer text-center"
-            >
-              <div className="p-1.5 rounded-lg bg-[#F06529]/10 group-hover:bg-[#F06529] text-[#F06529] group-hover:text-white transition-colors">
-                <UserCheck className="h-4 w-4" />
-              </div>
-              <span className="text-[11px] font-bold text-slate-700">Encargado</span>
-              <span className="text-[9px] text-slate-400">Gestión</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("TECNICO_FIJO")}
-              disabled={loading}
-              className="p-2.5 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50 hover:bg-emerald-50 flex flex-col items-center gap-1 transition-all group cursor-pointer text-center"
-            >
-              <div className="p-1.5 rounded-lg bg-emerald-100 group-hover:bg-emerald-600 text-emerald-700 group-hover:text-white transition-colors">
-                <Wrench className="h-4 w-4" />
-              </div>
-              <span className="text-[11px] font-bold text-slate-700">Técnico</span>
-              <span className="text-[9px] text-slate-400">Terreno</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       <footer className="mt-8 text-slate-400 text-xs font-medium text-center">

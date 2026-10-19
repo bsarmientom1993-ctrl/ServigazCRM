@@ -1,8 +1,11 @@
+import { requireSession } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
     const body = await req.json();
     const {
       serviciosActivos = ["GAS"],
@@ -191,6 +194,7 @@ export async function POST(req: NextRequest) {
       itemsDesglose,
     });
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Cotizador calculation error:", error);
     return NextResponse.json({ error: "Error en el cálculo" }, { status: 500 });
   }

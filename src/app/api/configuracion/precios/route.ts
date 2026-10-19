@@ -1,12 +1,13 @@
+import { requireSession } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
 
 // GET: Carga todas las reglas de negocio y precios
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
     const precios = await prisma.configuracionPrecio.findMany({
       orderBy: [{ subtipoCodigo: "asc" }, { concepto: "asc" }],
     });
@@ -32,7 +33,8 @@ export async function GET() {
       configDescuento,
       configAnticipo,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     return NextResponse.json({ error: "Error al cargar configuración" }, { status: 500 });
   }
 }
@@ -40,16 +42,8 @@ export async function GET() {
 // POST: Modificación de Reglas y Precios (Solo Gerente / Admin)
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get("servigaz_token")?.value;
-    if (!token) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (decoded.rol !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Solo el Gerente / Administrador puede modificar reglas y tarifas." },
-        { status: 403 }
-      );
-    }
+    const session = await requireSession(req, ["ADMIN"]);
+    const decoded = session;
 
     const body = await req.json();
     const { tipo, data } = body;
@@ -210,6 +204,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: "Tipo de regla no válido" }, { status: 400 });
   } catch (error: any) {
+    if (error instanceof ApiError) return apiError(error);
     console.error("Config save error:", error);
     return NextResponse.json({ error: "Error al guardar regla" }, { status: 500 });
   }

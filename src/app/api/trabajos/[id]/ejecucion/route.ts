@@ -1,176 +1,95 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
+import { requireSession, managers } from "@/lib/auth";
+import { ApiError, apiError } from "@/lib/api";
+import { withWork } from "@/lib/workflow";
+import { cents, assertStart } from "@/lib/workflow-policy";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
+const evidence = z.array(z.string().url().max(2000).refine(url => /^https?:\/\//.test(url), "Usa un enlace HTTP o HTTPS.").refine(url => !url.includes("unsplash.com"), "Adjunta evidencia del trabajo, no fotos de ejemplo.")).min(2, "Adjunta al menos dos fotos del trabajo.").max(20);
+const materialSchema = z.object({
+  descripcion: z.string().trim().min(1).max(500),
+  cantidad: z.number().finite().positive().max(99999999.99),
+  costoUnitario: z.number().finite().nonnegative(),
+  esDeInventario: z.boolean(),
+  productoId: z.string().optional(),
+  proveedorNombre: z.string().trim().max(300).optional(),
+  proveedorContacto: z.string().trim().max(300).optional(),
+});
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const user = await requireSession(req);
     const { id } = await params;
-    const token = req.cookies.get("servigaz_token")?.value;
-    let userId: string | null = null;
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        const userExists = await prisma.usuario.findUnique({ where: { id: decoded.id } });
-        if (userExists) userId = decoded.id;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      const admin = await prisma.usuario.findFirst({ where: { rol: { in: ["ENCARGADO", "ADMIN"] } } });
-      if (admin) userId = admin.id;
-    }
-
-    const trabajo = await prisma.trabajo.findUnique({
-      where: { id },
-      include: { materiales: true },
-    });
-
-    if (!trabajo) {
-      return NextResponse.json({ error: "Trabajo no encontrado" }, { status: 404 });
-    }
-
-    const body = await req.json();
-    const { accion, data } = body;
-
-    // 1. INICIAR EJECUCIÓN (Fase 9)
-    if (accion === "INICIAR_EJECUCION") {
-      const updated = await prisma.trabajo.update({
-        where: { id },
-        data: {
-          estado: "EN_PROCESO",
-          fechaInicioEjecucion: new Date(),
-        },
-      });
-
-      await prisma.auditoriaLog.create({
-        data: {
-          usuarioId: userId,
-          modulo: "EJECUCION",
-          accion: "UPDATE",
-          entidadTipo: "Trabajo",
-          entidadId: id,
-          valoresNuevos: { fase: 9, estado: "EN_PROCESO" },
-        },
-      });
-
-      return NextResponse.json({ success: true, trabajo: updated });
-    }
-
-    // 2. REGISTRAR MATERIAL CONSUMIDO (Fase 9 / Regla #93)
-    if (accion === "REGISTRAR_MATERIAL") {
-      const {
-        descripcion,
-        cantidad,
-        costoUnitario,
-        esDeInventario,
-        productoId,
-        proveedorNombre,
-        proveedorContacto,
-      } = data || {};
-
-      if (!descripcion || !descripcion.trim()) {
-        return NextResponse.json({ error: "Debe ingresar la descripción o nombre del material" }, { status: 400 });
-      }
-
-      const cantidadNum = Number(cantidad || 1);
-      const costoUnitarioNum = Number(costoUnitario || 0);
-      const subtotalCosto = cantidadNum * costoUnitarioNum;
-
-      // Si es de inventario, descontar stock y registrar movimiento
-      if (esDeInventario && productoId) {
-        const prod = await prisma.productoInventario.findUnique({ where: { id: productoId } });
-        if (prod) {
-          const stockActualNum = Number(prod.stockActual);
-          if (stockActualNum < cantidadNum) {
-            return NextResponse.json(
-              { error: `Stock insuficiente en almacén (Disponible: ${stockActualNum} ${prod.unidadMedida || "un"})` },
-              { status: 400 }
-            );
-          }
-
-          const nuevoStock = stockActualNum - cantidadNum;
-          await prisma.productoInventario.update({
-            where: { id: productoId },
-            data: { stockActual: nuevoStock },
+    const body = z.object({ accion: z.enum(["INICIAR_EJECUCION", "REGISTRAR_MATERIAL", "FINALIZAR_TECNICO", "VALIDAR_ENCARGADO"]), data: z.unknown().optional() }).parse(await req.json());
+    if (body.accion === "VALIDAR_ENCARGADO" && !managers.includes(user.rol)) throw new ApiError(403, "La calidad debe aprobarla el encargado.");
+    const result = await withWork(id, user, async (tx) => {
+      const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: {
+        cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 }, pagos: true, egreso: true,
+      } });
+      if (work.egreso) throw new ApiError(409, "El trabajo ya tiene cierre financiero.");
+      let changes: Prisma.TrabajoUpdateInput = {};
+      let details: Prisma.InputJsonObject = { accion: body.accion };
+      if (body.accion === "INICIAR_EJECUCION") {
+        const quote = work.cotizaciones[0];
+        if (!quote) throw new ApiError(409, "Falta la cotización aceptada.");
+        assertStart(work.estado, Boolean(work.tecnicoId), quote.estado === "APROBADA", cents(quote.anticipoMinimoRequerido),
+          work.pagos.reduce((sum, p) => sum + cents(p.monto), 0));
+        const technician = await tx.usuario.findUnique({ where: { id: work.tecnicoId! } });
+        if (!technician || technician.estado !== "ACTIVO" || technician.rol !== "TECNICO_FIJO") throw new ApiError(409, "Asigna un técnico activo.");
+        changes = { estado: "EN_PROCESO", fechaInicioEjecucion: new Date() };
+      } else if (body.accion === "REGISTRAR_MATERIAL") {
+        if (work.estado !== "EN_PROCESO") throw new ApiError(409, "Registra materiales durante la ejecución.");
+        const data = materialSchema.parse(body.data);
+        const quantity = new Prisma.Decimal(data.cantidad);
+        if (quantity.decimalPlaces() > 2) throw new ApiError(400, "La cantidad admite hasta dos decimales.");
+        let unitCost = new Prisma.Decimal(cents(data.costoUnitario)).div(100);
+        if (data.esDeInventario) {
+          if (!data.productoId) throw new ApiError(400, "Selecciona un producto.");
+          const product = await tx.productoInventario.findUnique({ where: { id: data.productoId } });
+          if (!product?.activo) throw new ApiError(404, "Producto no disponible.");
+          // Conditional decrement handles two different orders consuming the same product.
+          const changed = await tx.productoInventario.updateMany({
+            where: { id: product.id, stockActual: { gte: quantity }, activo: true },
+            data: { stockActual: { decrement: quantity } },
           });
-
-          if (userId) {
-            await prisma.movimientoInventario.create({
-              data: {
-                productoId,
-                tipoMovimiento: "CONSUMO_TRABAJO",
-                cantidad: cantidadNum,
-                stockAnterior: stockActualNum,
-                stockNuevo: nuevoStock,
-                usuarioId: userId,
-                observaciones: `Consumo en trabajo ${trabajo.codigoCorrelativo}`,
-              },
-            });
-          }
+          if (changed.count !== 1) throw new ApiError(409, "Stock insuficiente. Actualiza el inventario.");
+          const current = await tx.productoInventario.findUniqueOrThrow({ where: { id: product.id } });
+          unitCost = current.costoPromedio;
+          await tx.movimientoInventario.create({ data: {
+            productoId: product.id, tipoMovimiento: "CONSUMO_TRABAJO", cantidad: quantity,
+            stockAnterior: current.stockActual.add(quantity), stockNuevo: current.stockActual, usuarioId: user.id,
+            observaciones: "Consumo en trabajo " + work.codigoCorrelativo,
+          } });
         }
+        const material = await tx.materialEjecucion.create({ data: {
+          trabajoId: id, tipoOrigen: data.esDeInventario ? "INVENTARIO" : "MANUAL_FUERA_INVENTARIO",
+          productoId: data.esDeInventario ? data.productoId : null, descripcion: data.descripcion,
+          cantidad: quantity, costoUnitario: unitCost, subtotalCosto: quantity.mul(unitCost).toDecimalPlaces(2),
+          proveedorNombre: data.proveedorNombre || null, proveedorContacto: data.proveedorContacto || null, consumido: true,
+        } });
+        await tx.auditoriaLog.create({ data: {
+          usuarioId: user.id, modulo: "EJECUCION", accion: "CREATE", entidadTipo: "MaterialEjecucion", entidadId: material.id,
+          valoresNuevos: { trabajoId: id, cantidad: String(quantity), costoUnitario: String(unitCost), subtotal: String(material.subtotalCosto) },
+        } });
+        return { success: true, material };
+      } else if (body.accion === "FINALIZAR_TECNICO") {
+        if (work.estado !== "EN_PROCESO") throw new ApiError(409, "Solo puede terminarse un trabajo en ejecución.");
+        const data = z.object({ fotosTermino: evidence, observacionesTermino: z.string().trim().min(5, "Describe el resultado de las pruebas y el trabajo realizado.").max(3000) }).parse(body.data);
+        changes = { estado: "TERMINADO_TECNICO", fechaFinEjecucion: new Date(), porcentajeAvance: 100 };
+        // Persist evidence with author and timestamp instead of discarding it.
+        details = { ...details, fotosTermino: data.fotosTermino, observacionesTermino: data.observacionesTermino };
+      } else {
+        if (work.estado !== "TERMINADO_TECNICO") throw new ApiError(409, "El técnico debe terminar el trabajo antes de validar calidad.");
+        changes = { estado: "VALIDADO" };
       }
-
-      // Crear registro exacto de material
-      const mat = await prisma.materialEjecucion.create({
-        data: {
-          trabajoId: id,
-          tipoOrigen: esDeInventario ? "INVENTARIO" : "MANUAL_FUERA_INVENTARIO",
-          productoId: esDeInventario && productoId ? productoId : null,
-          descripcion: descripcion.trim(),
-          cantidad: cantidadNum,
-          costoUnitario: costoUnitarioNum,
-          subtotalCosto,
-          proveedorNombre: proveedorNombre || null,
-          proveedorContacto: proveedorContacto || null,
-          consumido: true,
-        },
-      });
-
-      return NextResponse.json({ success: true, material: mat });
-    }
-
-    // 3. TÉRMINO TÉCNICO (Fase 11)
-    if (accion === "FINALIZAR_TECNICO") {
-      const { fotosTermino, observacionesTermino } = data || {};
-
-      const finalFotos = Array.isArray(fotosTermino) && fotosTermino.length >= 2
-        ? fotosTermino
-        : [
-            "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80",
-            "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
-          ];
-
-      const updated = await prisma.trabajo.update({
-        where: { id },
-        data: {
-          estado: "TERMINADO_TECNICO",
-          fechaFinEjecucion: new Date(),
-          observaciones: `${trabajo.observaciones || ""} [Término Técnico: ${observacionesTermino || "Trabajo finalizado y conforme"}]`,
-        },
-      });
-
-      return NextResponse.json({ success: true, trabajo: updated });
-    }
-
-    // 4. VALIDACIÓN DE CALIDAD ENCARGADO (Fase 12)
-    if (accion === "VALIDAR_ENCARGADO") {
-      const updated = await prisma.trabajo.update({
-        where: { id },
-        data: { estado: "VALIDADO" },
-      });
-
-      return NextResponse.json({ success: true, trabajo: updated });
-    }
-
-    return NextResponse.json({ error: "Acción no válida" }, { status: 400 });
-  } catch (error: any) {
-    console.error("Ejecucion error:", error);
-    return NextResponse.json({ error: "Error en ejecución de obra: " + error.message }, { status: 500 });
-  }
+      const trabajo = await tx.trabajo.update({ where: { id }, data: changes });
+      await tx.auditoriaLog.create({ data: {
+        usuarioId: user.id, modulo: "EJECUCION", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
+        valoresAnteriores: { estado: work.estado }, valoresNuevos: { ...details, estado: trabajo.estado },
+      } });
+      return { success: true, trabajo };
+    });
+    return NextResponse.json(result);
+  } catch (error) { return apiError(error); }
 }

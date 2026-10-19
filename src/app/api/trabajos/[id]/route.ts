@@ -1,3 +1,5 @@
+import { requireSession, assertWorkAccess } from "@/lib/auth";
+import { apiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -6,6 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireSession(req);
     const { id } = await params;
     const trabajo = await prisma.trabajo.findUnique({
       where: { id },
@@ -35,9 +38,11 @@ export async function GET(
       return NextResponse.json({ error: "Trabajo no encontrado" }, { status: 404 });
     }
 
-    return NextResponse.json(trabajo);
-  } catch (error: any) {
-    console.error("Error al cargar trabajo:", error);
-    return NextResponse.json({ error: "Error al cargar trabajo: " + error.message }, { status: 500 });
-  }
+    assertWorkAccess(user, trabajo);
+    const evidenciasTermino = await prisma.auditoriaLog.findFirst({
+      where: { entidadId: id, entidadTipo: "Trabajo", modulo: "EJECUCION", valoresNuevos: { path: ["accion"], equals: "FINALIZAR_TECNICO" } },
+      orderBy: { timestamp: "desc" }, select: { valoresNuevos: true, timestamp: true },
+    });
+    return NextResponse.json({ ...trabajo, evidenciasTermino });
+  } catch (error) { return apiError(error); }
 }

@@ -1,8 +1,9 @@
+import { jwtSecret } from "@/lib/auth";
+import { ApiError, apiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import * as jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ user: null });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, jwtSecret(), { algorithms: ["HS256"] }) as any;
     const user = await prisma.usuario.findUnique({
       where: { id: decoded.id },
       select: {

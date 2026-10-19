@@ -1,191 +1,83 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
+import { z } from "zod";
+import { requireSession, managers, workScope } from "@/lib/auth";
+import { apiError, ApiError } from "@/lib/api";
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const estado = searchParams.get("estado");
-    const tecnicoId = searchParams.get("tecnicoId");
-
-    const where: any = {};
-    if (estado) where.estado = estado;
-    if (tecnicoId) where.tecnicoId = tecnicoId;
-
+    const user = await requireSession(req);
+    const estado = req.nextUrl.searchParams.get("estado");
+    const tecnicoId = req.nextUrl.searchParams.get("tecnicoId");
     const trabajos = await prisma.trabajo.findMany({
-      where,
-      include: {
-        cliente: true,
-        tecnico: { select: { id: true, nombre: true, email: true, telefono: true } },
+      where: { AND: [workScope(user), ...(estado ? [{ estado: z.enum(["BORRADOR", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "PAGO_A_CUENTA_VENCIDO", "RECHAZADO", "ANTICIPO_RECIBIDO", "EN_PROCESO", "EN_PAUSA", "CANCELADO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO", "RECLAMO_GARANTIA"]).parse(estado) }] : []), ...(tecnicoId ? [{ tecnicoId }] : [])] },
+      include: { cliente: true, tecnico: { select: { id: true, nombre: true, email: true, telefono: true } },
         encargado: { select: { id: true, nombre: true, email: true } },
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 },
-        visitas: { orderBy: { createdAt: "desc" }, take: 1 },
-      },
+        visitas: { orderBy: { createdAt: "desc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
     });
-
     return NextResponse.json(trabajos);
-  } catch (error: any) {
-    console.error("Error al listar trabajos:", error);
-    return NextResponse.json({ error: "Error al listar trabajos: " + error.message }, { status: 500 });
-  }
+  } catch (error) { return apiError(error); }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    let {
-      clienteId,
-      nuevoCliente,
-      tipoFlujo,
-      subtipoCodigo,
-      subtipoNombre,
-      observaciones,
-      dificultadNivel,
-      tecnicoId,
-      fechaProgramada,
-      requiereVisitaLevantamiento,
-      precioDirectoSugerido,
-    } = body;
-
-    // 1. Si se solicita registrar un nuevo cliente al vuelo
-    if (!clienteId && nuevoCliente) {
-      const clienteCreado = await prisma.cliente.create({
-        data: {
-          nombreCompleto: nuevoCliente.nombreCompleto,
-          telefonos: [nuevoCliente.telefono || "+591 70000000"],
-          email: nuevoCliente.email || null,
-          direccion: nuevoCliente.direccion,
-          nivelFidelizacion: "NUEVO",
-        },
-      });
-      clienteId = clienteCreado.id;
-    }
-
-    if (!clienteId) {
-      return NextResponse.json({ error: "Debe seleccionar o registrar un cliente." }, { status: 400 });
-    }
-
-    const count = await prisma.trabajo.count();
-    const correlativo = `TRB-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`;
-
-    // Obtener encargado por defecto o admin
-    const encargado = await prisma.usuario.findFirst({
-      where: { rol: { in: ["ENCARGADO", "ADMIN"] } },
-    });
-
-    // Determinar si es Servicio Directo (ej: revisión de calefón, mantenimiento) o Instalación con Levantamiento
-    const esServicioDirecto =
-      requiereVisitaLevantamiento === false ||
-      subtipoCodigo?.includes("3.3") ||
-      subtipoCodigo?.includes("3.4") ||
-      subtipoCodigo?.includes("3.6") ||
-      subtipoCodigo?.includes("OTR") ||
-      subtipoCodigo?.includes("TIENDA") ||
-      tipoFlujo === "SIMPLIFICADO";
-
-    // Si es servicio directo, el estado inicial salta directamente a COTIZADO
-    const estadoInicial = esServicioDirecto
-      ? "COTIZADO"
-      : tecnicoId && fechaProgramada
-      ? "EVALUACION_PENDIENTE"
-      : "BORRADOR";
-
-    const nuevoTrabajo = await prisma.trabajo.create({
-      data: {
-        codigoCorrelativo: correlativo,
-        clienteId,
-        encargadoId: encargado?.id || "",
-        tecnicoId: tecnicoId || null,
-        tipoFlujo: esServicioDirecto ? "SIMPLIFICADO" : tipoFlujo || "COMPLETO",
-        subtipoCodigo: subtipoCodigo || "GENERAL",
-        subtipoNombre: subtipoNombre || "Servicio General",
-        observaciones: observaciones || (esServicioDirecto ? "Atención directa de servicio técnico" : undefined),
-        dificultadNivel: Number(dificultadNivel || 1),
-        requiereInstaladorExtra: Number(dificultadNivel) >= 4,
-        estado: estadoInicial,
-      },
-    });
-
-    // 2. Si es Servicio Directo, emitir cotización formal fija inmediata
-    if (esServicioDirecto) {
-      let tarifaFija = Number(precioDirectoSugerido || 0);
-
-      if (!tarifaFija) {
-        // Buscar tarifa en BD según subtipo
-        const mo = await prisma.configuracionManoObra.findFirst({
-          where: { subtipoCodigo: { in: [subtipoCodigo, "3.3", "3.4", "3.6", "OTROS"] } },
-        });
-        tarifaFija = mo ? Number(mo.tarifaBase) : 180; // Bs. 180 por defecto para revisión
+    const user = await requireSession(req, managers);
+    const body = z.object({
+      clienteId: z.string().min(1).nullish(),
+      nuevoCliente: z.object({ nombreCompleto: z.string().trim().min(2).max(300), telefono: z.string().trim().min(7).max(30),
+        direccion: z.string().trim().min(3).max(1000), email: z.string().email().nullish() }).nullish(),
+      tipoFlujo: z.enum(["COMPLETO", "SIMPLIFICADO"]).default("COMPLETO"),
+      subtipoCodigo: z.string().trim().min(1).max(300), subtipoNombre: z.string().trim().min(1).max(500),
+      observaciones: z.string().trim().max(3000).optional(),
+      dificultadNivel: z.number().int().min(1).max(5).default(1),
+      tecnicoId: z.string().min(1).nullish(), fechaProgramada: z.string().nullish(),
+    }).parse(await req.json());
+    if (!body.clienteId && !body.nuevoCliente) throw new ApiError(400, "Selecciona o registra un cliente.");
+    if (Boolean(body.tecnicoId) !== Boolean(body.fechaProgramada)) throw new ApiError(400, "Para programar indica técnico y fecha.");
+    if (body.fechaProgramada && !Number.isFinite(new Date(body.fechaProgramada).getTime())) throw new ApiError(400, "Fecha inválida.");
+    const work = await prisma.$transaction(async tx => {
+      // Protect the annual sequence without a schema change.
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(742381)`;
+      const codes = body.subtipoCodigo.split("_");
+      const subtypes = await tx.catalogoSubtipo.findMany({ where: { codigo: { in: codes }, activo: true }, include: { categoria: true } });
+      if (subtypes.length !== codes.length || subtypes.some(s => !s.categoria.activo)) throw new ApiError(400, "Selecciona servicios activos del catálogo.");
+      const direct = subtypes.every(s => !s.categoria.requiereVisita);
+      if (body.tipoFlujo === "SIMPLIFICADO" && !direct) throw new ApiError(400, "El servicio requiere evaluación previa.");
+      if (body.tecnicoId) {
+        const technician = await tx.usuario.findUnique({ where: { id: body.tecnicoId } });
+        if (!technician || technician.rol !== "TECNICO_FIJO" || technician.estado !== "ACTIVO" ||
+          (user.rol !== "ADMIN" && technician.sucursalId !== user.sucursalId)) throw new ApiError(400, "Selecciona un técnico activo de tu sucursal.");
       }
-
-      const fechaVencimiento = new Date();
-      fechaVencimiento.setDate(fechaVencimiento.getDate() + 15);
-
-      await prisma.cotizacion.create({
-        data: {
-          trabajoId: nuevoTrabajo.id,
-          numeroVersion: 1,
-          tipoVersion: "ORIGINAL",
-          subtotalMateriales: 0,
-          subtotalManoObra: tarifaFija,
-          montoTransporte: 0,
-          totalCotizado: tarifaFija,
-          anticipoMinimoRequerido: tarifaFija, // En servicios puntuales el anticipo o pago es 100%
-          fechaVencimiento,
-          estado: "VIGENTE",
-          datosFormularioJson: {
-            tipoServicio: "DIRECTO_SIN_LEVANTAMIENTO",
-            concepto: subtipoNombre,
-            tarifaFija,
-          },
-          snapshotCalculoJson: {
-            concepto: subtipoNombre,
-            tarifaBase: tarifaFija,
-            total: tarifaFija,
-          },
-        },
-      });
-    }
-
-    // 3. Crear Visita si viene programada
-    if (tecnicoId && fechaProgramada) {
-      await prisma.visitaTecnica.create({
-        data: {
-          trabajoId: nuevoTrabajo.id,
-          tecnicoId,
-          fechaProgramada: new Date(fechaProgramada),
-          observaciones: esServicioDirecto
-            ? "Visita para ejecución directa del servicio (no requiere medición de metros)"
-            : "Visita técnica de medición y levantamiento en terreno",
-          completada: false,
-        },
-      });
-    }
-
-    // Registrar en auditoría
-    await prisma.auditoriaLog.create({
-      data: {
-        usuarioId: encargado?.id || null,
-        modulo: "TRABAJOS",
-        accion: "CREATE",
-        entidadTipo: "Trabajo",
-        entidadId: nuevoTrabajo.id,
-        valoresNuevos: {
-          codigo: correlativo,
-          clienteId,
-          subtipoCodigo,
-          esServicioDirecto,
-          estado: estadoInicial,
-        },
-      },
+      let clientId = body.clienteId;
+      if (clientId) {
+        const client = await tx.cliente.findUnique({ where: { id: clientId } });
+        if (!client || (user.rol !== "ADMIN" && client.sucursalId !== user.sucursalId)) throw new ApiError(403, "Cliente fuera de tu sucursal.");
+      } else {
+        const data = body.nuevoCliente!;
+        const client = await tx.cliente.create({ data: { nombreCompleto: data.nombreCompleto, telefonos: [data.telefono], direccion: data.direccion, email: data.email, sucursalId: user.sucursalId } });
+        clientId = client.id;
+      }
+      const prefix = "TRB-" + new Date().getFullYear() + "-";
+      const previous = await tx.trabajo.findMany({ where: { codigoCorrelativo: { startsWith: prefix } }, select: { codigoCorrelativo: true } });
+      const sequence = previous.reduce((max, w) => Math.max(max, Number(w.codigoCorrelativo.slice(prefix.length)) || 0), 0) + 1;
+      const trabajo = await tx.trabajo.create({ data: {
+        codigoCorrelativo: prefix + String(sequence).padStart(4, "0"), clienteId: clientId!, encargadoId: user.id, sucursalId: user.sucursalId,
+        tecnicoId: body.tecnicoId || null, tipoFlujo: direct ? "SIMPLIFICADO" : "COMPLETO", subtipoCodigo: body.subtipoCodigo,
+        subtipoNombre: subtypes.map(s => s.nombre).join(" + "), observaciones: body.observaciones,
+        dificultadNivel: body.dificultadNivel, requiereInstaladorExtra: body.dificultadNivel >= 4,
+        estado: direct ? "EVALUADO" : body.tecnicoId ? "EVALUACION_PENDIENTE" : "BORRADOR",
+      } });
+      // Direct services go straight to an explicit, reviewed quote; never invent a tariff.
+      if (body.tecnicoId && body.fechaProgramada) await tx.visitaTecnica.create({ data: {
+        trabajoId: trabajo.id, tecnicoId: body.tecnicoId, fechaProgramada: new Date(body.fechaProgramada),
+        observaciones: direct ? "Atención directa del servicio" : "Visita de evaluación",
+      } });
+      await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: "TRABAJOS", accion: "CREATE", entidadTipo: "Trabajo", entidadId: trabajo.id,
+        valoresNuevos: { codigo: trabajo.codigoCorrelativo, estado: trabajo.estado, servicioDirecto: direct } } });
+      return trabajo;
     });
-
-    return NextResponse.json(nuevoTrabajo, { status: 201 });
-  } catch (error: any) {
-    console.error("Error al crear trabajo:", error);
-    return NextResponse.json({ error: "Error al crear trabajo: " + error.message }, { status: 500 });
-  }
+    return NextResponse.json(work, { status: 201 });
+  } catch (error) { return apiError(error); }
 }

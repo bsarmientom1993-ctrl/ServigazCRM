@@ -1,185 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import * as jwt from "jsonwebtoken";
+import { z } from "zod";
+import { requireSession, managers } from "@/lib/auth";
+import { ApiError, apiError } from "@/lib/api";
+import { withWork } from "@/lib/workflow";
 
-const JWT_SECRET = process.env.JWT_SECRET || "servigaz-secret-key-2026";
+const photo = z.string().url().max(2000).refine(url => /^https?:\/\//.test(url), "Usa un enlace HTTP o HTTPS.").refine(url => !url.includes("unsplash.com"), "Usa fotografías del trabajo.");
+const evaluation = z.object({
+  visitaId: z.string().min(1),
+  medidasJson: z.object({ metrosVisto: z.number().finite().nonnegative(), metrosEmpotrado: z.number().finite().nonnegative() }),
+  condicionesJson: z.object({ condiciones: z.string().trim().min(5).max(3000) }),
+  ventilacionVasaOk: z.boolean().optional(),
+  fotosUrls: z.array(photo).min(3, "Adjunta al menos tres fotos de la visita.").max(20),
+  dificultadSugerida: z.number().int().min(1).max(5),
+  observaciones: z.string().trim().max(3000).optional(),
+});
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const user = await requireSession(req);
     const { id } = await params;
-    const token = req.cookies.get("servigaz_token")?.value;
-    let userId: string | null = null;
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        const userExists = await prisma.usuario.findUnique({ where: { id: decoded.id } });
-        if (userExists) userId = decoded.id;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      const admin = await prisma.usuario.findFirst({ where: { rol: { in: ["ENCARGADO", "ADMIN"] } } });
-      if (admin) userId = admin.id;
-    }
-
-    const trabajo = await prisma.trabajo.findUnique({ where: { id } });
-    if (!trabajo) {
-      return NextResponse.json({ error: "Trabajo no encontrado" }, { status: 404 });
-    }
-
     const body = await req.json();
-    const { accion } = body;
-
-    if (accion === "AGENDAR_VISITA") {
-      // FASE 4: Agenda y Asignación
-      const { tecnicoId, fechaProgramada, observaciones } = body;
-
-      if (!tecnicoId || !fechaProgramada) {
-        return NextResponse.json(
-          { error: "Debe seleccionar un técnico y fecha programada" },
-          { status: 400 }
-        );
+    const action = z.enum(["AGENDAR_VISITA", "COMPLETAR_VISITA", "GUARDAR_EVALUACION"]).parse(body.accion);
+    if (action === "AGENDAR_VISITA" && !managers.includes(user.rol)) throw new ApiError(403, "El encargado debe programar la visita.");
+    const result = await withWork(id, user, async (tx) => {
+      const work = await tx.trabajo.findUniqueOrThrow({ where: { id } });
+      if (action === "AGENDAR_VISITA") {
+        if (!["BORRADOR", "EVALUACION_PENDIENTE", "COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(work.estado)) throw new ApiError(409, "No se puede programar en este estado.");
+        const data = z.object({
+          tecnicoId: z.string().min(1), fechaProgramada: z.string().datetime({ local: true, offset: true }),
+          observaciones: z.string().trim().max(3000).optional(),
+        }).parse(body);
+        const technician = await tx.usuario.findUnique({ where: { id: data.tecnicoId } });
+        if (!technician || technician.rol !== "TECNICO_FIJO" || technician.estado !== "ACTIVO" ||
+          (user.rol !== "ADMIN" && technician.sucursalId !== user.sucursalId)) throw new ApiError(400, "Selecciona un técnico activo de tu sucursal.");
+        const visit = await tx.visitaTecnica.create({ data: {
+          trabajoId: id, tecnicoId: data.tecnicoId, fechaProgramada: new Date(data.fechaProgramada), observaciones: data.observaciones,
+        } });
+        const state = ["BORRADOR", "EVALUACION_PENDIENTE"].includes(work.estado) ? "EVALUACION_PENDIENTE" : work.estado;
+        await tx.trabajo.update({ where: { id }, data: { tecnicoId: data.tecnicoId, estado: state } });
+        await tx.auditoriaLog.create({ data: {
+          usuarioId: user.id, modulo: "TRABAJOS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
+          valoresNuevos: { accion: action, visitaId: visit.id, tecnicoId: data.tecnicoId, fechaProgramada: data.fechaProgramada },
+        } });
+        return { success: true, visita: visit };
       }
-
-      // Crear visita
-      const visita = await prisma.visitaTecnica.create({
-        data: {
-          trabajoId: id,
-          tecnicoId,
-          fechaProgramada: new Date(fechaProgramada),
-          observaciones,
-        },
-      });
-
-      // Actualizar trabajo
-      await prisma.trabajo.update({
-        where: { id },
-        data: {
-          tecnicoId,
-          estado: "EVALUACION_PENDIENTE",
-        },
-      });
-
-      // Registrar auditoría
-      await prisma.auditoriaLog.create({
-        data: {
-          usuarioId: userId,
-          modulo: "TRABAJOS",
-          accion: "UPDATE",
-          entidadTipo: "Trabajo",
-          entidadId: id,
-          valoresNuevos: { fase: 4, estado: "EVALUACION_PENDIENTE", tecnicoId, fechaProgramada },
-        },
-      });
-
-      return NextResponse.json({ success: true, visita });
-    }
-
-    if (accion === "GUARDAR_EVALUACION" || accion === "COMPLETAR_VISITA") {
-      // FASE 5: Visita Técnica
-      let {
-        visitaId,
-        metrosVisto,
-        metrosEmpotrado,
-        medidasJson,
-        condicionesJson,
-        ventilacionVasaOk,
-        fotosUrls,
-        dificultadSugerida,
-        observaciones,
-      } = body;
-
-      // Validación Gas: VASA obligatorio (#2)
-      if (trabajo.subtipoCodigo?.toLowerCase().includes("gas") && ventilacionVasaOk === false) {
-        return NextResponse.json(
-          { error: "Bloqueo Regla #2: No cumple normativas de Ventilación / VASA para gas." },
-          { status: 400 }
-        );
-      }
-
-      // Default sample photos if not attached in quick mode
-      const finalFotos = Array.isArray(fotosUrls) && fotosUrls.length >= 3
-        ? fotosUrls
-        : [
-            "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80",
-            "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
-            "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
-          ];
-
-      const jsonMedidas = medidasJson || {
-        metrosVisto: Number(metrosVisto || 0),
-        metrosEmpotrado: Number(metrosEmpotrado || 0),
-      };
-
-      // Si no viene visitaId, buscar la última visita técnica
-      if (!visitaId) {
-        const lastVisita = await prisma.visitaTecnica.findFirst({
-          where: { trabajoId: id },
-          orderBy: { createdAt: "desc" },
-        });
-        if (lastVisita) {
-          visitaId = lastVisita.id;
-        } else {
-          const nuevaV = await prisma.visitaTecnica.create({
-            data: {
-              trabajoId: id,
-              tecnicoId: trabajo.tecnicoId || userId || "",
-              fechaProgramada: new Date(),
-            },
-          });
-          visitaId = nuevaV.id;
-        }
-      }
-
-      // Actualizar visita técnica
-      if (visitaId) {
-        await prisma.visitaTecnica.update({
-          where: { id: visitaId },
-          data: {
-            fechaEjecutada: new Date(),
-            medidasJson: jsonMedidas,
-            condicionesJson: condicionesJson || {},
-            ventilacionVasaOk: ventilacionVasaOk !== undefined ? Boolean(ventilacionVasaOk) : true,
-            fotosUrls: finalFotos,
-            dificultadSugerida: Number(dificultadSugerida || 1),
-            observaciones: observaciones || "Levantamiento técnico concluido en terreno",
-            completada: true,
-          },
-        });
-      }
-
-      // Actualizar trabajo a EVALUADO
-      const updatedTrabajo = await prisma.trabajo.update({
-        where: { id },
-        data: {
-          estado: "EVALUADO",
-          dificultadNivel: Number(dificultadSugerida || 1),
-          requiereInstaladorExtra: Number(dificultadSugerida) >= 4,
-        },
-      });
-
-      // Registrar auditoría
-      await prisma.auditoriaLog.create({
-        data: {
-          usuarioId: userId,
-          modulo: "TRABAJOS",
-          accion: "UPDATE",
-          entidadTipo: "Trabajo",
-          entidadId: id,
-          valoresNuevos: { fase: 5, estado: "EVALUADO", dificultad: dificultadSugerida, fotos: finalFotos.length },
-        },
-      });
-
-      return NextResponse.json({ success: true, trabajo: updatedTrabajo });
-    }
-
-    return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 });
-  } catch (error: any) {
-    console.error("Error en visita:", error);
-    return NextResponse.json({ error: "Error procesando visita técnica: " + error.message }, { status: 500 });
-  }
+      if (work.estado !== "EVALUACION_PENDIENTE") throw new ApiError(409, "La orden no está pendiente de evaluación.");
+      const data = evaluation.parse(body);
+      const visit = await tx.visitaTecnica.findFirst({ where: { id: data.visitaId, trabajoId: id, completada: false } });
+      if (!visit) throw new ApiError(409, "La visita no pertenece a esta orden o ya fue completada.");
+      if (user.rol === "TECNICO_FIJO" && visit.tecnicoId !== user.id) throw new ApiError(403, "No tienes asignada esta visita.");
+      const subtype = await tx.catalogoSubtipo.findUnique({ where: { codigo: work.subtipoCodigo }, include: { categoria: true } });
+      const isGas = subtype?.categoria.codigo === "GAS" || work.subtipoCodigo.startsWith("1.1.") || work.subtipoNombre.toLowerCase().includes("gas");
+      if (isGas && data.ventilacionVasaOk !== true) throw new ApiError(400, "Confirma la revisión de ventilación antes de completar la visita de gas.");
+      await tx.visitaTecnica.update({ where: { id: visit.id }, data: {
+        fechaEjecutada: new Date(), medidasJson: data.medidasJson, condicionesJson: data.condicionesJson,
+        ventilacionVasaOk: data.ventilacionVasaOk ?? null, fotosUrls: data.fotosUrls,
+        dificultadSugerida: data.dificultadSugerida, observaciones: data.observaciones, completada: true,
+      } });
+      const trabajo = await tx.trabajo.update({ where: { id }, data: {
+        estado: "EVALUADO", dificultadNivel: data.dificultadSugerida, requiereInstaladorExtra: data.dificultadSugerida >= 4,
+      } });
+      await tx.auditoriaLog.create({ data: {
+        usuarioId: user.id, modulo: "TRABAJOS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
+        valoresNuevos: { accion: action, estado: "EVALUADO", visitaId: visit.id },
+      } });
+      return { success: true, trabajo };
+    });
+    return NextResponse.json(result);
+  } catch (error) { return apiError(error); }
 }

@@ -261,14 +261,8 @@ export default function NuevoTrabajoWizardPage() {
 
   // Determinar si los servicios elegidos requieren visita técnica de levantamiento de metros
   const codigosSubtiposSeleccionados = categoriasSeleccionadas.map((c) => subtiposElegidos[c]).filter(Boolean);
-  const esServicioDirecto =
-    categoriasSeleccionadas.length > 0 &&
-    categoriasSeleccionadas.every((cat) => {
-      if (["EQUIPOS", "OTROS", "TIENDA"].includes(cat)) return true;
-      const sub = subtiposElegidos[cat];
-      if (!sub) return false;
-      return SERVICIOS_DIRECTOS_CODIGOS.some((dirCod) => sub.startsWith(dirCod));
-    });
+  const esServicioDirecto = categoriasSeleccionadas.length > 0 &&
+    categoriasSeleccionadas.every(codigo => catalogo.find(c => c.codigo === codigo)?.requiereVisita === false);
 
   // Validaciones antes de avanzar paso
   const avanzarAlPaso2 = () => {
@@ -348,7 +342,7 @@ export default function NuevoTrabajoWizardPage() {
             },
         tipoFlujo: esServicioDirecto ? "SIMPLIFICADO" : "COMPLETO",
         requiereVisitaLevantamiento: !esServicioDirecto,
-        subtipoCodigo: Object.values(subtiposElegidos).join("_"),
+        subtipoCodigo: categoriasSeleccionadas.map(c => subtiposElegidos[c]).filter(Boolean).join("_"),
         subtipoNombre: subtiposNombres.join(" + "),
         observaciones: observacionesRequerimiento,
         dificultadNivel: 1,

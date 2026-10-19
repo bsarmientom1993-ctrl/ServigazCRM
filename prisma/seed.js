@@ -1,3 +1,4 @@
+const catalogoInicial = require("./catalogo-inicial.json");
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
@@ -15,6 +16,19 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL === "1") {
+    throw new Error("El seed de demostración no puede ejecutarse en producción.");
+  }
+
+  // Explicit development seed: catalog reads never initialize database state.
+  for (const category of catalogoInicial) {
+    const { subtipos, ...fields } = category;
+    const saved = await prisma.catalogoCategoria.upsert({ where: { codigo: fields.codigo }, update: {}, create: fields });
+    for (const [index, subtype] of subtipos.entries()) {
+      await prisma.catalogoSubtipo.upsert({ where: { codigo: subtype.codigo }, update: {},
+        create: { ...subtype, categoriaId: saved.id, orden: index + 1 } });
+    }
+  }
   console.log('🌱 Iniciando Seed de Servigaz CRM v12.0...');
 
   // 1. Sucursal Principal
