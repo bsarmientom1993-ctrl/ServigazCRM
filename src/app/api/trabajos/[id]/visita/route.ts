@@ -1,3 +1,4 @@
+import { assertTechnicianSlot, schedulingSchema } from "@/lib/scheduling";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession, managers } from "@/lib/auth";
@@ -27,14 +28,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (action === "AGENDAR_VISITA") {
         if (!["BORRADOR", "EVALUACION_PENDIENTE", "COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(work.estado)) throw new ApiError(409, "No se puede programar en este estado.");
         const data = z.object({
-          tecnicoId: z.string().min(1), fechaProgramada: z.string().datetime({ local: true, offset: true }),
+          tecnicoId: z.string().min(1), fechaProgramada: z.string().datetime({ offset: true }),
+          agenda: schedulingSchema.optional(),
           observaciones: z.string().trim().max(3000).optional(),
         }).parse(body);
-        const technician = await tx.usuario.findUnique({ where: { id: data.tecnicoId } });
-        if (!technician || technician.rol !== "TECNICO_FIJO" || technician.estado !== "ACTIVO" ||
-          (user.rol !== "ADMIN" && technician.sucursalId !== user.sucursalId)) throw new ApiError(400, "Selecciona un técnico activo de tu sucursal.");
+        const agenda = schedulingSchema.parse(data.agenda || {});
+        await assertTechnicianSlot(tx, user, data.tecnicoId, new Date(data.fechaProgramada), agenda);
         const visit = await tx.visitaTecnica.create({ data: {
-          trabajoId: id, tecnicoId: data.tecnicoId, fechaProgramada: new Date(data.fechaProgramada), observaciones: data.observaciones,
+          trabajoId: id, tecnicoId: data.tecnicoId, fechaProgramada: new Date(data.fechaProgramada), observaciones: data.observaciones, condicionesJson: { agenda },
         } });
         const state = ["BORRADOR", "EVALUACION_PENDIENTE"].includes(work.estado) ? "EVALUACION_PENDIENTE" : work.estado;
         await tx.trabajo.update({ where: { id }, data: { tecnicoId: data.tecnicoId, estado: state } });
