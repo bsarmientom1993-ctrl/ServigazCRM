@@ -244,24 +244,24 @@ export default function ConfiguracionPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-[#0F2C59] tracking-tight flex items-center gap-2">
+          <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
             <Settings className="h-5 w-5 text-[#F06529]" />
             Panel de Servicios, Tarifas & Reglas de Negocio
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Administra los nombres de servicios, añade o quita subtipos, y configura fórmulas y precios de cobro.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {isAdmin ? (
-            <span className="text-[11px] font-bold px-3 py-1 bg-purple-100 text-purple-800 rounded-full border border-purple-200 flex items-center gap-1">
+            <span className="text-[11px] font-bold px-3 py-1 bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-900 flex items-center gap-1">
               <ShieldCheck className="h-3.5 w-3.5" /> Modo Gerente (Control Total)
             </span>
           ) : (
-            <span className="text-[11px] font-bold px-3 py-1 bg-amber-100 text-amber-800 rounded-full border border-amber-200 flex items-center gap-1">
+            <span className="text-[11px] font-bold px-3 py-1 bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 rounded-full border border-amber-200 dark:border-amber-900 flex items-center gap-1">
               <Lock className="h-3.5 w-3.5" /> Modo Lectura (Encargado)
             </span>
           )}
@@ -269,20 +269,20 @@ export default function ConfiguracionPage() {
       </div>
 
       {msgExito && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4" />
           <span>{msgExito}</span>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-line pb-2 overflow-x-auto">
         <button
           onClick={() => setTabActiva("catalogo")}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
             tabActiva === "catalogo"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           <FolderTree className="h-4 w-4" />
@@ -294,7 +294,7 @@ export default function ConfiguracionPage() {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             tabActiva === "precios"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           Precios por Concepto ({dataConfig.precios?.length || 0})
@@ -305,7 +305,7 @@ export default function ConfiguracionPage() {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             tabActiva === "mano_obra"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           Reglas de Mano de Obra
@@ -316,7 +316,7 @@ export default function ConfiguracionPage() {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             tabActiva === "dificultad"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           Factores de Dificultad
@@ -327,7 +327,7 @@ export default function ConfiguracionPage() {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             tabActiva === "comercial"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           Políticas Comerciales & Márgenes
@@ -338,7 +338,7 @@ export default function ConfiguracionPage() {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             tabActiva === "garantias"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           Garantías por Defecto
@@ -350,15 +350,15 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {tabActiva === "catalogo" && (
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-300 flex items-center justify-between">
             <div>
               <p className="font-bold">🗂️ Control del Catálogo Oficial de Servicios</p>
-              <p className="text-slate-600 mt-0.5">
+              <p className="text-secondary mt-0.5">
                 Modifica los nombres de los servicios, añade nuevos subtipos a los menús desplegables o elimina los que no utilices.
               </p>
             </div>
             {isAdmin && (
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-200 text-blue-900 rounded">
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-200 text-blue-900 dark:text-blue-300 rounded">
                 Edición en Vivo
               </span>
             )}
@@ -366,26 +366,26 @@ export default function ConfiguracionPage() {
 
           <div className="space-y-4">
             {catalogoServicios.map((cat) => (
-              <div key={cat.id} className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div key={cat.id} className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
                 {/* Categoría Header */}
-                <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-4 bg-canvas border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-black text-[#0F2C59]">{cat.nombre}</h3>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                      <h3 className="text-sm font-black text-ink">{cat.nombre}</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emphasis text-secondary">
                         Código: {cat.codigo}
                       </span>
                       {cat.requiereVisita ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-800">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300">
                           Requiere Visita
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">
                           Sin Visita Previa
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">{cat.descripcion}</p>
+                    <p className="text-xs text-muted mt-0.5">{cat.descripcion}</p>
                   </div>
 
                   {isAdmin && (
@@ -400,9 +400,9 @@ export default function ConfiguracionPage() {
                           });
                           setModalCategoria(true);
                         }}
-                        className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-2xs"
+                        className="px-3 py-1.5 bg-surface border border-line hover:bg-canvas text-secondary rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-2xs"
                       >
-                        <Edit2 className="h-3.5 w-3.5 text-[#0F2C59]" />
+                        <Edit2 className="h-3.5 w-3.5 text-ink" />
                         <span>Editar Nombre Servicio</span>
                       </button>
 
@@ -428,24 +428,24 @@ export default function ConfiguracionPage() {
 
                 {/* Subtipos de la categoría */}
                 <div className="p-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-faint block mb-2">
                     Subtipos disponibles en el menú desplegable ({cat.subtipos?.length || 0}):
                   </span>
 
                   {cat.subtipos?.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic">No hay subtipos registrados en esta categoría.</p>
+                    <p className="text-xs text-faint italic">No hay subtipos registrados en esta categoría.</p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {cat.subtipos?.map((sub: any) => (
                         <div
                           key={sub.id}
-                          className="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors"
+                          className="p-3 rounded-xl border border-line-soft bg-canvas/50 flex items-center justify-between gap-2 hover:bg-canvas transition-colors"
                         >
                           <div>
-                            <span className="text-xs font-bold text-slate-800 block">
+                            <span className="text-xs font-bold text-ink block">
                               {sub.nombre}
                             </span>
-                            <span className="font-mono text-[10px] text-slate-400">
+                            <span className="font-mono text-[10px] text-faint">
                               Código: {sub.codigo}
                             </span>
                           </div>
@@ -463,7 +463,7 @@ export default function ConfiguracionPage() {
                                   });
                                   setModalSubtipo(true);
                                 }}
-                                className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#F06529] cursor-pointer"
+                                className="p-1.5 rounded-lg bg-surface border border-line text-secondary hover:text-[#F06529] cursor-pointer"
                                 title="Editar subtipo"
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
@@ -471,7 +471,7 @@ export default function ConfiguracionPage() {
 
                               <button
                                 onClick={() => handleEliminarSubtipo(sub.id, sub.nombre)}
-                                className="p-1.5 rounded-lg bg-white border border-slate-200 text-red-500 hover:bg-red-50 cursor-pointer"
+                                className="p-1.5 rounded-lg bg-surface border border-line text-red-500 hover:bg-red-50 cursor-pointer"
                                 title="Eliminar subtipo"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -494,15 +494,15 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {tabActiva === "precios" && (
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-3">
+          <div className="bg-surface p-4 rounded-2xl border border-line shadow-xs flex items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
-              <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="h-4 w-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar por concepto o material..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
+                className="w-full pl-9 pr-3 py-2 bg-canvas border border-line rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
               />
             </div>
 
@@ -528,9 +528,9 @@ export default function ConfiguracionPage() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+              <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3 px-4">Concepto / Material</th>
                   <th className="py-3 px-4">Criterio Unidad</th>
@@ -538,19 +538,19 @@ export default function ConfiguracionPage() {
                   {isAdmin && <th className="py-3 px-4 text-center">Editar</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800">
+              <tbody className="divide-y divide-slate-100 text-ink">
                 {filteredPrecios?.map((p: any) => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={p.id} className="hover:bg-canvas/80 transition-colors">
                     <td className="py-3.5 px-4">
-                      <p className="font-bold text-[#0F2C59]">{p.concepto}</p>
-                      <span className="text-[10px] text-slate-400">
+                      <p className="font-bold text-ink">{p.concepto}</p>
+                      <span className="text-[10px] text-faint">
                         {p.diametro ? `${p.diametro} • ` : ""}{p.material || "Estándar"}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600">
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-secondary">
                       por {p.unidad}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-black text-slate-900">
+                    <td className="py-3.5 px-4 text-right font-black text-ink">
                       Bs. {Number(p.precioUnitario).toLocaleString("es-CL")}
                     </td>
                     {isAdmin && (
@@ -568,7 +568,7 @@ export default function ConfiguracionPage() {
                             });
                             setModalPrecio(true);
                           }}
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-[#F06529] text-slate-600 hover:text-white transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg bg-wash hover:bg-[#F06529] text-secondary hover:text-white transition-colors cursor-pointer"
                           title="Editar Precio"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
@@ -587,15 +587,15 @@ export default function ConfiguracionPage() {
       {/* 2. TAB REGLAS DE MANO DE OBRA                                */}
       {/* ============================================================ */}
       {tabActiva === "mano_obra" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+        <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-line-soft flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
               Reglas y Fórmulas de Cálculo de Mano de Obra
             </h3>
           </div>
 
           <table className="w-full text-xs text-left">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+            <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 <th className="py-3 px-4">Categoría / Servicio</th>
                 <th className="py-3 px-4">Fórmula de Cálculo</th>
@@ -603,16 +603,16 @@ export default function ConfiguracionPage() {
                 {isAdmin && <th className="py-3 px-4 text-center">Modificar</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
+            <tbody className="divide-y divide-slate-100 text-ink">
               {dataConfig.manoObra?.map((mo: any) => (
-                <tr key={mo.id} className="hover:bg-slate-50/80">
-                  <td className="py-3.5 px-4 font-bold text-[#0F2C59]">{mo.subtipoCodigo}</td>
-                  <td className="py-3.5 px-4 font-semibold text-slate-700">
-                    <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                <tr key={mo.id} className="hover:bg-canvas/80">
+                  <td className="py-3.5 px-4 font-bold text-ink">{mo.subtipoCodigo}</td>
+                  <td className="py-3.5 px-4 font-semibold text-secondary">
+                    <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
                       {mo.tipoCalculo.replace("_", " ").toUpperCase()}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-right font-black text-slate-900">
+                  <td className="py-3.5 px-4 text-right font-black text-ink">
                     Bs. {Number(mo.tarifaBase).toLocaleString("es-CL")}
                   </td>
                   {isAdmin && (
@@ -628,7 +628,7 @@ export default function ConfiguracionPage() {
                           });
                           setModalManoObra(true);
                         }}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-[#F06529] text-slate-600 hover:text-white transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg bg-wash hover:bg-[#F06529] text-secondary hover:text-white transition-colors cursor-pointer"
                         title="Modificar Criterio"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
@@ -646,8 +646,8 @@ export default function ConfiguracionPage() {
       {/* 3. TAB FACTORES DE DIFICULTAD                                */}
       {/* ============================================================ */}
       {tabActiva === "dificultad" && (
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+        <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
             Factores Multiplicadores de Dificultad (1 al 5)
           </h3>
 
@@ -656,17 +656,17 @@ export default function ConfiguracionPage() {
               <div
                 key={d.nivel}
                 className={`p-4 rounded-xl border flex flex-col justify-between ${
-                  d.sugerenciaInstaladorExtra ? "border-amber-200 bg-amber-50/50" : "border-slate-200 bg-slate-50"
+                  d.sugerenciaInstaladorExtra ? "border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/40" : "border-line bg-canvas"
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-black text-slate-700">Nivel {d.nivel}</span>
+                    <span className="text-xs font-black text-secondary">Nivel {d.nivel}</span>
                     <span className="text-sm font-black text-[#F06529]">{d.factorMultiplicador}x</span>
                   </div>
-                  <p className="text-xs text-slate-700 font-medium">{d.descripcion}</p>
+                  <p className="text-xs text-secondary font-medium">{d.descripcion}</p>
                   {d.sugerenciaInstaladorExtra && (
-                    <p className="text-[10px] font-bold text-amber-700 mt-2 flex items-center gap-1">
+                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-300 mt-2 flex items-center gap-1">
                       <UserPlus className="h-3.5 w-3.5" /> Sugiere instalador adicional (#95)
                     </p>
                   )}
@@ -684,7 +684,7 @@ export default function ConfiguracionPage() {
                         });
                         setModalDificultad(true);
                       }}
-                      className="text-xs font-bold text-[#0F2C59] hover:text-[#F06529] flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-bold text-ink hover:text-[#F06529] flex items-center gap-1 cursor-pointer"
                     >
                       <Edit2 className="h-3.5 w-3.5" /> Modificar Factor
                     </button>
@@ -700,22 +700,22 @@ export default function ConfiguracionPage() {
       {/* 4. TAB POLÍTICAS COMERCIALES                                 */}
       {/* ============================================================ */}
       {tabActiva === "comercial" && (
-        <form onSubmit={handleGuardarComercial} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <form onSubmit={handleGuardarComercial} className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-5">
+          <div className="flex items-center justify-between border-b border-line-soft pb-3">
             <div>
-              <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
                 <Sliders className="h-4 w-4 text-[#F06529]" />
                 Políticas de Rentabilidad y Descuentos Comerciales
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-muted mt-0.5">
                 Define los márgenes mínimos de ganancia y límites de descuento autorizados.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <label className="block font-bold text-slate-800">
+            <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
+              <label className="block font-bold text-ink">
                 Margen Mínimo de Ganancia Esperado (%)
               </label>
               <input
@@ -723,12 +723,12 @@ export default function ConfiguracionPage() {
                 disabled={!isAdmin}
                 value={reglasComerciales.margenMinimoPct}
                 onChange={(e) => setReglasComerciales({ ...reglasComerciales, margenMinimoPct: Number(e.target.value) })}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none"
+                className="w-full p-2.5 bg-surface border border-line-strong rounded-xl font-bold text-ink outline-none"
               />
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <label className="block font-bold text-slate-800">
+            <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
+              <label className="block font-bold text-ink">
                 Umbral Alerta Bajo Margen (#94) (%)
               </label>
               <input
@@ -736,12 +736,12 @@ export default function ConfiguracionPage() {
                 disabled={!isAdmin}
                 value={reglasComerciales.alertaBajoMargenUmbralPct}
                 onChange={(e) => setReglasComerciales({ ...reglasComerciales, alertaBajoMargenUmbralPct: Number(e.target.value) })}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none"
+                className="w-full p-2.5 bg-surface border border-line-strong rounded-xl font-bold text-ink outline-none"
               />
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <label className="block font-bold text-slate-800">
+            <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
+              <label className="block font-bold text-ink">
                 Tope Máximo de Descuento Autorizado por Gerente (%)
               </label>
               <input
@@ -749,12 +749,12 @@ export default function ConfiguracionPage() {
                 disabled={!isAdmin}
                 value={reglasComerciales.topeMaximoPct}
                 onChange={(e) => setReglasComerciales({ ...reglasComerciales, topeMaximoPct: Number(e.target.value) })}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none"
+                className="w-full p-2.5 bg-surface border border-line-strong rounded-xl font-bold text-ink outline-none"
               />
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <label className="block font-bold text-slate-800">
+            <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
+              <label className="block font-bold text-ink">
                 Límite de Descuento para Encargados (%)
               </label>
               <input
@@ -762,7 +762,7 @@ export default function ConfiguracionPage() {
                 disabled={!isAdmin}
                 value={reglasComerciales.pctMaxEncargado}
                 onChange={(e) => setReglasComerciales({ ...reglasComerciales, pctMaxEncargado: Number(e.target.value) })}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none"
+                className="w-full p-2.5 bg-surface border border-line-strong rounded-xl font-bold text-ink outline-none"
               />
             </div>
           </div>
@@ -786,23 +786,23 @@ export default function ConfiguracionPage() {
       {/* 5. TAB GARANTÍAS                                             */}
       {/* ============================================================ */}
       {tabActiva === "garantias" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
           <table className="w-full text-xs text-left">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+            <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 <th className="py-3 px-4">Servicio / Categoría</th>
                 <th className="py-3 px-4 text-center">Duración Cobertura</th>
                 <th className="py-3 px-4">Condiciones por Defecto</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
+            <tbody className="divide-y divide-slate-100 text-ink">
               {dataConfig.garantias?.map((g: any) => (
-                <tr key={g.id} className="hover:bg-slate-50/80">
-                  <td className="py-3.5 px-4 font-bold text-[#0F2C59]">{g.subtipoCodigo}</td>
+                <tr key={g.id} className="hover:bg-canvas/80">
+                  <td className="py-3.5 px-4 font-bold text-ink">{g.subtipoCodigo}</td>
                   <td className="py-3.5 px-4 text-center font-black text-[#F06529]">
                     {g.mesesDefecto} Meses
                   </td>
-                  <td className="py-3.5 px-4 text-slate-600">{g.condiciones || "Garantía estándar Servigaz"}</td>
+                  <td className="py-3.5 px-4 text-secondary">{g.condiciones || "Garantía estándar Servigaz"}</td>
                 </tr>
               ))}
             </tbody>
@@ -815,39 +815,39 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {modalCategoria && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
+              <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                 <Edit2 className="h-4 w-4 text-[#F06529]" />
                 Modificar Nombre del Servicio
               </h3>
-              <button onClick={() => setModalCategoria(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <button onClick={() => setModalCategoria(false)} className="text-faint hover:text-secondary cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleGuardarCategoria} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nombre Visible del Servicio</label>
+                <label className="block font-bold text-secondary mb-1">Nombre Visible del Servicio</label>
                 <input
                   required
                   value={categoriaEditando.nombre}
                   onChange={(e) => setCategoriaEditando({ ...categoriaEditando, nombre: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Descripción Breve</label>
+                <label className="block font-bold text-secondary mb-1">Descripción Breve</label>
                 <textarea
                   rows={2}
                   value={categoriaEditando.descripcion}
                   onChange={(e) => setCategoriaEditando({ ...categoriaEditando, descripcion: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-none"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-medium outline-none"
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-canvas border border-line flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="visitaReq"
@@ -855,13 +855,13 @@ export default function ConfiguracionPage() {
                   onChange={(e) => setCategoriaEditando({ ...categoriaEditando, requiereVisita: e.target.checked })}
                   className="w-4 h-4 accent-[#F06529] rounded cursor-pointer"
                 />
-                <label htmlFor="visitaReq" className="text-xs font-bold text-slate-800 cursor-pointer">
+                <label htmlFor="visitaReq" className="text-xs font-bold text-ink cursor-pointer">
                   Requiere Agendar Visita Técnica Previa (Fase 4)
                 </label>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setModalCategoria(false)} className="px-4 py-2 border rounded-xl font-bold text-slate-600">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
+                <button type="button" onClick={() => setModalCategoria(false)} className="px-4 py-2 border rounded-xl font-bold text-secondary">
                   Cancelar
                 </button>
                 <button type="submit" disabled={guardando} className="px-5 py-2 bg-[#F06529] hover:bg-[#D94E15] text-white rounded-xl font-bold">
@@ -878,42 +878,42 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {modalSubtipo && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
+              <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                 <PlusCircle className="h-4 w-4 text-[#F06529]" />
                 {subtipoEditando.id ? "Editar Subtipo" : "Añadir Nuevo Subtipo"}
               </h3>
-              <button onClick={() => setModalSubtipo(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <button onClick={() => setModalSubtipo(false)} className="text-faint hover:text-secondary cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleGuardarSubtipo} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nombre / Etiqueta del Subtipo</label>
+                <label className="block font-bold text-secondary mb-1">Nombre / Etiqueta del Subtipo</label>
                 <input
                   required
                   value={subtipoEditando.nombre}
                   onChange={(e) => setSubtipoEditando({ ...subtipoEditando, nombre: e.target.value })}
                   placeholder="Ej: Instalación de Termoeléctrico"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Código Identificador</label>
+                <label className="block font-bold text-secondary mb-1">Código Identificador</label>
                 <input
                   required
                   value={subtipoEditando.codigo}
                   onChange={(e) => setSubtipoEditando({ ...subtipoEditando, codigo: e.target.value })}
                   placeholder="Ej: 1.1.7 o GAS_NUEVO"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setModalSubtipo(false)} className="px-4 py-2 border rounded-xl font-bold text-slate-600">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
+                <button type="button" onClick={() => setModalSubtipo(false)} className="px-4 py-2 border rounded-xl font-bold text-secondary">
                   Cancelar
                 </button>
                 <button type="submit" disabled={guardando} className="px-5 py-2 bg-[#F06529] hover:bg-[#D94E15] text-white rounded-xl font-bold">
@@ -930,35 +930,35 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {modalPrecio && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
+              <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                 <DollarSign className="h-4 w-4 text-[#F06529]" />
                 {precioEditando.id ? "Editar Precio / Concepto" : "Crear Nueva Tarifa"}
               </h3>
-              <button onClick={() => setModalPrecio(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <button onClick={() => setModalPrecio(false)} className="text-faint hover:text-secondary cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleGuardarPrecio} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nombre / Concepto</label>
+                <label className="block font-bold text-secondary mb-1">Nombre / Concepto</label>
                 <input
                   required
                   value={precioEditando.concepto}
                   onChange={(e) => setPrecioEditando({ ...precioEditando, concepto: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Criterio de Cobro</label>
+                  <label className="block font-bold text-secondary mb-1">Criterio de Cobro</label>
                   <select
                     value={precioEditando.unidad}
                     onChange={(e) => setPrecioEditando({ ...precioEditando, unidad: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   >
                     <option value="metro">Por Metro (m)</option>
                     <option value="unidad">Por Unidad (un)</option>
@@ -969,20 +969,20 @@ export default function ConfiguracionPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Precio Unitario ($ CLP)</label>
+                  <label className="block font-bold text-secondary mb-1">Precio Unitario ($ CLP)</label>
                   <input
                     type="number"
                     required
                     min="0"
                     value={precioEditando.precioUnitario}
                     onChange={(e) => setPrecioEditando({ ...precioEditando, precioUnitario: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setModalPrecio(false)} className="px-4 py-2 border rounded-xl font-bold text-slate-600">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
+                <button type="button" onClick={() => setModalPrecio(false)} className="px-4 py-2 border rounded-xl font-bold text-secondary">
                   Cancelar
                 </button>
                 <button type="submit" disabled={guardando} className="px-5 py-2 bg-[#F06529] hover:bg-[#D94E15] text-white rounded-xl font-bold">
@@ -999,33 +999,33 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {modalManoObra && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
+              <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                 <Sliders className="h-4 w-4 text-[#F06529]" />
                 Modificar Criterio de Mano de Obra
               </h3>
-              <button onClick={() => setModalManoObra(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <button onClick={() => setModalManoObra(false)} className="text-faint hover:text-secondary cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleGuardarManoObra} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Categoría</label>
+                <label className="block font-bold text-secondary mb-1">Categoría</label>
                 <input
                   disabled
                   value={manoObraEditando.subtipoCodigo}
-                  className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-700 cursor-not-allowed"
+                  className="w-full p-2.5 bg-wash border border-line rounded-xl font-bold text-secondary cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Fórmula / Tipo de Cálculo</label>
+                <label className="block font-bold text-secondary mb-1">Fórmula / Tipo de Cálculo</label>
                 <select
                   value={manoObraEditando.tipoCalculo}
                   onChange={(e) => setManoObraEditando({ ...manoObraEditando, tipoCalculo: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#F06529]"
                 >
                   <option value="por_metro">Por Metro Lineal Instalado</option>
                   <option value="por_trabajo">Tarifa Fija por Trabajo / Servicio</option>
@@ -1035,19 +1035,19 @@ export default function ConfiguracionPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Tarifa Base ($ CLP)</label>
+                <label className="block font-bold text-secondary mb-1">Tarifa Base ($ CLP)</label>
                 <input
                   type="number"
                   required
                   min="0"
                   value={manoObraEditando.tarifaBase}
                   onChange={(e) => setManoObraEditando({ ...manoObraEditando, tarifaBase: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setModalManoObra(false)} className="px-4 py-2 border rounded-xl font-bold text-slate-600">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
+                <button type="button" onClick={() => setModalManoObra(false)} className="px-4 py-2 border rounded-xl font-bold text-secondary">
                   Cancelar
                 </button>
                 <button type="submit" disabled={guardando} className="px-5 py-2 bg-[#F06529] hover:bg-[#D94E15] text-white rounded-xl font-bold">
@@ -1064,20 +1064,20 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {modalDificultad && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
+              <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                 <UserPlus className="h-4 w-4 text-[#F06529]" />
                 Modificar Factor Dificultad Nivel {dificultadEditando.nivel}
               </h3>
-              <button onClick={() => setModalDificultad(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <button onClick={() => setModalDificultad(false)} className="text-faint hover:text-secondary cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleGuardarDificultad} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Factor Multiplicador</label>
+                <label className="block font-bold text-secondary mb-1">Factor Multiplicador</label>
                 <input
                   type="number"
                   step="0.05"
@@ -1086,22 +1086,22 @@ export default function ConfiguracionPage() {
                   required
                   value={dificultadEditando.factorMultiplicador}
                   onChange={(e) => setDificultadEditando({ ...dificultadEditando, factorMultiplicador: Number(e.target.value) })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Descripción</label>
+                <label className="block font-bold text-secondary mb-1">Descripción</label>
                 <textarea
                   rows={2}
                   required
                   value={dificultadEditando.descripcion}
                   onChange={(e) => setDificultadEditando({ ...dificultadEditando, descripcion: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="extraInst"
@@ -1109,13 +1109,13 @@ export default function ConfiguracionPage() {
                   onChange={(e) => setDificultadEditando({ ...dificultadEditando, sugerenciaInstaladorExtra: e.target.checked })}
                   className="w-4 h-4 accent-[#F06529] rounded cursor-pointer"
                 />
-                <label htmlFor="extraInst" className="text-xs font-bold text-amber-900 cursor-pointer">
+                <label htmlFor="extraInst" className="text-xs font-bold text-amber-900 dark:text-amber-300 cursor-pointer">
                   Activar sugerencia de instalador adicional en cotizador (#95)
                 </label>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setModalDificultad(false)} className="px-4 py-2 border rounded-xl font-bold text-slate-600">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
+                <button type="button" onClick={() => setModalDificultad(false)} className="px-4 py-2 border rounded-xl font-bold text-secondary">
                   Cancelar
                 </button>
                 <button type="submit" disabled={guardando} className="px-5 py-2 bg-[#F06529] hover:bg-[#D94E15] text-white rounded-xl font-bold">

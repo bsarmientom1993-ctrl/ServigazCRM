@@ -112,25 +112,25 @@ export default function CotizadorPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-5 rounded-2xl border border-line shadow-xs">
         <div>
-          <h2 className="text-xl font-black text-[#0F2C59] tracking-tight flex items-center gap-2">
+          <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
             <Calculator className="h-5 w-5 text-[#F06529]" />
             Cotizador Modular Integral (Bolivianos - Bs.)
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Presupuesta instalaciones de gas, calefacción, calderas, pruebas de hermeticidad y arriendo de herramientas en moneda nacional (Bs.).
           </p>
         </div>
 
-        <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full flex items-center gap-1">
+        <span className="text-xs font-bold px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 rounded-full flex items-center gap-1">
           <Sparkles className="h-3.5 w-3.5" /> Moneda: Bolivianos (Bs.)
         </span>
       </div>
 
       {/* Selector de Módulos */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
+      <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs">
+        <label className="block text-xs font-bold uppercase tracking-wider text-secondary mb-3">
           1. Marca los servicios que integran el presupuesto:
         </label>
 
@@ -145,7 +145,7 @@ export default function CotizadorPage() {
                 className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                   isSelected
                     ? "border-[#0F2C59] bg-[#0F2C59] text-white shadow-sm"
-                    : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                    : "border-line bg-canvas text-secondary hover:bg-wash"
                 }`}
               >
                 <span>{s.label}</span>
@@ -162,30 +162,30 @@ export default function CotizadorPage() {
         <div className="lg:col-span-7 space-y-4">
           {/* MÓDULO GAS */}
           {serviciosActivos.includes("GAS") && (
-            <div className="bg-white p-5 rounded-2xl border border-orange-200 shadow-xs space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-[#F06529] flex items-center gap-1.5 border-b border-orange-100 pb-2">
+            <div className="bg-surface p-5 rounded-2xl border border-orange-200 dark:border-orange-900 shadow-xs space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#F06529] flex items-center gap-1.5 border-b border-orange-100 dark:border-orange-900 pb-2">
                 <Flame className="h-4 w-4" /> Módulo de Instalación de Gas
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Gabinete de Medidores</label>
+                  <label className="block font-bold text-secondary mb-1">Gabinete de Medidores</label>
                   <input
                     type="number"
                     min="1"
                     value={formData.gasMedidores}
                     onChange={(e) => handleInputChange("gasMedidores", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Bs. 350 / medidor</span>
+                  <span className="text-[10px] text-faint mt-0.5 block">Bs. 350 / medidor</span>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Proyecto y Planos Gas</label>
+                  <label className="block font-bold text-secondary mb-1">Proyecto y Planos Gas</label>
                   <select
                     value={formData.gasIncluyeProyecto ? "SI" : "NO"}
                     onChange={(e) => handleInputChange("gasIncluyeProyecto", e.target.value === "SI")}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   >
                     <option value="SI">Incluir Proyecto y Planos (Bs. 650)</option>
                     <option value="NO">Sin Proyecto (Solo Trazado)</option>
@@ -193,27 +193,27 @@ export default function CotizadorPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Metros Tubo Visto (m)</label>
+                  <label className="block font-bold text-secondary mb-1">Metros Tubo Visto (m)</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.gasMetrosVisto}
                     onChange={(e) => handleInputChange("gasMetrosVisto", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Bs. 85 / metro</span>
+                  <span className="text-[10px] text-faint mt-0.5 block">Bs. 85 / metro</span>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Metros Tubo Empotrado (m)</label>
+                  <label className="block font-bold text-secondary mb-1">Metros Tubo Empotrado (m)</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.gasMetrosEmpotrado}
                     onChange={(e) => handleInputChange("gasMetrosEmpotrado", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Bs. 125 / metro</span>
+                  <span className="text-[10px] text-faint mt-0.5 block">Bs. 125 / metro</span>
                 </div>
               </div>
             </div>
@@ -221,18 +221,18 @@ export default function CotizadorPage() {
 
           {/* MÓDULO OTROS SERVICIOS */}
           {serviciosActivos.includes("OFICINA_TRAMITES") && (
-            <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-xs space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5 border-b border-amber-100 pb-2">
+            <div className="bg-surface p-5 rounded-2xl border border-amber-200 dark:border-amber-900 shadow-xs space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1.5 border-b border-amber-100 dark:border-amber-900 pb-2">
                 <ClipboardCheck className="h-4 w-4" /> Módulo de Otros Servicios & Ensayos
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tipo de Servicio Técnico</label>
+                  <label className="block font-bold text-secondary mb-1">Tipo de Servicio Técnico</label>
                   <select
                     value={formData.oficinaTipo}
                     onChange={(e) => handleInputChange("oficinaTipo", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   >
                     <option value="HERMETICIDAD">Prueba de Hermeticidad Manométrica (Bs. 280)</option>
                     <option value="CAMBIO_MEDIDOR">Cambio / Reemplazo de Medidor (Bs. 320)</option>
@@ -243,23 +243,23 @@ export default function CotizadorPage() {
                 {formData.oficinaTipo === "ALQUILER_HERRAMIENTAS" && (
                   <>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Días de Arriendo</label>
+                      <label className="block font-bold text-secondary mb-1">Días de Arriendo</label>
                       <input
                         type="number"
                         min="1"
                         value={formData.alquilerDias}
                         onChange={(e) => handleInputChange("alquilerDias", e.target.value)}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                        className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Tarifa Diaria (Bs.)</label>
+                      <label className="block font-bold text-secondary mb-1">Tarifa Diaria (Bs.)</label>
                       <input
                         type="number"
                         min="0"
                         value={formData.alquilerTarifaDia}
                         onChange={(e) => handleInputChange("alquilerTarifaDia", e.target.value)}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                        className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                       />
                     </div>
                   </>
@@ -270,18 +270,18 @@ export default function CotizadorPage() {
 
           {/* MÓDULO CALEFACCIÓN */}
           {serviciosActivos.includes("CALEFACCION") && (
-            <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-xs space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-blue-600 flex items-center gap-1.5 border-b border-blue-100 pb-2">
+            <div className="bg-surface p-5 rounded-2xl border border-blue-200 dark:border-blue-900 shadow-xs space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-300 flex items-center gap-1.5 border-b border-blue-100 dark:border-blue-900 pb-2">
                 <Thermometer className="h-4 w-4" /> Módulo de Calefacción
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tipo de Sistema</label>
+                  <label className="block font-bold text-secondary mb-1">Tipo de Sistema</label>
                   <select
                     value={formData.calefaccionTipo}
                     onChange={(e) => handleInputChange("calefaccionTipo", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   >
                     <option value="RADIADORES">Radiadores de Agua (PPR / PEX)</option>
                     <option value="PISO">Piso Radiante (Losa)</option>
@@ -291,35 +291,35 @@ export default function CotizadorPage() {
                 {formData.calefaccionTipo === "RADIADORES" ? (
                   <>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Metros Tuberías (m)</label>
+                      <label className="block font-bold text-secondary mb-1">Metros Tuberías (m)</label>
                       <input
                         type="number"
                         min="1"
                         value={formData.calMetrosTubo}
                         onChange={(e) => handleInputChange("calMetrosTubo", e.target.value)}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                        className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Cantidad Radiadores</label>
+                      <label className="block font-bold text-secondary mb-1">Cantidad Radiadores</label>
                       <input
                         type="number"
                         min="1"
                         value={formData.calCantRadiadores}
                         onChange={(e) => handleInputChange("calCantRadiadores", e.target.value)}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                        className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                       />
                     </div>
                   </>
                 ) : (
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Superficie Piso (m²)</label>
+                    <label className="block font-bold text-secondary mb-1">Superficie Piso (m²)</label>
                     <input
                       type="number"
                       min="1"
                       value={formData.calM2Piso}
                       onChange={(e) => handleInputChange("calM2Piso", e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                     />
                   </div>
                 )}
@@ -329,22 +329,22 @@ export default function CotizadorPage() {
 
           {/* MÓDULO PLOMERÍA */}
           {serviciosActivos.includes("PLOMERIA") && (
-            <div className="bg-white p-5 rounded-2xl border border-cyan-200 shadow-xs space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-cyan-700 flex items-center gap-1.5 border-b border-cyan-100 pb-2">
+            <div className="bg-surface p-5 rounded-2xl border border-cyan-200 dark:border-cyan-900 shadow-xs space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-cyan-700 dark:text-cyan-300 flex items-center gap-1.5 border-b border-cyan-100 dark:border-cyan-900 pb-2">
                 <Droplets className="h-4 w-4" /> Módulo de Plomería & Sanitaria
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Puntos de Agua / Conexiones</label>
+                  <label className="block font-bold text-secondary mb-1">Puntos de Agua / Conexiones</label>
                   <input
                     type="number"
                     min="1"
                     value={formData.plomeriaPuntosAgua}
                     onChange={(e) => handleInputChange("plomeriaPuntosAgua", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Bs. 330 / punto completo</span>
+                  <span className="text-[10px] text-faint mt-0.5 block">Bs. 330 / punto completo</span>
                 </div>
               </div>
             </div>
@@ -352,30 +352,30 @@ export default function CotizadorPage() {
 
           {/* MÓDULO EQUIPOS */}
           {serviciosActivos.includes("EQUIPOS") && (
-            <div className="bg-white p-5 rounded-2xl border border-purple-200 shadow-xs space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5 border-b border-purple-100 pb-2">
+            <div className="bg-surface p-5 rounded-2xl border border-purple-200 dark:border-purple-900 shadow-xs space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5 border-b border-purple-100 dark:border-purple-900 pb-2">
                 <Wrench className="h-4 w-4" /> Módulo de Equipos & Calderas
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Nombre / Modelo Equipo</label>
+                  <label className="block font-bold text-secondary mb-1">Nombre / Modelo Equipo</label>
                   <input
                     type="text"
                     value={formData.equiposNombre}
                     onChange={(e) => handleInputChange("equiposNombre", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Precio Provisión Equipo (Bs.)</label>
+                  <label className="block font-bold text-secondary mb-1">Precio Provisión Equipo (Bs.)</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.equiposPrecio}
                     onChange={(e) => handleInputChange("equiposPrecio", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   />
                 </div>
               </div>
@@ -384,20 +384,20 @@ export default function CotizadorPage() {
 
           {/* MÓDULO TIENDA */}
           {serviciosActivos.includes("TIENDA") && (
-            <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-xs space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5 border-b border-emerald-100 pb-2">
+            <div className="bg-surface p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900 shadow-xs space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 border-b border-emerald-100 dark:border-emerald-900 pb-2">
                 <ShoppingBag className="h-4 w-4" /> Módulo Venta de Tienda / Insumos
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Total Insumos Mostrador (Bs.)</label>
+                  <label className="block font-bold text-secondary mb-1">Total Insumos Mostrador (Bs.)</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.tiendaMaterialesTotal}
                     onChange={(e) => handleInputChange("tiendaMaterialesTotal", e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-semibold outline-none"
                   />
                 </div>
               </div>
@@ -405,9 +405,9 @@ export default function CotizadorPage() {
           )}
 
           {/* Dificultad */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <label className="text-xs font-bold uppercase tracking-wider text-secondary">
                 Dificultad General del Trabajo
               </label>
               <span className="text-xs font-black text-[#F06529]">
@@ -423,7 +423,7 @@ export default function CotizadorPage() {
                   className={`py-2 rounded-xl text-xs font-bold cursor-pointer transition-all ${
                     dificultadNivel === lvl
                       ? "bg-[#0F2C59] text-white shadow-xs"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      : "bg-wash text-secondary hover:bg-emphasis"
                   }`}
                 >
                   Nivel {lvl}
@@ -448,7 +448,7 @@ export default function CotizadorPage() {
 
             {/* Desglose */}
             <div className="space-y-2 text-xs">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-faint">
                 Desglose por Servicio:
               </p>
               {calculo?.itemsDesglose?.map((item: any, idx: number) => (
@@ -457,7 +457,7 @@ export default function CotizadorPage() {
                     <span>{item.modulo}</span>
                     <span>Bs. {(item.materiales + item.manoObra).toLocaleString("es-CL")}</span>
                   </div>
-                  <p className="text-[10px] text-slate-400">{item.detalle}</p>
+                  <p className="text-[10px] text-faint">{item.detalle}</p>
                 </div>
               ))}
             </div>
@@ -486,7 +486,7 @@ export default function CotizadorPage() {
 
             {/* Total final */}
             <div className="pt-3 border-t border-white/20">
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+              <p className="text-[10px] uppercase tracking-wider text-faint font-bold">
                 Total Cotizado Combinado
               </p>
               <h3 className="text-3xl font-black text-white mt-0.5 tracking-tight">

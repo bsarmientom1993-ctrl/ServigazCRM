@@ -52,24 +52,24 @@ export default function AsistenciaPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-[#0F2C59] tracking-tight flex items-center gap-2">
+          <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
             <Clock className="h-5 w-5 text-[#F06529]" />
             Control de Personal & Asistencia (Fase 18)
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Registro diario de entrada/salida, tolerancia 15m, cálculo automático de tardanzas y gestión de permisos.
           </p>
         </div>
 
-        <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+        <span className="text-xs font-bold px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 rounded-full">
           Horario: 08:30 - 18:00
         </span>
       </div>
 
       {mensaje && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs font-semibold text-blue-800">
+        <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl text-xs font-semibold text-blue-800 dark:text-blue-300">
           {mensaje}
         </div>
       )}
@@ -78,14 +78,14 @@ export default function AsistenciaPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Clock-in Terminal (6 cols) */}
         <div className="lg:col-span-6 space-y-5">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs text-center space-y-4">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs text-center space-y-4">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-faint">
               Terminal de Marcación Diaria
             </span>
 
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 max-w-xs mx-auto">
-              <p className="text-xs text-slate-500 font-medium">Estado de Hoy:</p>
-              <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-black text-sm">
+            <div className="p-4 bg-canvas rounded-2xl border border-line-soft max-w-xs mx-auto">
+              <p className="text-xs text-muted font-medium">Estado de Hoy:</p>
+              <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black text-sm">
                 <CheckCircle2 className="h-4 w-4" />
                 {estadoHoy}
               </div>
@@ -117,45 +117,45 @@ export default function AsistenciaPage() {
               </button>
             </div>
 
-            <div className="text-[11px] text-slate-500 pt-3 border-t border-slate-100">
+            <div className="text-[11px] text-muted pt-3 border-t border-line-soft">
               🔒 <strong>Regla #90:</strong> Bloqueos automáticos ante doble entrada o salida sin entrada previa.
             </div>
           </div>
 
           {/* Attendance History */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center justify-between">
+          <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-secondary mb-3 flex items-center justify-between">
               <span>Registro de la Semana</span>
-              <span className="text-[10px] text-slate-400">Tolerancia: 15 min</span>
+              <span className="text-[10px] text-faint">Tolerancia: 15 min</span>
             </h3>
 
             <div className="divide-y divide-slate-100 text-xs">
               <div className="py-2.5 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-slate-800">Hoy (30 Ago)</p>
-                  <p className="text-[11px] text-slate-500">Entrada: 08:24 • Salida: --:--</p>
+                  <p className="font-bold text-ink">Hoy (30 Ago)</p>
+                  <p className="text-[11px] text-muted">Entrada: 08:24 • Salida: --:--</p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold text-[10px]">
                   Presente (A tiempo)
                 </span>
               </div>
 
               <div className="py-2.5 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-slate-800">Viernes (28 Ago)</p>
-                  <p className="text-[11px] text-slate-500">Entrada: 08:28 • Salida: 18:05</p>
+                  <p className="font-bold text-ink">Viernes (28 Ago)</p>
+                  <p className="text-[11px] text-muted">Entrada: 08:28 • Salida: 18:05</p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold text-[10px]">
                   Presente
                 </span>
               </div>
 
               <div className="py-2.5 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-slate-800">Jueves (27 Ago)</p>
-                  <p className="text-[11px] text-slate-500">Entrada: 08:48 • Salida: 18:00</p>
+                  <p className="font-bold text-ink">Jueves (27 Ago)</p>
+                  <p className="text-[11px] text-muted">Entrada: 08:48 • Salida: 18:00</p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold text-[10px]">
                   Tardanza (-25% día)
                 </span>
               </div>
@@ -166,23 +166,23 @@ export default function AsistenciaPage() {
         {/* Right Column: Solicitud de Permisos & Reglas de Descuento (6 cols) */}
         <div className="lg:col-span-6 space-y-5">
           {/* Formulario Permisos */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
               <FileText className="h-4 w-4 text-[#F06529]" />
               Solicitud de Permiso (Máx 2 al mes)
             </h3>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Fecha del Permiso</label>
+              <label className="block text-xs font-bold text-secondary mb-1">Fecha del Permiso</label>
               <input
                 type="date"
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none"
+                className="w-full p-2 bg-canvas border border-line rounded-xl text-xs font-semibold outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Motivo</label>
-              <select className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none">
+              <label className="block text-xs font-bold text-secondary mb-1">Motivo</label>
+              <select className="w-full p-2 bg-canvas border border-line rounded-xl text-xs font-semibold outline-none">
                 <option value="medico">Atención Médica / Exámenes</option>
                 <option value="tramite">Trámite Personal Impostergable</option>
                 <option value="familiar">Fuerza Mayor / Familiar</option>
@@ -190,12 +190,12 @@ export default function AsistenciaPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-secondary mb-1">
                 Comprobante / Justificación (OBLIGATORIO)
               </label>
               <input
                 type="file"
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 outline-none"
+                className="w-full p-2 bg-canvas border border-line rounded-xl text-xs text-secondary outline-none"
               />
             </div>
 
@@ -208,30 +208,30 @@ export default function AsistenciaPage() {
           </div>
 
           {/* Tabla de Descuentos Automáticos */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1.5">
+          <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
               <TrendingDown className="h-4 w-4 text-red-500" />
               Tabla de Descuentos Automáticos (#90)
             </h3>
 
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-400">
+                <tr className="border-b border-line text-faint">
                   <th className="py-2">Evento</th>
                   <th className="py-2">Cálculo Descuento</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 text-secondary">
                 <tr>
-                  <td className="py-2 font-bold text-red-600">Falta Injustificada</td>
+                  <td className="py-2 font-bold text-red-600 dark:text-red-300">Falta Injustificada</td>
                   <td className="py-2">Sueldo Día × 100%</td>
                 </tr>
                 <tr>
-                  <td className="py-2 font-bold text-amber-600">Tardanza (&gt;15 min)</td>
+                  <td className="py-2 font-bold text-amber-600 dark:text-amber-300">Tardanza (&gt;15 min)</td>
                   <td className="py-2">Sueldo Día × 25%</td>
                 </tr>
                 <tr>
-                  <td className="py-2 font-bold text-blue-600">Permiso Aprobado</td>
+                  <td className="py-2 font-bold text-blue-600 dark:text-blue-300">Permiso Aprobado</td>
                   <td className="py-2">Sin descuento (Justificado)</td>
                 </tr>
               </tbody>

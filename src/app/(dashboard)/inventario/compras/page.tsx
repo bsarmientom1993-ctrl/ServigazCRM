@@ -127,24 +127,24 @@ export default function ComprasProveedoresPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-5 rounded-2xl border border-line shadow-xs">
         <div className="flex items-center gap-3">
           <Link
             href="/inventario"
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+            className="p-2 rounded-xl bg-wash hover:bg-emphasis text-secondary transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-[#0F2C59] tracking-tight">
+              <h1 className="text-xl font-black text-ink tracking-tight">
                 Compras a Proveedores Oficiales
               </h1>
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
                 Fase 20 • Regla #96
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               Registro formal de facturas de insumos con actualización automática de costo promedio ponderado.
             </p>
           </div>
@@ -152,22 +152,22 @@ export default function ComprasProveedoresPage() {
 
         <Link
           href="/finanzas"
-          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+          className="px-4 py-2 bg-wash hover:bg-emphasis text-secondary rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
         >
-          <DollarSign className="h-4 w-4 text-emerald-600" />
+          <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
           <span>Ver Balance en Finanzas</span>
         </Link>
       </div>
 
       {/* Alertas */}
       {errorMsg && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center gap-2">
+        <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -176,12 +176,12 @@ export default function ComprasProveedoresPage() {
       {/* Grid Principal: Formulario a la izquierda, Simulación e Historial */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Formulario de Compra (7 columnas) */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+        <div className="lg:col-span-7 bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-5">
+          <div className="border-b border-line-soft pb-3">
+            <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
               <PlusCircle className="h-4 w-4 text-[#F06529]" /> Registrar Nueva Factura / Nota de Compra
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               Ingresa los datos del proveedor y los insumos adquiridos para el taller o tienda.
             </p>
           </div>
@@ -189,14 +189,14 @@ export default function ComprasProveedoresPage() {
           <form onSubmit={handleRegistrarCompra} className="space-y-4 text-xs">
             {/* 1. Selección de Producto */}
             <div>
-              <label className="block font-bold text-slate-700 mb-1">
+              <label className="block font-bold text-secondary mb-1">
                 Producto / Material de Almacén <span className="text-red-500">*</span>
               </label>
               <select
                 required
                 value={formCompra.productoId}
                 onChange={(e) => setFormCompra({ ...formCompra, productoId: e.target.value })}
-                className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                className="w-full p-3 bg-canvas border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
               >
                 <option value="">-- Elige un producto a reabastecer --</option>
                 {productos.map((p) => (
@@ -210,7 +210,7 @@ export default function ComprasProveedoresPage() {
             {/* 2. Cantidad y Precio de Compra */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-bold text-secondary mb-1">
                   Cantidad Comprada ({productoSeleccionado?.unidadMedida || "unidades"}) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -221,12 +221,12 @@ export default function ComprasProveedoresPage() {
                   value={formCompra.cantidad}
                   onChange={(e) => setFormCompra({ ...formCompra, cantidad: e.target.value })}
                   placeholder="Ej: 50"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-bold text-secondary mb-1">
                   Precio Unitario de Compra (Bs.) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -237,20 +237,20 @@ export default function ComprasProveedoresPage() {
                   value={formCompra.precioCompraUnitario}
                   onChange={(e) => setFormCompra({ ...formCompra, precioCompraUnitario: e.target.value })}
                   placeholder="Ej: 45.50"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
             </div>
 
             {/* 3. Datos del Proveedor Oficial (#96) */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <span className="font-black text-[#0F2C59] block text-xs flex items-center gap-1.5">
+            <div className="p-4 rounded-xl bg-canvas border border-line space-y-3">
+              <span className="font-black text-ink block text-xs flex items-center gap-1.5">
                 <Building className="h-4 w-4 text-[#F06529]" /> Datos del Proveedor Oficial (Regla #96)
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className="block font-bold text-secondary mb-1">
                     Razón Social / Empresa <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -259,12 +259,12 @@ export default function ComprasProveedoresPage() {
                     value={formCompra.proveedorNombre}
                     onChange={(e) => setFormCompra({ ...formCompra, proveedorNombre: e.target.value })}
                     placeholder="Ej: Tigre Plasmar / Importadora GasBol"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                    className="w-full p-2.5 bg-surface border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className="block font-bold text-secondary mb-1">
                     NIT / Teléfono de Contacto
                   </label>
                   <input
@@ -272,13 +272,13 @@ export default function ComprasProveedoresPage() {
                     value={formCompra.proveedorContacto}
                     onChange={(e) => setFormCompra({ ...formCompra, proveedorContacto: e.target.value })}
                     placeholder="Ej: NIT: 1029384 • Tel: 2-2789123"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
+                    className="w-full p-2.5 bg-surface border border-line-strong rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-bold text-secondary mb-1">
                   N° de Factura / Nota de Entrega
                 </label>
                 <input
@@ -286,18 +286,18 @@ export default function ComprasProveedoresPage() {
                   value={formCompra.numeroDocumento}
                   onChange={(e) => setFormCompra({ ...formCompra, numeroDocumento: e.target.value })}
                   placeholder="Ej: FAC-0012948 / Nota #45"
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-surface border border-line-strong rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
             </div>
 
             {/* Switch de Egreso en Caja */}
-            <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 flex items-center justify-between">
               <div>
-                <strong className="text-amber-950 font-bold block text-xs">
+                <strong className="text-amber-950 dark:text-amber-300 font-bold block text-xs">
                   ¿Registrar egreso automático en Finanzas?
                 </strong>
-                <p className="text-[11px] text-amber-800">
+                <p className="text-[11px] text-amber-800 dark:text-amber-300">
                   Crea automáticamente un registro de gasto en la categoría "Compras de Inventario".
                 </p>
               </div>
@@ -336,32 +336,32 @@ export default function ComprasProveedoresPage() {
             {productoSeleccionado ? (
               <div className="space-y-3 text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Producto a Actualizar:</span>
+                  <span className="text-faint block text-[10px]">Producto a Actualizar:</span>
                   <p className="font-black text-white text-sm">{productoSeleccionado.nombre}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-white/5 border border-white/10">
                   <div>
-                    <span className="text-slate-400 text-[10px] block">Stock Anterior:</span>
+                    <span className="text-faint text-[10px] block">Stock Anterior:</span>
                     <strong className="text-slate-200">
                       {stockAnterior} {productoSeleccionado.unidadMedida}
                     </strong>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[10px] block">Costo Anterior:</span>
+                    <span className="text-faint text-[10px] block">Costo Anterior:</span>
                     <strong className="text-slate-200">Bs. {costoAnterior.toLocaleString("es-CL")}</strong>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-white/5 border border-white/10">
                   <div>
-                    <span className="text-slate-400 text-[10px] block">Comprando Ahora:</span>
+                    <span className="text-faint text-[10px] block">Comprando Ahora:</span>
                     <strong className="text-emerald-400">
                       +{cantComprada} {productoSeleccionado.unidadMedida}
                     </strong>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[10px] block">Inversión Total:</span>
+                    <span className="text-faint text-[10px] block">Inversión Total:</span>
                     <strong className="text-emerald-400">Bs. {totalCompra.toLocaleString("es-CL")}</strong>
                   </div>
                 </div>
@@ -383,18 +383,18 @@ export default function ComprasProveedoresPage() {
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center text-slate-400 text-xs">
+              <div className="p-8 text-center text-faint text-xs">
                 Selecciona un producto del formulario para simular el impacto en el costo promedio de almacén.
               </div>
             )}
           </div>
 
           {/* Información Normativa */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs text-xs text-slate-600 space-y-2">
-            <h4 className="font-bold text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface p-4 rounded-2xl border border-line shadow-xs text-xs text-secondary space-y-2">
+            <h4 className="font-bold text-ink flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-[#F06529]" /> ¿Cómo funciona el Costo Ponderado?
             </h4>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-muted">
               Al ingresar una compra a un precio diferente al anterior, el sistema calcula la media ponderada exacta. Esto garantiza que las cotizaciones y los costos de materiales utilicen siempre el valor real de tu inventario.
             </p>
           </div>
@@ -402,17 +402,17 @@ export default function ComprasProveedoresPage() {
       </div>
 
       {/* Historial de Compras Recientes (#96) */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+      <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-line-soft pb-3">
+          <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
             <History className="h-4 w-4 text-[#F06529]" /> Historial de Compras a Proveedores Oficiales
           </h3>
-          <span className="text-xs text-slate-400">Total: {compras.length} compras registradas</span>
+          <span className="text-xs text-faint">Total: {compras.length} compras registradas</span>
         </div>
 
-        <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+        <div className="border border-line rounded-xl overflow-hidden text-xs">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+            <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 <th className="py-3 px-4">Fecha</th>
                 <th className="py-3 px-4">Proveedor Oficial (#96)</th>
@@ -422,38 +422,38 @@ export default function ComprasProveedoresPage() {
                 <th className="py-3 px-4">Registrado Por</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
+            <tbody className="divide-y divide-slate-100 text-ink">
               {compras.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-faint">
                     No se han registrado compras todavía. Usa el formulario de arriba para ingresar una.
                   </td>
                 </tr>
               ) : (
                 compras.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-bold text-slate-600">
+                  <tr key={c.id} className="hover:bg-canvas/80 transition-colors">
+                    <td className="py-3 px-4 font-bold text-secondary">
                       {new Date(c.fecha).toLocaleDateString("es-CL")}
                     </td>
                     <td className="py-3 px-4">
-                      <strong className="text-slate-900 block">{c.proveedorNombre}</strong>
+                      <strong className="text-ink block">{c.proveedorNombre}</strong>
                       {c.proveedorContacto && (
-                        <span className="text-[10px] text-slate-400">{c.proveedorContacto}</span>
+                        <span className="text-[10px] text-faint">{c.proveedorContacto}</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="font-bold text-[#0F2C59]">{c.producto?.nombre}</span>
-                      <span className="text-[10px] text-slate-400 block">SKU: {c.producto?.codigoSku}</span>
+                      <span className="font-bold text-ink">{c.producto?.nombre}</span>
+                      <span className="text-[10px] text-faint block">SKU: {c.producto?.codigoSku}</span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs">
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black text-xs">
                         +{Number(c.cantidad)} {c.producto?.unidadMedida}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-600">
+                    <td className="py-3 px-4 text-secondary">
                       {c.observaciones || "Compra directa"}
                     </td>
-                    <td className="py-3 px-4 text-slate-500">
+                    <td className="py-3 px-4 text-muted">
                       {c.usuario?.nombre || "Encargado"}
                     </td>
                   </tr>

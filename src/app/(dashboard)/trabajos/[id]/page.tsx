@@ -414,8 +414,8 @@ export default function TrabajoDetallePage({
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500 font-semibold text-xs">Cargando orden de trabajo...</div>;
-  if (!trabajo) return <div className="p-8 text-center text-red-600 font-bold">{errorMsg || "Trabajo no encontrado"}</div>;
+  if (loading) return <div className="p-8 text-center text-muted font-semibold text-xs">Cargando orden de trabajo...</div>;
+  if (!trabajo) return <div className="p-8 text-center text-red-600 dark:text-red-300 font-bold">{errorMsg || "Trabajo no encontrado"}</div>;
 
   const isGas = trabajo.subtipoCodigo?.startsWith("1.1.") || trabajo.subtipoCodigo?.toLowerCase().includes("gas") || trabajo.subtipoNombre?.toLowerCase().includes("gas");
   const estado = trabajo.estado;
@@ -468,27 +468,27 @@ export default function TrabajoDetallePage({
 
   return (
     <div className="space-y-6" aria-busy={saving}>
-      {saving && <p role="status" className="p-3 bg-blue-50 text-blue-800 rounded-xl">Guardando operación...</p>}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-        <p className="text-xs font-bold text-blue-700">Próximo paso</p>
-        <p className="font-bold text-slate-900">{proximaAccion}</p>
-        <p className="text-xs text-slate-600 mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"} · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</p>
+      {saving && <p role="status" className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 rounded-xl">Guardando operación...</p>}
+      <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl">
+        <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Próximo paso</p>
+        <p className="font-bold text-ink">{proximaAccion}</p>
+        <p className="text-xs text-secondary mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"} · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</p>
       </div>
-      <fieldset disabled={saving} className="contents">
+      <fieldset disabled={saving} className="space-y-6 min-w-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-5 rounded-2xl border border-line shadow-xs">
         <div className="flex items-center gap-3">
-          <Link href="/trabajos" className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+          <Link href="/trabajos" className="p-2 rounded-xl bg-wash hover:bg-emphasis text-secondary transition-colors">
             <ChevronLeft className="h-4 w-4" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-[#0F2C59] tracking-tight">{trabajo.codigoCorrelativo}</h2>
-              <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+              <h2 className="text-xl font-black text-ink tracking-tight">{trabajo.codigoCorrelativo}</h2>
+              <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
                 {trabajo.estado}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               {trabajo.subtipoNombre} • Cliente: <strong>{trabajo.cliente?.nombreCompleto}</strong>
             </p>
           </div>
@@ -499,9 +499,9 @@ export default function TrabajoDetallePage({
           {cotizacionVigente && (
             <button
               onClick={() => setModalPdf(true)}
-              className="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 bg-surface border border-line hover:bg-canvas text-secondary rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
-              <Printer className="h-3.5 w-3.5 text-[#0F2C59]" />
+              <Printer className="h-3.5 w-3.5 text-ink" />
               <span>Ver Cotización (PDF)</span>
             </button>
           )}
@@ -520,39 +520,39 @@ export default function TrabajoDetallePage({
 
       {/* Messages */}
       {errorMsg && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center gap-2">
+        <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {trabajo.evidenciasTermino && (
-        <div className="bg-white p-4 border rounded-xl space-y-2 text-sm">
+        <div className="bg-surface p-4 border rounded-xl space-y-2 text-sm">
           <p className="font-bold">Evidencia de término técnico</p>
           <p>{trabajo.evidenciasTermino.valoresNuevos?.observacionesTermino}</p>
           {trabajo.evidenciasTermino.valoresNuevos?.fotosTermino?.map((url: string, index: number) =>
-            <a key={index} href={url} target="_blank" rel="noopener noreferrer" className="inline-block mr-4 text-blue-700 underline">Foto {index + 1}</a>)}
+            <a key={index} href={url} target="_blank" rel="noopener noreferrer" className="inline-block mr-4 text-blue-700 dark:text-blue-300 underline">Foto {index + 1}</a>)}
         </div>
       )}
       {/* Timeline */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs overflow-x-auto">
+      <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs overflow-x-auto">
         <div className="flex items-center justify-between min-w-[750px] gap-2">
           {steps.map((s, idx) => (
             <div key={idx} className="flex-1 flex flex-col items-center text-center">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                  s.done ? "bg-[#0F2C59] text-white shadow-xs" : "bg-slate-100 text-slate-400 border border-slate-200"
+                  s.done ? "bg-[#0F2C59] text-white shadow-xs" : "bg-wash text-faint border border-line"
                 }`}
               >
                 {idx + 1}
               </div>
-              <span className={`text-[10px] mt-1.5 font-bold ${s.done ? "text-[#0F2C59]" : "text-slate-400"}`}>
+              <span className={`text-[10px] mt-1.5 font-bold ${s.done ? "text-ink" : "text-faint"}`}>
                 {s.label}
               </span>
             </div>
@@ -564,19 +564,19 @@ export default function TrabajoDetallePage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column (4 cols) */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+          <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-secondary flex items-center gap-2">
               <User className="h-4 w-4 text-[#F06529]" /> Datos del Cliente
             </h3>
             <div>
-              <p className="text-sm font-black text-slate-900">{trabajo.cliente?.nombreCompleto}</p>
-              <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+              <p className="text-sm font-black text-ink">{trabajo.cliente?.nombreCompleto}</p>
+              <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300">
                 Fidelización: {trabajo.cliente?.nivelFidelizacion}
               </span>
             </div>
-            <div className="text-xs text-slate-600 space-y-1.5 pt-2 border-t border-slate-100">
+            <div className="text-xs text-secondary space-y-1.5 pt-2 border-t border-line-soft">
               <p className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-[#0F2C59] shrink-0" />
+                <MapPin className="h-3.5 w-3.5 text-ink shrink-0" />
                 <span>{trabajo.cliente?.direccion}</span>
               </p>
             </div>
@@ -608,19 +608,19 @@ export default function TrabajoDetallePage({
         <div className="lg:col-span-8 space-y-5">
           {/* FASE 4 */}
           {canManage && (estado === "BORRADOR" || (!trabajo.tecnicoId && ["EVALUADO", "COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(estado))) && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-              <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+            <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
+              <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-[#F06529]" /> Asignar técnico y programar atención
               </h3>
               <form onSubmit={handleAgendarVisita} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Técnico Instalador</label>
+                    <label className="block text-xs font-bold text-secondary mb-1">Técnico Instalador</label>
                     <select
                       required
                       value={fase4Data.tecnicoId}
                       onChange={(e) => setFase4Data({ ...fase4Data, tecnicoId: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl text-xs font-semibold outline-none"
                     >
                       <option value="">Seleccionar técnico...</option>
                       {tecnicos.map((t) => (
@@ -629,13 +629,13 @@ export default function TrabajoDetallePage({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Fecha Programada</label>
+                    <label className="block text-xs font-bold text-secondary mb-1">Fecha Programada</label>
                     <input
                       type="datetime-local"
                       required
                       value={fase4Data.fechaProgramada}
                       onChange={(e) => setFase4Data({ ...fase4Data, fechaProgramada: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl text-xs font-semibold outline-none"
                     />
                   </div>
                 </div>
@@ -649,17 +649,17 @@ export default function TrabajoDetallePage({
 
           {/* FASE 5: MEDICIÓN EN TERRENO */}
           {estado === "EVALUACION_PENDIENTE" && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-line-soft pb-3">
                 <div>
-                  <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
                     <Wrench className="h-4 w-4 text-[#F06529]" /> 📏 Paso del Técnico: Medición en Casa/Obra del Cliente
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     El instalador asignado ({trabajo.tecnico?.nombre || "Técnico"}) anota los metros de tubería y dificultad en el lugar.
                   </p>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
                   Visita Asignada
                 </span>
               </div>
@@ -673,7 +673,7 @@ export default function TrabajoDetallePage({
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">
+                    <label className="block font-bold text-secondary mb-1">
                       Metros de tubería por fuera / vista (m)
                     </label>
                     <input
@@ -683,13 +683,13 @@ export default function TrabajoDetallePage({
                       required
                       value={fase5Data.metrosVisto}
                       onChange={(e) => setFase5Data({ ...fase5Data, metrosVisto: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">Tubería que va con abrazaderas o grampas</span>
+                    <span className="text-[10px] text-faint mt-0.5 block">Tubería que va con abrazaderas o grampas</span>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">
+                    <label className="block font-bold text-secondary mb-1">
                       Metros de tubería picada en la pared / empotrada (m)
                     </label>
                     <input
@@ -699,17 +699,17 @@ export default function TrabajoDetallePage({
                       required
                       value={fase5Data.metrosEmpotrado}
                       onChange={(e) => setFase5Data({ ...fase5Data, metrosEmpotrado: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">Tubería oculta bajo revoque o piso</span>
+                    <span className="text-[10px] text-faint mt-0.5 block">Tubería oculta bajo revoque o piso</span>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Dificultad del Trabajo</label>
+                    <label className="block font-bold text-secondary mb-1">Dificultad del Trabajo</label>
                     <select
                       value={fase5Data.dificultadSugerida}
                       onChange={(e) => setFase5Data({ ...fase5Data, dificultadSugerida: Number(e.target.value) })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none"
                     >
                       <option value={1}>Nivel 1 (Normal / Fácil)</option>
                       <option value={2}>Nivel 2 (Medio / Altura moderada)</option>
@@ -728,7 +728,7 @@ export default function TrabajoDetallePage({
                         onChange={(e) => setFase5Data({ ...fase5Data, ventilacionVasaOk: e.target.checked })}
                         className="w-4 h-4 accent-[#F06529] rounded cursor-pointer"
                       />
-                      <label htmlFor="vasaCheck" className="font-bold text-slate-800 cursor-pointer">
+                      <label htmlFor="vasaCheck" className="font-bold text-ink cursor-pointer">
                         Rejillas y ventilación de gas seguras y reglamentarias
                       </label>
                     </div>
@@ -750,17 +750,17 @@ export default function TrabajoDetallePage({
 
           {/* FASE 6: EMISIÓN DE COTIZACIÓN POR EL ENCARGADO */}
           {canManage && estado === "EVALUADO" && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-line-soft pb-3">
                 <div>
-                  <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-[#F06529]" /> 📄 Presupuesto Oficial para el Cliente
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     Revisa el alcance y los importes en Bolivianos (Bs.) antes de emitir el presupuesto.
                   </p>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">
                   Listo para Presupuestar
                 </span>
               </div>
@@ -768,7 +768,7 @@ export default function TrabajoDetallePage({
               <form onSubmit={handleEmitirCotizacion} className="space-y-4 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Costo de Materiales (Bs.)</label>
+                    <label className="block font-bold text-secondary mb-1">Costo de Materiales (Bs.)</label>
                     <input
                       type="number"
                       min="0"
@@ -776,11 +776,11 @@ export default function TrabajoDetallePage({
                       required
                       value={fase6Calculo.subtotalMateriales}
                       onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalMateriales: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Costo de Mano de Obra (Bs.)</label>
+                    <label className="block font-bold text-secondary mb-1">Costo de Mano de Obra (Bs.)</label>
                     <input
                       type="number"
                       min="0"
@@ -788,11 +788,11 @@ export default function TrabajoDetallePage({
                       required
                       value={fase6Calculo.subtotalManoObra}
                       onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalManoObra: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Transporte / Movilidad (Bs.)</label>
+                    <label className="block font-bold text-secondary mb-1">Transporte / Movilidad (Bs.)</label>
                     <input
                       type="number"
                       min="0"
@@ -800,7 +800,7 @@ export default function TrabajoDetallePage({
                       required
                       value={fase6Calculo.montoTransporte}
                       onChange={(e) => setFase6Calculo({ ...fase6Calculo, montoTransporte: e.target.value })}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none"
+                      className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
                   </div>
                 </div>
@@ -820,24 +820,24 @@ export default function TrabajoDetallePage({
 
           {/* FASE 7: ENVÍO AL CLIENTE (WHATSAPP / PDF) & DECISIÓN */}
           {canManage && estado === "COTIZADO" && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-line-soft pb-3">
                 <div>
-                  <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
                     <Clock className="h-4 w-4 text-[#F06529]" /> 📱 Enviar Presupuesto al Cliente y Registrar Respuesta
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     Presupuesto vigente por un total de <strong>Bs. {totalCotizado.toLocaleString("es-CL")}</strong>.
                   </p>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-purple-100 text-purple-800">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300">
                   Válido por 15 Días
                 </span>
               </div>
 
               {/* Botones de Envío al Cliente */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
-                <span className="font-bold text-slate-700 block">Enviar presupuesto al cliente:</span>
+              <div className="p-4 rounded-xl bg-canvas border border-line space-y-3 text-xs">
+                <span className="font-bold text-secondary block">Enviar presupuesto al cliente:</span>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <a
                     href={`https://api.whatsapp.com/send?phone=${encodeURIComponent(
@@ -864,13 +864,13 @@ export default function TrabajoDetallePage({
 
               {/* Registro de Decisión */}
               <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-slate-500 font-medium">
+                <span className="text-xs text-muted font-medium">
                   ¿Qué respondió el cliente?
                 </span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleDecisionCliente("RECHAZAR")}
-                    className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 cursor-pointer"
+                    className="px-4 py-2 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-700 dark:text-red-300 font-bold text-xs rounded-xl border border-red-200 dark:border-red-900 cursor-pointer"
                   >
                     Cliente Rechaza
                   </button>
@@ -888,24 +888,24 @@ export default function TrabajoDetallePage({
 
           {/* ESTADO APROBADO: REGISTRAR PAGO O INICIAR DIRECTAMENTE */}
           {canManage && ["APROBADO", "PAGO_A_CUENTA_RECIBIDO"].includes(estado) && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-line-soft pb-3">
                 <div>
-                  <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Presupuesto Aceptado por el Cliente
+                  <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" /> Presupuesto Aceptado por el Cliente
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     El cliente aprobó la cotización de <strong>Bs. {totalCotizado.toLocaleString("es-CL")}</strong>.
                   </p>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">
                   Aprobado
                 </span>
               </div>
 
               {/* Opciones directas: Registrar Pago o Iniciar Directamente */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
-                <span className="font-bold text-slate-700 block">
+              <div className="p-4 rounded-xl bg-canvas border border-line space-y-3 text-xs">
+                <span className="font-bold text-secondary block">
                   ¿Cómo deseas continuar con la orden?
                 </span>
                 <div className="flex flex-wrap items-center gap-3">
@@ -932,13 +932,13 @@ export default function TrabajoDetallePage({
 
           {/* FASE 8: ANTICIPO APROBADO -> INICIAR TRABAJO */}
           {estado === "ANTICIPO_RECIBIDO" && (
-            <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 shadow-xs space-y-3 animate-fade-in">
+            <div className="bg-emerald-50 dark:bg-emerald-950/40 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-900 shadow-xs space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-emerald-900 uppercase tracking-wider flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Anticipo confirmado
+                  <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" /> Anticipo confirmado
                   </h3>
-                  <p className="text-xs text-emerald-700 mt-0.5">
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
                     El cliente pagó el anticipo requerido. El trabajo está listo para realizarse.
                   </p>
                 </div>
@@ -959,10 +959,10 @@ export default function TrabajoDetallePage({
 
           {/* FASE 9, 10, 11, 12, 13: EJECUCIÓN Y CONTROL DE MATERIALES / REPUESTOS / HERRAMIENTAS */}
           {["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO"].includes(estado) && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-line-soft">
                 <div>
-                  <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
                     {trabajo.subtipoCodigo?.toLowerCase().includes("alquiler") || trabajo.subtipoCodigo?.startsWith("OTR.3") || trabajo.subtipoNombre?.toLowerCase().includes("alquiler") ? (
                       <>
                         <Wrench className="h-4 w-4 text-[#F06529]" /> 🛠️ Herramientas y Equipos en Alquiler
@@ -981,7 +981,7 @@ export default function TrabajoDetallePage({
                       </>
                     )}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     {trabajo.subtipoCodigo?.toLowerCase().includes("alquiler") || trabajo.subtipoCodigo?.startsWith("OTR.3") || trabajo.subtipoNombre?.toLowerCase().includes("alquiler")
                       ? "Herramientas o equipos entregados al cliente bajo contrato de alquiler (termofusoras, bombas, etc.)."
                       : trabajo.subtipoCodigo?.startsWith("OTR") || trabajo.subtipoNombre?.toLowerCase().includes("hermeticidad") || trabajo.subtipoNombre?.toLowerCase().includes("trámite")
@@ -1025,7 +1025,7 @@ export default function TrabajoDetallePage({
 
               {/* Tabla de Materiales / Repuestos / Herramientas */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-faint block">
                   {trabajo.subtipoCodigo?.toLowerCase().includes("alquiler") || trabajo.subtipoCodigo?.startsWith("OTR.3") || trabajo.subtipoNombre?.toLowerCase().includes("alquiler")
                     ? `Herramientas e insumos registrados (${trabajo.materiales?.length || 0}):`
                     : trabajo.subtipoCodigo?.startsWith("OTR") || trabajo.subtipoNombre?.toLowerCase().includes("hermeticidad")
@@ -1036,7 +1036,7 @@ export default function TrabajoDetallePage({
                 </span>
 
                 {trabajo.materiales?.length === 0 ? (
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
+                  <div className="p-4 rounded-xl bg-canvas border border-line text-xs text-muted text-center">
                     {trabajo.subtipoCodigo?.toLowerCase().includes("alquiler") || trabajo.subtipoCodigo?.startsWith("OTR.3") || trabajo.subtipoNombre?.toLowerCase().includes("alquiler")
                       ? "Herramientas asignadas para el alquiler. Al finalizar el período o devolver los equipos, presiona 'Trabajo Físico Terminado'."
                       : trabajo.subtipoCodigo?.startsWith("OTR") || trabajo.subtipoNombre?.toLowerCase().includes("hermeticidad") || trabajo.subtipoNombre?.toLowerCase().includes("trámite")
@@ -1046,9 +1046,9 @@ export default function TrabajoDetallePage({
                       : "No se han registrado materiales todavía. Presiona el botón naranja de arriba para agregar uno."}
                   </div>
                 ) : (
-                  <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+                  <div className="border border-line rounded-xl overflow-hidden text-xs">
                     <table className="w-full text-left">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                      <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
                         <tr>
                           <th className="py-2.5 px-3">Descripción</th>
                           <th className="py-2.5 px-3">Origen</th>
@@ -1057,28 +1057,28 @@ export default function TrabajoDetallePage({
                           <th className="py-2.5 px-3 text-right">Subtotal (Bs.)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-800">
+                      <tbody className="divide-y divide-slate-100 text-ink">
                         {trabajo.materiales?.map((m: any) => (
                           <tr key={m.id}>
-                            <td className="py-2.5 px-3 font-bold text-slate-900">{m.descripcion}</td>
+                            <td className="py-2.5 px-3 font-bold text-ink">{m.descripcion}</td>
                             <td className="py-2.5 px-3">
                               {m.tipoOrigen === "INVENTARIO" || m.esDeInventario ? (
-                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-900">
                                   🏢 Tienda Servigaz
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200">
+                                <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-900">
                                   🛒 Comprado Afuera
                                 </span>
                               )}
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono">{Number(m.cantidad)}</td>
                             <td className="py-2.5 px-3 text-right font-mono">Bs. {Number(m.costoUnitario).toLocaleString("es-CL")}</td>
-                            <td className="py-2.5 px-3 text-right font-black text-[#0F2C59]">Bs. {Number(m.subtotalCosto).toLocaleString("es-CL")}</td>
+                            <td className="py-2.5 px-3 text-right font-black text-ink">Bs. {Number(m.subtotalCosto).toLocaleString("es-CL")}</td>
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="bg-slate-50 border-t border-slate-200 font-black text-slate-900">
+                      <tfoot className="bg-canvas border-t border-line font-black text-ink">
                         <tr>
                           <td colSpan={4} className="py-2.5 px-3 text-right uppercase text-[10px]">
                             {trabajo.subtipoCodigo?.startsWith("3.") || trabajo.subtipoNombre?.toLowerCase().includes("calef") || trabajo.subtipoNombre?.toLowerCase().includes("equipo")
@@ -1094,8 +1094,8 @@ export default function TrabajoDetallePage({
               </div>
 
               {/* Botones de Transición de Fases */}
-              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <span className="text-[11px] text-slate-500 font-medium">
+              <div className="pt-3 border-t border-line-soft flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <span className="text-[11px] text-muted font-medium">
                   {estado === "EN_PROCESO" && "👉 Trabajo en curso. Cuando el técnico termine en el lugar, presiona 'Trabajo Físico Terminado'."}
                   {estado === "TERMINADO_TECNICO" && "👉 El técnico terminó. El Encargado debe revisar y presionar 'Aprobar Calidad del Trabajo'."}
                   {estado === "VALIDADO" && "👉 Trabajo aprobado. Presiona 'Finalizar Trabajo y Ver Ganancia' para emitir la garantía oficial con QR."}
@@ -1134,8 +1134,8 @@ export default function TrabajoDetallePage({
                 )}
 
                 {estado === "FINALIZADO_FINANCIERO" && (
-                  <div className="p-3 rounded-xl bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center gap-1.5 shrink-0">
-                    <Lock className="h-4 w-4 text-emerald-700" />
+                  <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 shrink-0">
+                    <Lock className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
                     <span>Trabajo Finalizado con Garantía QR</span>
                   </div>
                 )}
@@ -1147,8 +1147,8 @@ export default function TrabajoDetallePage({
 
       {modalTermino && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <form onSubmit={handleFinalizarTecnico} className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-4">
-              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
+          <form onSubmit={handleFinalizarTecnico} className="bg-surface rounded-2xl p-6 max-w-lg w-full space-y-4">
+              {errorMsg && <p role="alert" className="text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 rounded-xl p-3">{errorMsg}</p>}
             <h3 className="font-bold">Registrar término técnico</h3>
             <label className="block text-sm">Trabajo realizado y resultado de pruebas
               <textarea required minLength={5} maxLength={3000} value={terminoData.observaciones} onChange={e => setTerminoData({ ...terminoData, observaciones: e.target.value })} className="w-full border rounded-xl p-3 mt-1" />
@@ -1166,10 +1166,10 @@ export default function TrabajoDetallePage({
       {/* MODAL DE MATERIALES / REPUESTOS CON DESCUENTO DE STOCK EN TIENDA */}
       {modalMaterial && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="bg-surface rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
               <div>
-                <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+                <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                   {trabajo.subtipoCodigo?.startsWith("3.") || trabajo.subtipoNombre?.toLowerCase().includes("calef") || trabajo.subtipoNombre?.toLowerCase().includes("equipo") ? (
                     <>
                       <Wrench className="h-4 w-4 text-[#F06529]" /> 🔧 Agregar Repuesto para el Equipo
@@ -1180,7 +1180,7 @@ export default function TrabajoDetallePage({
                     </>
                   )}
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-muted mt-0.5">
                   Selecciona si el ítem sale de la tienda Servigaz (descontará inventario) o si se compró afuera.
                 </p>
               </div>
@@ -1192,14 +1192,14 @@ export default function TrabajoDetallePage({
                   }
                   setModalMaterial(false);
                 }}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                className="text-faint hover:text-secondary cursor-pointer p-1"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleRegistrarMaterial} className="space-y-4 text-xs">
-              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
+              {errorMsg && <p role="alert" className="text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 rounded-xl p-3">{errorMsg}</p>}
               {/* Selector de Origen en 2 Tarjetas */}
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -1207,14 +1207,14 @@ export default function TrabajoDetallePage({
                   onClick={() => setMaterialData({ ...materialData, esDeInventario: true, descripcion: "", productoId: "" })}
                   className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                     materialData.esDeInventario
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500"
-                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300"
+                      ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-500"
+                      : "border-line bg-canvas text-secondary hover:border-line-strong"
                   }`}
                 >
                   <div className="flex items-center gap-1.5 font-bold text-xs">
                     <span>🏢 Tienda / Almacén</span>
                   </div>
-                  <span className="text-[10px] text-emerald-700 block mt-0.5 font-semibold">
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-300 block mt-0.5 font-semibold">
                     ⚡ Descuenta stock en vivo
                   </span>
                 </button>
@@ -1224,14 +1224,14 @@ export default function TrabajoDetallePage({
                   onClick={() => setMaterialData({ ...materialData, esDeInventario: false, productoId: "", costoUnitario: 0 })}
                   className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                     !materialData.esDeInventario
-                      ? "border-[#F06529] bg-orange-50 text-orange-950 ring-2 ring-[#F06529]"
-                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300"
+                      ? "border-[#F06529] bg-orange-50 dark:bg-orange-950/40 text-orange-950 dark:text-orange-300 ring-2 ring-[#F06529]"
+                      : "border-line bg-canvas text-secondary hover:border-line-strong"
                   }`}
                 >
                   <div className="flex items-center gap-1.5 font-bold text-xs">
                     <span>🛒 Comprado Afuera</span>
                   </div>
-                  <span className="text-[10px] text-orange-700 block mt-0.5 font-semibold">
+                  <span className="text-[10px] text-orange-700 dark:text-orange-300 block mt-0.5 font-semibold">
                     Ferretería / Proveedor externo
                   </span>
                 </button>
@@ -1239,7 +1239,7 @@ export default function TrabajoDetallePage({
 
               {materialData.esDeInventario ? (
                 <div className="space-y-2">
-                  <label className="block font-bold text-slate-700">
+                  <label className="block font-bold text-secondary">
                     Seleccionar Producto del Inventario de la Tienda <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -1255,7 +1255,7 @@ export default function TrabajoDetallePage({
                         costoUnitario: Number(prod?.costoPromedio || prod?.precioVenta || 0),
                       });
                     }}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-2.5 bg-canvas border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="">-- Elige un producto en existencia --</option>
                     {productosInventario.map((p) => (
@@ -1266,9 +1266,9 @@ export default function TrabajoDetallePage({
                   </select>
 
                   {materialData.productoId && (
-                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 flex items-center justify-between">
+                    <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
                       <span>Stock disponible en tienda:</span>
-                      <strong className="text-emerald-950 font-black">
+                      <strong className="text-emerald-950 dark:text-emerald-300 font-black">
                         {productosInventario.find((p) => p.id === materialData.productoId)?.stockActual}{" "}
                         {productosInventario.find((p) => p.id === materialData.productoId)?.unidadMedida || "un"}
                       </strong>
@@ -1277,7 +1277,7 @@ export default function TrabajoDetallePage({
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <label className="block font-bold text-slate-700">
+                  <label className="block font-bold text-secondary">
                     Nombre del Material o Repuesto <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -1289,14 +1289,14 @@ export default function TrabajoDetallePage({
                         ? "Ej: Termocupla Universal, Membrana de calefón 14L, Sensor de llama..."
                         : "Ej: Codo de Cobre 1/2, Teflón de gas, Válvula de bola..."
                     }
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                    className="w-full p-2.5 bg-canvas border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                   />
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Cantidad Utilizada <span className="text-red-500">*</span></label>
+                  <label className="block font-bold text-secondary mb-1">Cantidad Utilizada <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     min="0.1"
@@ -1304,11 +1304,11 @@ export default function TrabajoDetallePage({
                     required
                     value={materialData.cantidad}
                     onChange={(e) => setMaterialData({ ...materialData, cantidad: Number(e.target.value) })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2.5 bg-canvas border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Costo Unitario (Bs.) <span className="text-red-500">*</span></label>
+                  <label className="block font-bold text-secondary mb-1">Costo Unitario (Bs.) <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     min="0"
@@ -1317,20 +1317,20 @@ export default function TrabajoDetallePage({
                     readOnly={materialData.esDeInventario}
                     value={materialData.costoUnitario}
                     onChange={(e) => setMaterialData({ ...materialData, costoUnitario: Number(e.target.value) })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2.5 bg-canvas border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Subtotal Calculado */}
-              <div className="p-3 bg-slate-100 rounded-xl flex items-center justify-between text-xs font-bold text-slate-700">
+              <div className="p-3 bg-wash rounded-xl flex items-center justify-between text-xs font-bold text-secondary">
                 <span>Subtotal de este ítem:</span>
-                <span className="text-sm font-black text-[#0F2C59]">
+                <span className="text-sm font-black text-ink">
                   Bs. {(Number(materialData.cantidad || 0) * Number(materialData.costoUnitario || 0)).toLocaleString("es-CL")}
                 </span>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
                 <button
                   type="button"
                   onClick={() => {
@@ -1339,7 +1339,7 @@ export default function TrabajoDetallePage({
                     }
                     setModalMaterial(false);
                   }}
-                  className="px-4 py-2 border rounded-xl font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  className="px-4 py-2 border rounded-xl font-bold text-secondary hover:bg-canvas cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -1358,31 +1358,31 @@ export default function TrabajoDetallePage({
       {/* MODAL CIERRE FINANCIERO (FASE 13) */}
       {modalCierreFinanciero && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
+              <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                 <Lock className="h-4 w-4 text-[#F06529]" /> Finalizar Trabajo y Calcular Ganancia
               </h3>
-              <button onClick={() => setModalCierreFinanciero(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <button onClick={() => setModalCierreFinanciero(false)} className="text-faint hover:text-secondary cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleCierreFinanciero} className="space-y-3 text-xs">
-              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
-              <div className="p-3 rounded-xl bg-slate-50 border space-y-1">
+              {errorMsg && <p role="alert" className="text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 rounded-xl p-3">{errorMsg}</p>}
+              <div className="p-3 rounded-xl bg-canvas border space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Cobrado al Cliente:</span>
-                  <span className="font-black text-emerald-700">Bs. {totalPagado.toLocaleString("es-CL")}</span>
+                  <span className="text-muted">Total Cobrado al Cliente:</span>
+                  <span className="font-black text-emerald-700 dark:text-emerald-300">Bs. {totalPagado.toLocaleString("es-CL")}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Gastado en Materiales:</span>
-                  <span className="font-bold text-slate-800">Bs. {totalMaterialesReales.toLocaleString("es-CL")}</span>
+                  <span className="text-muted">Total Gastado en Materiales:</span>
+                  <span className="font-bold text-ink">Bs. {totalMaterialesReales.toLocaleString("es-CL")}</span>
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Pago Real de Mano de Obra al Instalador (Bs.)</label>
+                <label className="block font-bold text-secondary mb-1">Pago Real de Mano de Obra al Instalador (Bs.)</label>
                 <input
                   type="number"
                   min="0"
@@ -1390,12 +1390,12 @@ export default function TrabajoDetallePage({
                   required
                   value={cierreData.costoManoObraReal}
                   onChange={(e) => setCierreData({ ...cierreData, costoManoObraReal: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border rounded-xl font-bold outline-none"
+                  className="w-full p-2.5 bg-canvas border rounded-xl font-bold outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Gasto Real de Transporte / Pasajes (Bs.)</label>
+                <label className="block font-bold text-secondary mb-1">Gasto Real de Transporte / Pasajes (Bs.)</label>
                 <input
                   type="number"
                   min="0"
@@ -1403,12 +1403,12 @@ export default function TrabajoDetallePage({
                   required
                   value={cierreData.costoTransporteReal}
                   onChange={(e) => setCierreData({ ...cierreData, costoTransporteReal: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border rounded-xl font-bold outline-none"
+                  className="w-full p-2.5 bg-canvas border rounded-xl font-bold outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setModalCierreFinanciero(false)} className="px-4 py-2 border rounded-xl font-bold text-slate-600">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
+                <button type="button" onClick={() => setModalCierreFinanciero(false)} className="px-4 py-2 border rounded-xl font-bold text-secondary">
                   Cancelar
                 </button>
                 <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold">
@@ -1423,39 +1423,39 @@ export default function TrabajoDetallePage({
       {/* MODAL PAGO CON MÚLTIPLES MÉTODOS (EFECTIVO, TRANSFERENCIA, QR, TARJETA) */}
       {modalPago && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
               <div>
-                <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+                <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                   <CreditCard className="h-4 w-4 text-[#F06529]" /> Registrar Pago / Cobro
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-muted mt-0.5">
                   Registra el abono del cliente en efectivo, transferencia o QR.
                 </p>
               </div>
-              <button onClick={() => setModalPago(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer p-1">
+              <button onClick={() => setModalPago(false)} className="text-faint hover:text-secondary cursor-pointer p-1">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <form onSubmit={handleRegistrarPago} className="space-y-4 text-xs">
-              {errorMsg && <p role="alert" className="text-red-700 bg-red-50 rounded-xl p-3">{errorMsg}</p>}
+              {errorMsg && <p role="alert" className="text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 rounded-xl p-3">{errorMsg}</p>}
               {/* Resumen de Saldo */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-canvas border border-line flex items-center justify-between">
                 <div>
-                  <span className="text-slate-500 block text-[10px]">Saldo Pendiente:</span>
-                  <strong className="text-sm font-black text-slate-900">
+                  <span className="text-muted block text-[10px]">Saldo Pendiente:</span>
+                  <strong className="text-sm font-black text-ink">
                     Bs. {saldoPendiente.toLocaleString("es-BO")}
                   </strong>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300">
                   En Bolivianos (Bs.)
                 </span>
               </div>
 
               {/* Selector de Método de Pago */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1.5">Forma de Pago:</label>
+                <label className="block font-bold text-secondary mb-1.5">Forma de Pago:</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
                     { id: "EFECTIVO", label: "💵 Efectivo" },
@@ -1471,8 +1471,8 @@ export default function TrabajoDetallePage({
                       onClick={() => setPagoData({ ...pagoData, metodoPago: m.id })}
                       className={`p-2 rounded-xl border text-center font-bold text-xs transition-all cursor-pointer ${
                         pagoData.metodoPago === m.id
-                          ? "border-[#F06529] bg-orange-50 text-[#F06529] ring-2 ring-[#F06529]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                          ? "border-[#F06529] bg-orange-50 dark:bg-orange-950/40 text-[#F06529] ring-2 ring-[#F06529]"
+                          : "border-line bg-canvas text-secondary hover:bg-wash"
                       }`}
                     >
                       {m.label}
@@ -1483,7 +1483,7 @@ export default function TrabajoDetallePage({
 
               {/* Monto */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Monto a Cobrar (Bs.) <span className="text-red-500">*</span></label>
+                <label className="block font-bold text-secondary mb-1">Monto a Cobrar (Bs.) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   required
@@ -1492,24 +1492,24 @@ export default function TrabajoDetallePage({
                   value={pagoData.monto || ""}
                   onChange={(e) => setPagoData({ ...pagoData, monto: Number(e.target.value) })}
                   placeholder={`Ej: ${saldoPendiente > 0 ? saldoPendiente : totalCotizado}`}
-                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-black text-slate-900 text-sm outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-3 bg-canvas border border-line-strong rounded-xl font-black text-ink text-sm outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               {/* Nro de Referencia / Comprobante */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">N° de Comprobante / Referencia (Opcional)</label>
+                <label className="block font-bold text-secondary mb-1">N° de Comprobante / Referencia (Opcional)</label>
                 <input
                   type="text"
                   value={pagoData.numeroReferencia || ""}
                   onChange={(e) => setPagoData({ ...pagoData, numeroReferencia: e.target.value })}
                   placeholder="Ej: Transf #98214 / QR BCP / Recibo #042"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-medium text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setModalPago(false)} className="px-4 py-2 border rounded-xl font-bold text-slate-600 hover:bg-slate-50 cursor-pointer">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
+                <button type="button" onClick={() => setModalPago(false)} className="px-4 py-2 border rounded-xl font-bold text-secondary hover:bg-canvas cursor-pointer">
                   Cancelar
                 </button>
                 <button type="submit" className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-md cursor-pointer transition-all">
@@ -1524,7 +1524,7 @@ export default function TrabajoDetallePage({
       {/* MODAL PDF */}
       {modalPdf && cotizacionVigente && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
+          <div className="bg-surface rounded-2xl max-w-2xl w-full shadow-2xl border border-line-soft overflow-hidden my-8">
             <div className="bg-[#0F2C59] text-white p-6 flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold text-[#FF7B42] uppercase tracking-wider block">Presupuesto Oficial</span>
@@ -1535,16 +1535,16 @@ export default function TrabajoDetallePage({
                 <span className="text-xs font-mono font-bold px-3 py-1 bg-white/10 rounded-lg block">COT-{trabajo.codigoCorrelativo}</span>
               </div>
             </div>
-            <div className="p-6 space-y-6 text-xs text-slate-800">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="font-bold text-slate-800">{trabajo.subtipoNombre}</p>
+            <div className="p-6 space-y-6 text-xs text-ink">
+              <div className="p-3 bg-canvas rounded-xl border border-line-soft">
+                <p className="font-bold text-ink">{trabajo.subtipoNombre}</p>
               </div>
-              <div className="text-right font-black text-lg text-[#0F2C59]">
+              <div className="text-right font-black text-lg text-ink">
                 Total: Bs. {totalCotizado.toLocaleString("es-CL")}
               </div>
             </div>
-            <div className="p-4 bg-slate-100 border-t flex justify-between">
-              <button onClick={() => setModalPdf(false)} className="px-4 py-2 bg-white border rounded-xl font-bold text-xs text-slate-700">Cerrar</button>
+            <div className="p-4 bg-wash border-t flex justify-between">
+              <button onClick={() => setModalPdf(false)} className="px-4 py-2 bg-surface border rounded-xl font-bold text-xs text-secondary">Cerrar</button>
               <button onClick={() => window.print()} className="px-5 py-2 bg-[#0F2C59] text-white rounded-xl font-bold text-xs flex items-center gap-1.5">
                 <Printer className="h-4 w-4" /> Imprimir
               </button>

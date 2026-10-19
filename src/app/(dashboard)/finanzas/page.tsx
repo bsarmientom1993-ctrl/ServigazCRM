@@ -117,13 +117,13 @@ export default function FinanzasPage() {
   };
 
   const categoriasLabels: Record<string, { label: string; icon: any; color: string }> = {
-    ALQUILER: { label: "Alquiler Taller/Tienda", icon: Building2, color: "bg-purple-100 text-purple-800 border-purple-200" },
-    SERVICIOS: { label: "Servicios Básicos (Luz/Agua/Net)", icon: Receipt, color: "bg-blue-100 text-blue-800 border-blue-200" },
-    NOMINA: { label: "Sueldos & Nómina", icon: DollarSign, color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-    INVENTARIO_COMPRAS: { label: "Compras de Inventario", icon: Layers, color: "bg-amber-100 text-amber-800 border-amber-200" },
-    TRANSPORTE: { label: "Transporte & Combustible", icon: Truck, color: "bg-cyan-100 text-cyan-800 border-cyan-200" },
-    MANTENIMIENTO: { label: "Mantenimiento Local/Herramientas", icon: Wrench, color: "bg-indigo-100 text-indigo-800 border-indigo-200" },
-    OTROS: { label: "Otros Gastos", icon: Receipt, color: "bg-slate-100 text-slate-800 border-slate-200" },
+    ALQUILER: { label: "Alquiler Taller/Tienda", icon: Building2, color: "bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-900" },
+    SERVICIOS: { label: "Servicios Básicos (Luz/Agua/Net)", icon: Receipt, color: "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-900" },
+    NOMINA: { label: "Sueldos & Nómina", icon: DollarSign, color: "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900" },
+    INVENTARIO_COMPRAS: { label: "Compras de Inventario", icon: Layers, color: "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900" },
+    TRANSPORTE: { label: "Transporte & Combustible", icon: Truck, color: "bg-cyan-100 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-900" },
+    MANTENIMIENTO: { label: "Mantenimiento Local/Herramientas", icon: Wrench, color: "bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900" },
+    OTROS: { label: "Otros Gastos", icon: Receipt, color: "bg-wash text-ink border-line" },
   };
 
   const egresosFiltrados = egresos.filter((eg) => {
@@ -139,15 +139,15 @@ export default function FinanzasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-5 rounded-2xl border border-line shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-[#0F2C59] tracking-tight">Finanzas & Estado de Resultados</h1>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <h1 className="text-xl font-black text-ink tracking-tight">Finanzas & Estado de Resultados</h1>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
               Fase 19 (Bolivianos)
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Balance consolidado: Ingresos por Servicios vs Costos de Trabajos (#84) vs Gastos Operativos de Oficina.
           </p>
         </div>
@@ -163,13 +163,13 @@ export default function FinanzasPage() {
 
       {/* Alertas */}
       {errorMsg && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center gap-2">
+        <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs font-bold text-red-700 dark:text-red-300 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -178,47 +178,47 @@ export default function FinanzasPage() {
       {/* 4 KPIs Clave del Balance Global */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Ingresos Totales */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+        <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">Ingresos por Cobros</span>
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+            <span className="text-xs font-bold text-muted">Ingresos por Cobros</span>
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300">
               <TrendingUp className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-slate-900">
+          <div className="text-2xl font-black text-ink">
             Bs. {balance?.resumen?.totalIngresos?.toLocaleString("es-CL") || "0"}
           </div>
-          <p className="text-[11px] text-emerald-700 font-semibold">Cobros reales en caja y banco</p>
+          <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">Cobros reales en caja y banco</p>
         </div>
 
         {/* 2. Egresos Trabajos */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+        <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">Costos de Trabajos (#84)</span>
-            <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+            <span className="text-xs font-bold text-muted">Costos de Trabajos (#84)</span>
+            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300">
               <Wrench className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-slate-900">
+          <div className="text-2xl font-black text-ink">
             Bs. {balance?.resumen?.totalEgresosFaenas?.toLocaleString("es-CL") || "0"}
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-muted">
             {balance?.desgloseFaenas?.cantidadFaenasCerradas || 0} trabajos cerrados con materiales y mano de obra
           </p>
         </div>
 
         {/* 3. Gastos Fijos / Operativos */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+        <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">Gastos de Operación</span>
-            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+            <span className="text-xs font-bold text-muted">Gastos de Operación</span>
+            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300">
               <Building2 className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-slate-900">
+          <div className="text-2xl font-black text-ink">
             Bs. {balance?.resumen?.totalEgresosOperativos?.toLocaleString("es-CL") || "0"}
           </div>
-          <p className="text-[11px] text-slate-500">Alquiler, servicios, combustible y compras</p>
+          <p className="text-[11px] text-muted">Alquiler, servicios, combustible y compras</p>
         </div>
 
         {/* 4. Utilidad Neta Consolidada */}
@@ -241,13 +241,13 @@ export default function FinanzasPage() {
       </div>
 
       {/* Tabs de Navegación */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-line pb-2">
         <button
           onClick={() => setTabActiva("balance")}
           className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
             tabActiva === "balance"
               ? "bg-[#0F2C59] text-white shadow-xs"
-              : "bg-white text-slate-600 border hover:bg-slate-50"
+              : "bg-surface text-secondary border hover:bg-canvas"
           }`}
         >
           📊 Estado de Resultados & Desglose
@@ -257,7 +257,7 @@ export default function FinanzasPage() {
           className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
             tabActiva === "gastos"
               ? "bg-[#0F2C59] text-white shadow-xs"
-              : "bg-white text-slate-600 border hover:bg-slate-50"
+              : "bg-surface text-secondary border hover:bg-canvas"
           }`}
         >
           🏢 Gastos Operativos de Oficina ({egresos.length})
@@ -267,7 +267,7 @@ export default function FinanzasPage() {
           className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
             tabActiva === "costos_trabajos"
               ? "bg-[#0F2C59] text-white shadow-xs"
-              : "bg-white text-slate-600 border hover:bg-slate-50"
+              : "bg-surface text-secondary border hover:bg-canvas"
           }`}
         >
           🏗️ Costos Directos de Trabajos (#84)
@@ -278,8 +278,8 @@ export default function FinanzasPage() {
       {tabActiva === "balance" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
           {/* Gastos por Categoría */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+          <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4">
+            <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
               <Layers className="h-4 w-4 text-[#F06529]" /> Desglose de Gastos Operativos por Rubro
             </h3>
 
@@ -292,17 +292,17 @@ export default function FinanzasPage() {
                 const Icon = info.icon;
 
                 return (
-                  <div key={catKey} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                  <div key={catKey} className="p-3 rounded-xl bg-canvas border border-line-soft flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-lg bg-white shadow-2xs text-[#0F2C59]">
+                      <div className="p-2 rounded-lg bg-surface shadow-2xs text-ink">
                         <Icon className="h-4 w-4" />
                       </div>
                       <div>
-                        <span className="font-bold text-slate-800 block">{info.label}</span>
-                        <span className="text-[10px] text-slate-400">{pct}% del gasto operativo</span>
+                        <span className="font-bold text-ink block">{info.label}</span>
+                        <span className="text-[10px] text-faint">{pct}% del gasto operativo</span>
                       </div>
                     </div>
-                    <span className="font-black text-slate-900 text-sm">
+                    <span className="font-black text-ink text-sm">
                       Bs. {monto.toLocaleString("es-CL")}
                     </span>
                   </div>
@@ -312,22 +312,22 @@ export default function FinanzasPage() {
           </div>
 
           {/* Composición de Costos de Trabajos (#84) */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+          <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4">
+            <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
               <Wrench className="h-4 w-4 text-[#F06529]" /> Composición de Costos en Trabajos Realizados
             </h3>
 
             <div className="space-y-3">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="p-4 rounded-xl bg-canvas border border-line-soft space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-blue-600" /> Materiales & Cañerías Reales:
+                  <span className="font-bold text-secondary flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" /> Materiales & Cañerías Reales:
                   </span>
-                  <strong className="text-slate-900 font-black">
+                  <strong className="text-ink font-black">
                     Bs. {balance?.desgloseFaenas?.totalMateriales?.toLocaleString("es-CL") || "0"}
                   </strong>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="w-full bg-emphasis rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full"
                     style={{
@@ -337,16 +337,16 @@ export default function FinanzasPage() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="p-4 rounded-xl bg-canvas border border-line-soft space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5 text-emerald-600" /> Mano de Obra Pagada a Técnicos:
+                  <span className="font-bold text-secondary flex items-center gap-1.5">
+                    <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-300" /> Mano de Obra Pagada a Técnicos:
                   </span>
-                  <strong className="text-slate-900 font-black">
+                  <strong className="text-ink font-black">
                     Bs. {balance?.desgloseFaenas?.totalManoObra?.toLocaleString("es-CL") || "0"}
                   </strong>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="w-full bg-emphasis rounded-full h-2">
                   <div
                     className="bg-emerald-600 h-2 rounded-full"
                     style={{
@@ -356,16 +356,16 @@ export default function FinanzasPage() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="p-4 rounded-xl bg-canvas border border-line-soft space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                  <span className="font-bold text-secondary flex items-center gap-1.5">
                     <Truck className="h-3.5 w-3.5 text-[#F06529]" /> Pasajes y Fletes de Transporte:
                   </span>
-                  <strong className="text-slate-900 font-black">
+                  <strong className="text-ink font-black">
                     Bs. {balance?.desgloseFaenas?.totalTransporte?.toLocaleString("es-CL") || "0"}
                   </strong>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="w-full bg-emphasis rounded-full h-2">
                   <div
                     className="bg-[#F06529] h-2 rounded-full"
                     style={{
@@ -377,8 +377,8 @@ export default function FinanzasPage() {
             </div>
 
             {/* Aviso de Privacidad #91 */}
-            <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-[11px] text-purple-900 flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-purple-600 shrink-0" />
+            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 text-[11px] text-purple-900 dark:text-purple-300 flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-purple-600 dark:text-purple-300 shrink-0" />
               <span>
                 <strong>Regla de Privacidad #91:</strong> Los costos de trabajos son visibles por el Encargado del trabajo y Administrador. Los gastos manuales de oficina son privados por usuario.
               </span>
@@ -389,28 +389,28 @@ export default function FinanzasPage() {
 
       {/* TAB 2: LISTADO DE GASTOS OPERATIVOS */}
       {tabActiva === "gastos" && (
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
+        <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4 animate-fade-in">
           {/* Barra de Filtros */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <div className="relative w-full">
-                <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="h-4 w-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   placeholder="Buscar por descripción, proveedor o usuario..."
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full pl-9 pr-3 py-2 bg-canvas border border-line rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+              <Filter className="h-4 w-4 text-faint" />
               <select
                 value={filtroCategoria}
                 onChange={(e) => setFiltroCategoria(e.target.value)}
-                className="p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none"
+                className="p-2 bg-canvas border border-line rounded-xl text-xs font-bold text-secondary outline-none"
               >
                 <option value="">Todas las Categorías</option>
                 {Object.keys(categoriasLabels).map((cat) => (
@@ -423,9 +423,9 @@ export default function FinanzasPage() {
           </div>
 
           {/* Tabla de Gastos */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+          <div className="border border-line rounded-xl overflow-hidden text-xs">
             <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+              <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3 px-4">Fecha</th>
                   <th className="py-3 px-4">Categoría</th>
@@ -435,10 +435,10 @@ export default function FinanzasPage() {
                   <th className="py-3 px-4 text-right">Monto (Bs.)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800">
+              <tbody className="divide-y divide-slate-100 text-ink">
                 {egresosFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                    <td colSpan={6} className="py-8 text-center text-faint">
                       No hay gastos operativos registrados con este filtro.
                     </td>
                   </tr>
@@ -446,8 +446,8 @@ export default function FinanzasPage() {
                   egresosFiltrados.map((eg) => {
                     const info = categoriasLabels[eg.categoria] || categoriasLabels.OTROS;
                     return (
-                      <tr key={eg.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4 font-bold text-slate-600">
+                      <tr key={eg.id} className="hover:bg-canvas/80 transition-colors">
+                        <td className="py-3 px-4 font-bold text-secondary">
                           {new Date(eg.fechaEgreso).toLocaleDateString("es-CL")}
                         </td>
                         <td className="py-3 px-4">
@@ -456,24 +456,24 @@ export default function FinanzasPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <strong className="text-slate-900 block">{eg.descripcion}</strong>
+                          <strong className="text-ink block">{eg.descripcion}</strong>
                           {eg.proveedorInfo && (
-                            <span className="text-[11px] text-slate-400">Proveedor: {eg.proveedorInfo}</span>
+                            <span className="text-[11px] text-faint">Proveedor: {eg.proveedorInfo}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-slate-600">
+                        <td className="py-3 px-4 text-secondary">
                           {eg.creadoPor?.nombre || "Usuario"}
                         </td>
                         <td className="py-3 px-4 text-center">
                           {eg.esRecurrente ? (
-                            <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold flex items-center gap-1 justify-center border border-purple-200">
+                            <span className="px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[10px] font-bold flex items-center gap-1 justify-center border border-purple-200 dark:border-purple-900">
                               <Repeat className="h-3 w-3" /> Fijo Mensual
                             </span>
                           ) : (
-                            <span className="text-slate-400 text-[10px]">Gasto Puntual</span>
+                            <span className="text-faint text-[10px]">Gasto Puntual</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right font-black text-slate-900 text-sm">
+                        <td className="py-3 px-4 text-right font-black text-ink text-sm">
                           Bs. {Number(eg.monto).toLocaleString("es-CL")}
                         </td>
                       </tr>
@@ -488,17 +488,17 @@ export default function FinanzasPage() {
 
       {/* TAB 3: COSTOS REALES DE TRABAJOS (#84) */}
       {tabActiva === "costos_trabajos" && (
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
+        <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4 animate-fade-in">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
               <Lock className="h-4 w-4 text-[#F06529]" /> Costos de Trabajos Finalizados (#84)
             </h3>
-            <span className="text-xs text-slate-400">Total: {balance?.ultimasFaenasCerradas?.length || 0} trabajos</span>
+            <span className="text-xs text-faint">Total: {balance?.ultimasFaenasCerradas?.length || 0} trabajos</span>
           </div>
 
-          <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+          <div className="border border-line rounded-xl overflow-hidden text-xs">
             <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+              <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3 px-4">Código / Trabajo</th>
                   <th className="py-3 px-4">Cliente</th>
@@ -508,33 +508,33 @@ export default function FinanzasPage() {
                   <th className="py-3 px-4 text-right">Costo Total (Bs.)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800">
+              <tbody className="divide-y divide-slate-100 text-ink">
                 {!balance?.ultimasFaenasCerradas || balance.ultimasFaenasCerradas.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                    <td colSpan={6} className="py-8 text-center text-faint">
                       No hay trabajos cerrados financieramente todavía.
                     </td>
                   </tr>
                 ) : (
                   balance.ultimasFaenasCerradas.map((f: any) => (
-                    <tr key={f.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={f.id} className="hover:bg-canvas/80 transition-colors">
                       <td className="py-3 px-4">
-                        <strong className="text-slate-900 block">{f.trabajo?.codigoCorrelativo}</strong>
-                        <span className="text-[10px] text-slate-400">{f.trabajo?.subtipoNombre}</span>
+                        <strong className="text-ink block">{f.trabajo?.codigoCorrelativo}</strong>
+                        <span className="text-[10px] text-faint">{f.trabajo?.subtipoNombre}</span>
                       </td>
-                      <td className="py-3 px-4 font-bold text-slate-700">
+                      <td className="py-3 px-4 font-bold text-secondary">
                         {f.trabajo?.cliente?.nombreCompleto || "Cliente"}
                       </td>
-                      <td className="py-3 px-4 text-right text-blue-700 font-bold">
+                      <td className="py-3 px-4 text-right text-blue-700 dark:text-blue-300 font-bold">
                         Bs. {Number(f.totalMaterialesReales || Math.max(0, Number(f.totalEgreso || 0) - Number(f.manoObraMonto || 0) - Number(f.transporteMonto || 0))).toLocaleString("es-CL")}
                       </td>
-                      <td className="py-3 px-4 text-right text-emerald-700 font-bold">
+                      <td className="py-3 px-4 text-right text-emerald-700 dark:text-emerald-300 font-bold">
                         Bs. {Number(f.costoManoObraReal || f.manoObraMonto || 0).toLocaleString("es-CL")}
                       </td>
                       <td className="py-3 px-4 text-right text-[#F06529] font-bold">
                         Bs. {Number(f.costoTransporteReal || f.transporteMonto || 0).toLocaleString("es-CL")}
                       </td>
-                      <td className="py-3 px-4 text-right font-black text-slate-900 text-sm">
+                      <td className="py-3 px-4 text-right font-black text-ink text-sm">
                         Bs. {Number(f.totalEgreso).toLocaleString("es-CL")}
                       </td>
                     </tr>
@@ -549,17 +549,17 @@ export default function FinanzasPage() {
       {/* MODAL REGISTRAR GASTO OPERATIVO */}
       {modalGasto && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
               <div>
-                <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+                <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                   <PlusCircle className="h-4 w-4 text-[#F06529]" /> Registrar Gasto Operativo
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-muted mt-0.5">
                   Gastos de oficina, alquiler, servicios básicos o compras.
                 </p>
               </div>
-              <button onClick={() => setModalGasto(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer p-1">
+              <button onClick={() => setModalGasto(false)} className="text-faint hover:text-secondary cursor-pointer p-1">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -567,12 +567,12 @@ export default function FinanzasPage() {
             <form onSubmit={handleCrearGasto} className="space-y-4 text-xs">
               {/* Categoría */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Categoría del Gasto <span className="text-red-500">*</span></label>
+                <label className="block font-bold text-secondary mb-1">Categoría del Gasto <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formGasto.categoria}
                   onChange={(e) => setFormGasto({ ...formGasto, categoria: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-[#F06529]"
                 >
                   {Object.keys(categoriasLabels).map((cat) => (
                     <option key={cat} value={cat}>
@@ -584,7 +584,7 @@ export default function FinanzasPage() {
 
               {/* Monto */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Monto en Bolivianos (Bs.) <span className="text-red-500">*</span></label>
+                <label className="block font-bold text-secondary mb-1">Monto en Bolivianos (Bs.) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   required
@@ -593,66 +593,66 @@ export default function FinanzasPage() {
                   value={formGasto.monto}
                   onChange={(e) => setFormGasto({ ...formGasto, monto: e.target.value })}
                   placeholder="Ej: 2500"
-                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-black text-slate-900 text-sm outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-3 bg-canvas border border-line-strong rounded-xl font-black text-ink text-sm outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               {/* Descripción */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Descripción del Gasto <span className="text-red-500">*</span></label>
+                <label className="block font-bold text-secondary mb-1">Descripción del Gasto <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   value={formGasto.descripcion}
                   onChange={(e) => setFormGasto({ ...formGasto, descripcion: e.target.value })}
                   placeholder="Ej: Pago alquiler mes de agosto / Factura de luz taller"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               {/* Proveedor / Empresa */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Proveedor / Beneficiario (Opcional)</label>
+                <label className="block font-bold text-secondary mb-1">Proveedor / Beneficiario (Opcional)</label>
                 <input
                   type="text"
                   value={formGasto.proveedorInfo}
                   onChange={(e) => setFormGasto({ ...formGasto, proveedorInfo: e.target.value })}
                   placeholder="Ej: DELAPAZ S.A. / Inmobiliaria Calacoto"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
+                  className="w-full p-2.5 bg-canvas border border-line rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
                 />
               </div>
 
               {/* Fecha y Switch Recurrente */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Fecha del Gasto</label>
+                  <label className="block font-bold text-secondary mb-1">Fecha del Gasto</label>
                   <input
                     type="date"
                     required
                     value={formGasto.fechaEgreso}
                     onChange={(e) => setFormGasto({ ...formGasto, fechaEgreso: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none"
+                    className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                   />
                 </div>
 
                 <div className="flex flex-col justify-end">
-                  <label className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 cursor-pointer">
+                  <label className="p-2.5 rounded-xl bg-canvas border border-line flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formGasto.esRecurrente}
                       onChange={(e) => setFormGasto({ ...formGasto, esRecurrente: e.target.checked })}
                       className="w-4 h-4 accent-[#F06529] rounded"
                     />
-                    <span className="text-[11px] font-bold text-slate-700">Gasto Fijo Mensual</span>
+                    <span className="text-[11px] font-bold text-secondary">Gasto Fijo Mensual</span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
                 <button
                   type="button"
                   onClick={() => setModalGasto(false)}
-                  className="px-4 py-2 border rounded-xl font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  className="px-4 py-2 border rounded-xl font-bold text-secondary hover:bg-canvas cursor-pointer"
                 >
                   Cancelar
                 </button>

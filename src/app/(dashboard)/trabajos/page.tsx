@@ -38,20 +38,20 @@ export default function TrabajosPage() {
   }, []);
 
   const estadoBadge: Record<string, { label: string; color: string }> = {
-    BORRADOR: { label: "📝 Borrador", color: "bg-slate-100 text-slate-700 border-slate-200" },
-    EVALUACION_PENDIENTE: { label: "📏 Medición Pendiente", color: "bg-blue-50 text-blue-800 border-blue-200" },
-    EVALUADO: { label: "⏳ Por Presupuestar", color: "bg-indigo-50 text-indigo-800 border-indigo-200" },
-    COTIZADO: { label: "📄 Esperando al Cliente", color: "bg-purple-50 text-purple-800 border-purple-200" },
-    APROBADO: { label: "🤝 Aprobado (Falta Anticipo)", color: "bg-amber-50 text-amber-800 border-amber-200" },
-    ANTICIPO_RECIBIDO: { label: "💵 Anticipo Pagado", color: "bg-emerald-50 text-emerald-800 border-emerald-200" },
-    EN_PROCESO: { label: "⚡ En Ejecución / Trabajo en Curso", color: "bg-orange-50 text-orange-800 border-orange-200 animate-pulse" },
-    TERMINADO_TECNICO: { label: "🏁 Físico Terminado", color: "bg-sky-50 text-sky-800 border-sky-200" },
-    VALIDADO: { label: "✅ Calidad Aprobada", color: "bg-teal-50 text-teal-800 border-teal-200" },
-    FINALIZADO_FINANCIERO: { label: "🎉 Finalizado con Garantía", color: "bg-green-100 text-green-900 border-green-300 font-black" },
-    RECHAZADO: { label: "Rechazado", color: "bg-red-50 text-red-800 border-red-200" },
-    PAGO_A_CUENTA_RECIBIDO: { label: "Anticipo parcial", color: "bg-amber-50 text-amber-800 border-amber-200" },
-    CANCELADO: { label: "❌ Cancelado", color: "bg-red-50 text-red-800 border-red-200" },
-    ARCHIVADO: { label: "📁 Archivado", color: "bg-slate-100 text-slate-500 border-slate-200" },
+    BORRADOR: { label: "📝 Borrador", color: "bg-wash text-secondary border-line" },
+    EVALUACION_PENDIENTE: { label: "📏 Medición Pendiente", color: "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-900" },
+    EVALUADO: { label: "⏳ Por Presupuestar", color: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900" },
+    COTIZADO: { label: "📄 Esperando al Cliente", color: "bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-900" },
+    APROBADO: { label: "🤝 Aprobado (Falta Anticipo)", color: "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900" },
+    ANTICIPO_RECIBIDO: { label: "💵 Anticipo Pagado", color: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900" },
+    EN_PROCESO: { label: "⚡ En Ejecución / Trabajo en Curso", color: "bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-900 animate-pulse" },
+    TERMINADO_TECNICO: { label: "🏁 Físico Terminado", color: "bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-900" },
+    VALIDADO: { label: "✅ Calidad Aprobada", color: "bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-900" },
+    FINALIZADO_FINANCIERO: { label: "🎉 Finalizado con Garantía", color: "bg-green-100 dark:bg-green-950/40 text-green-900 dark:text-green-300 border-green-300 dark:border-green-900 font-black" },
+    RECHAZADO: { label: "Rechazado", color: "bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900" },
+    PAGO_A_CUENTA_RECIBIDO: { label: "Anticipo parcial", color: "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900" },
+    CANCELADO: { label: "❌ Cancelado", color: "bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900" },
+    ARCHIVADO: { label: "📁 Archivado", color: "bg-wash text-muted border-line" },
   };
 
   const getServiceIcon = (nombre: string = "") => {
@@ -101,13 +101,13 @@ export default function TrabajosPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-5 rounded-2xl border border-line shadow-xs">
         <div>
-          <h2 className="text-xl font-black text-[#0F2C59] tracking-tight flex items-center gap-2">
+          <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-[#F06529]" />
             Órdenes de Trabajo & Servicios
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Las órdenes activas permanecen como <strong>Pendientes</strong> hasta que se completen o cancelen.
           </p>
         </div>
@@ -122,19 +122,19 @@ export default function TrabajosPage() {
       </div>
 
       {/* Pestañas Principales de Estado (Pendientes / Finalizados / Rechazados / Cancelados) */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-1 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-line pb-1 overflow-x-auto">
         <button
           onClick={() => setTabEstado("PENDIENTES")}
           className={`px-4 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
             tabEstado === "PENDIENTES"
               ? "bg-[#0F2C59] text-white shadow-xs"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           <Clock className="h-4 w-4 text-[#F06529]" />
           <span>⏳ Órdenes Pendientes / En Curso</span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-            tabEstado === "PENDIENTES" ? "bg-amber-400 text-slate-900" : "bg-slate-200 text-slate-700"
+            tabEstado === "PENDIENTES" ? "bg-amber-400 text-ink" : "bg-emphasis text-secondary"
           }`}>
             {pendientesCount}
           </span>
@@ -145,13 +145,13 @@ export default function TrabajosPage() {
           className={`px-4 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
             tabEstado === "FINALIZADOS"
               ? "bg-emerald-700 text-white shadow-xs"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           <CheckCircle2 className="h-4 w-4 text-emerald-300" />
           <span>✅ Finalizadas (Garantía Activa)</span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-            tabEstado === "FINALIZADOS" ? "bg-white text-emerald-900" : "bg-slate-200 text-slate-700"
+            tabEstado === "FINALIZADOS" ? "bg-surface text-emerald-900 dark:text-emerald-300" : "bg-emphasis text-secondary"
           }`}>
             {finalizadosCount}
           </span>
@@ -162,13 +162,13 @@ export default function TrabajosPage() {
           className={`px-4 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
             tabEstado === "CANCELADOS"
               ? "bg-red-700 text-white shadow-xs"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           <XCircle className="h-4 w-4 text-red-300" />
           <span>❌ Canceladas</span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-            tabEstado === "CANCELADOS" ? "bg-white text-red-900" : "bg-slate-200 text-slate-700"
+            tabEstado === "CANCELADOS" ? "bg-surface text-red-900 dark:text-red-300" : "bg-emphasis text-secondary"
           }`}>
             {canceladosCount}
           </span>
@@ -179,7 +179,7 @@ export default function TrabajosPage() {
           className={`px-3 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
             tabEstado === "TODOS"
               ? "bg-slate-800 text-white"
-              : "bg-white text-slate-500 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-muted hover:bg-wash border border-line"
           }`}
         >
           Ver Todas ({trabajos.length})
@@ -187,15 +187,15 @@ export default function TrabajosPage() {
       </div>
 
       {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-surface p-4 rounded-2xl border border-line shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-80">
-          <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="h-4 w-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Buscar por código, cliente o servicio..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
+            className="w-full pl-9 pr-3 py-2 bg-canvas border border-line rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
           />
         </div>
 
@@ -213,7 +213,7 @@ export default function TrabajosPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                 filtroCategoria === cat.id
                   ? "bg-[#0F2C59] text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-wash text-secondary hover:bg-emphasis"
               }`}
             >
               {cat.label}
@@ -223,20 +223,20 @@ export default function TrabajosPage() {
       </div>
 
       {/* List */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-xs text-slate-500 font-semibold">
+          <div className="p-12 text-center text-xs text-muted font-semibold">
             Cargando órdenes de trabajo...
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <Briefcase className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-            <h3 className="text-sm font-bold text-slate-700">
+            <h3 className="text-sm font-bold text-secondary">
               {tabEstado === "PENDIENTES"
                 ? "No hay órdenes pendientes en este momento"
                 : "No se encontraron trabajos con los filtros actuales"}
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-faint mt-1">
               {tabEstado === "PENDIENTES"
                 ? "Todos los trabajos han sido completados o no se han creado nuevas solicitudes."
                 : "Intenta cambiar la búsqueda o el filtro de servicio."}
@@ -253,32 +253,32 @@ export default function TrabajosPage() {
           <div className="divide-y divide-slate-100">
             {filtered.map((t) => {
               const Icon = getServiceIcon(t.subtipoNombre);
-              const badge = estadoBadge[t.estado] || { label: t.estado, color: "bg-slate-100 text-slate-700 border-slate-200" };
+              const badge = estadoBadge[t.estado] || { label: t.estado, color: "bg-wash text-secondary border-line" };
               return (
                 <div
                   key={t.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors"
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-canvas/80 transition-colors"
                 >
                   <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-[#0F2C59] shrink-0 mt-0.5">
+                    <div className="w-10 h-10 rounded-xl bg-wash flex items-center justify-center text-ink shrink-0 mt-0.5">
                       <Icon className="h-5 w-5" />
                     </div>
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-[#0F2C59]">
+                        <span className="text-sm font-black text-ink">
                           {t.codigoCorrelativo}
                         </span>
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-wash text-secondary border border-line">
                           {t.subtipoNombre}
                         </span>
                       </div>
 
-                      <p className="text-xs font-semibold text-slate-800 mt-1">
+                      <p className="text-xs font-semibold text-ink mt-1">
                         {t.cliente?.nombreCompleto}
                       </p>
 
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1">
+                      <div className="flex items-center gap-3 text-[11px] text-faint mt-1">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {t.cliente?.direccion || "Sin dirección registrada"}

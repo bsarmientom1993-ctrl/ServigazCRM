@@ -1,3 +1,5 @@
+import { ThemeProvider } from "@/context/ThemeContext";
+import { themeBootstrap } from "@/lib/theme";
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -16,9 +18,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className="antialiased min-h-screen bg-slate-50 text-slate-900 selection:bg-[#F06529]/20 selection:text-[#0F2C59]">
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="es" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: themeBootstrap }} /></head>
+      <body className="antialiased min-h-screen bg-canvas text-ink selection:bg-[#F06529]/20 selection:text-ink">
+        <ThemeProvider><AuthProvider>{children}</AuthProvider></ThemeProvider>
       </body>
     </html>
   );

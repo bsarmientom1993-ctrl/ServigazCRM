@@ -122,13 +122,13 @@ export default function GarantiasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-[#0F2C59] tracking-tight flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+          <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
             Portal de Garantías & Post-Venta (Fase 14 & 22)
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Certificados QR oficiales emitidos, control de vigencias de 12 meses y atención de reclamos técnicos.
           </p>
         </div>
@@ -147,20 +147,20 @@ export default function GarantiasPage() {
       </div>
 
       {msgExito && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4" />
           <span>{msgExito}</span>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-line pb-2">
         <button
           onClick={() => setTabActiva("certificados")}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
             tabActiva === "certificados"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           <ShieldCheck className="h-4 w-4" />
@@ -172,7 +172,7 @@ export default function GarantiasPage() {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
             tabActiva === "reclamos"
               ? "bg-[#0F2C59] text-white shadow-sm"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              : "bg-surface text-secondary hover:bg-wash border border-line"
           }`}
         >
           <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -183,34 +183,34 @@ export default function GarantiasPage() {
       {/* TAB 1: CERTIFICADOS EMITIDOS */}
       {tabActiva === "certificados" && (
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-3">
+          <div className="bg-surface p-4 rounded-2xl border border-line shadow-xs flex items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
-              <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="h-4 w-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar por código, orden o cliente..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
+                className="w-full pl-9 pr-3 py-2 bg-canvas border border-line rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#F06529]"
               />
             </div>
-            <span className="text-xs text-slate-400 font-semibold hidden sm:inline">
+            <span className="text-xs text-faint font-semibold hidden sm:inline">
               Vigencia oficial según Regla #89 (12 Meses)
             </span>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
             {certificadosFiltrados.length === 0 ? (
               <div className="p-12 text-center">
                 <ShieldCheck className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-                <h4 className="text-sm font-bold text-slate-700">No hay certificados generados aún</h4>
-                <p className="text-xs text-slate-400 mt-1">
+                <h4 className="text-sm font-bold text-secondary">No hay certificados generados aún</h4>
+                <p className="text-xs text-faint mt-1">
                   Los certificados se generan automáticamente al realizar el Cierre Financiero (#84) de cada trabajo.
                 </p>
               </div>
             ) : (
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
                   <tr>
                     <th className="py-3 px-4">Código Certificado & Trabajo</th>
                     <th className="py-3 px-4">Cliente & Dirección</th>
@@ -219,41 +219,41 @@ export default function GarantiasPage() {
                     <th className="py-3 px-4 text-center">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-800">
+                <tbody className="divide-y divide-slate-100 text-ink">
                   {certificadosFiltrados.map((c) => {
                     const ahora = new Date();
                     const esVigente = ahora <= new Date(c.fechaFin);
                     return (
-                      <tr key={c.id} className="hover:bg-slate-50/80">
+                      <tr key={c.id} className="hover:bg-canvas/80">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5">
-                            <div className="p-2 bg-emerald-50 rounded-xl text-emerald-700">
+                            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl text-emerald-700 dark:text-emerald-300">
                               <QrCode className="h-4 w-4" />
                             </div>
                             <div>
-                              <p className="font-mono font-black text-[#0F2C59]">{c.codigoCertificado}</p>
-                              <span className="text-[10px] text-slate-400">
+                              <p className="font-mono font-black text-ink">{c.codigoCertificado}</p>
+                              <span className="text-[10px] text-faint">
                                 Orden: {c.trabajo?.codigoCorrelativo} ({c.trabajo?.subtipoNombre})
                               </span>
                             </div>
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
-                          <p className="font-bold text-slate-900">{c.trabajo?.cliente?.nombreCompleto}</p>
-                          <span className="text-[11px] text-slate-500">{c.trabajo?.cliente?.direccion}</span>
+                          <p className="font-bold text-ink">{c.trabajo?.cliente?.nombreCompleto}</p>
+                          <span className="text-[11px] text-muted">{c.trabajo?.cliente?.direccion}</span>
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          <span className="font-semibold text-slate-700 block">
+                          <span className="font-semibold text-secondary block">
                             {new Date(c.fechaInicio).toLocaleDateString("es-CL")} al {new Date(c.fechaFin).toLocaleDateString("es-CL")}
                           </span>
-                          <span className="text-[10px] text-slate-400">({c.mesesCobertura} Meses)</span>
+                          <span className="text-[10px] text-faint">({c.mesesCobertura} Meses)</span>
                         </td>
                         <td className="py-3.5 px-4 text-center">
                           <span
                             className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
                               esVigente
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : "bg-red-50 text-red-700 border-red-200"
+                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900"
+                                : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900"
                             }`}
                           >
                             {esVigente ? "VIGENTE" : "VENCIDA"}
@@ -284,47 +284,47 @@ export default function GarantiasPage() {
 
       {/* TAB 2: TICKETS DE RECLAMO */}
       {tabActiva === "reclamos" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden">
           {reclamos.length === 0 ? (
             <div className="p-12 text-center">
               <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
-              <h4 className="text-sm font-bold text-slate-700">Sin reclamos activos</h4>
-              <p className="text-xs text-slate-400 mt-1">
+              <h4 className="text-sm font-bold text-secondary">Sin reclamos activos</h4>
+              <p className="text-xs text-faint mt-1">
                 Todas las instalaciones y servicios ejecutados operan de manera óptima y conforme.
               </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
               {reclamos.map((r) => (
-                <div key={r.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50">
+                <div key={r.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-canvas">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-black text-[#0F2C59]">
+                      <span className="font-mono text-xs font-black text-ink">
                         Reclamo #{r.id.slice(0, 8)}
                       </span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           r.estado === "PENDIENTE"
-                            ? "bg-amber-100 text-amber-800"
+                            ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300"
                             : r.estado === "RESUELTO"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300"
+                            : "bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300"
                         }`}
                       >
                         {r.estado}
                       </span>
                     </div>
 
-                    <p className="text-xs font-bold text-slate-800">
+                    <p className="text-xs font-bold text-ink">
                       Cliente: {r.trabajoOriginal?.cliente?.nombreCompleto} • {r.trabajoOriginal?.cliente?.direccion}
                     </p>
 
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-secondary">
                       <strong>Falla Reportada:</strong> {r.descripcionFalla}
                     </p>
 
                     {r.solucionDetalle && (
-                      <p className="text-[11px] text-indigo-700 bg-indigo-50 p-2 rounded-lg mt-1">
+                      <p className="text-[11px] text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 p-2 rounded-lg mt-1">
                         <strong>Resolución:</strong> {r.solucionDetalle}
                       </p>
                     )}
@@ -354,34 +354,34 @@ export default function GarantiasPage() {
       {/* MODAL CERTIFICADO IMPRIMIBLE CON QR (SERVIGAZ BOLIVIA) */}
       {modalCertificado && certSeleccionado && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden">
+          <div className="bg-surface rounded-2xl max-w-lg w-full shadow-2xl border border-line-soft overflow-hidden">
             <div className="bg-gradient-to-r from-[#0F2C59] to-[#1A3E72] text-white p-6 text-center space-y-2">
               <ShieldCheck className="h-10 w-10 text-emerald-400 mx-auto" />
               <h3 className="text-lg font-black tracking-tight">CERTIFICADO OFICIAL DE GARANTÍA</h3>
               <p className="text-xs text-slate-300">SERVIGAZ • Equipos e Instalaciones Térmicas</p>
             </div>
 
-            <div className="p-6 space-y-4 text-xs text-slate-800 text-center">
-              <div className="p-4 bg-slate-50 border rounded-2xl space-y-1">
-                <p className="font-mono text-base font-black text-[#0F2C59]">{certSeleccionado.codigoCertificado}</p>
-                <p className="text-slate-600 font-medium">Orden de Trabajo: {certSeleccionado.trabajo?.codigoCorrelativo}</p>
+            <div className="p-6 space-y-4 text-xs text-ink text-center">
+              <div className="p-4 bg-canvas border rounded-2xl space-y-1">
+                <p className="font-mono text-base font-black text-ink">{certSeleccionado.codigoCertificado}</p>
+                <p className="text-secondary font-medium">Orden de Trabajo: {certSeleccionado.trabajo?.codigoCorrelativo}</p>
               </div>
 
-              <div className="text-left space-y-2 p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl text-xs">
+              <div className="text-left space-y-2 p-4 bg-emerald-50/50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900 rounded-xl text-xs">
                 <p><strong>Cliente:</strong> {certSeleccionado.trabajo?.cliente?.nombreCompleto}</p>
                 <p><strong>Dirección:</strong> {certSeleccionado.trabajo?.cliente?.direccion}</p>
                 <p><strong>Servicio Realizado:</strong> {certSeleccionado.trabajo?.subtipoNombre}</p>
                 <p><strong>Período de Cobertura:</strong> {certSeleccionado.mesesCobertura} Meses ({new Date(certSeleccionado.fechaInicio).toLocaleDateString("es-CL")} al {new Date(certSeleccionado.fechaFin).toLocaleDateString("es-CL")})</p>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl text-center space-y-1">
-                <p className="font-mono text-[10px] text-slate-500 break-all">{certSeleccionado.qrCodeData}</p>
-                <p className="text-[10px] text-slate-400">Escanee el código QR para validar la autenticidad del certificado</p>
+              <div className="p-3 bg-canvas rounded-xl text-center space-y-1">
+                <p className="font-mono text-[10px] text-muted break-all">{certSeleccionado.qrCodeData}</p>
+                <p className="text-[10px] text-faint">Escanee el código QR para validar la autenticidad del certificado</p>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-100 border-t flex justify-between">
-              <button onClick={() => setModalCertificado(false)} className="px-4 py-2 bg-white border rounded-xl font-bold text-xs">Cerrar</button>
+            <div className="p-4 bg-wash border-t flex justify-between">
+              <button onClick={() => setModalCertificado(false)} className="px-4 py-2 bg-surface border rounded-xl font-bold text-xs">Cerrar</button>
               <button onClick={() => window.print()} className="px-5 py-2 bg-[#0F2C59] text-white rounded-xl font-bold text-xs flex items-center gap-1.5">
                 <Printer className="h-4 w-4" /> Imprimir Certificado
               </button>
@@ -393,22 +393,22 @@ export default function GarantiasPage() {
       {/* MODAL NUEVO RECLAMO */}
       {modalNuevoReclamo && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
+          <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-sm font-black text-[#0F2C59] flex items-center gap-1.5">
+              <h3 className="text-sm font-black text-ink flex items-center gap-1.5">
                 <AlertTriangle className="h-4 w-4 text-[#F06529]" /> Ingresar Reclamo de Post-Venta
               </h3>
-              <button onClick={() => setModalNuevoReclamo(false)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
+              <button onClick={() => setModalNuevoReclamo(false)} className="text-faint hover:text-secondary"><X className="h-4 w-4" /></button>
             </div>
 
             <form onSubmit={handleCrearReclamo} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Garantía / Trabajo Asociado</label>
+                <label className="block font-bold text-secondary mb-1">Garantía / Trabajo Asociado</label>
                 <select
                   required
                   value={nuevoReclamoData.trabajoOriginalId}
                   onChange={(e) => setNuevoReclamoData({ ...nuevoReclamoData, trabajoOriginalId: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border rounded-xl font-bold outline-none"
+                  className="w-full p-2.5 bg-canvas border rounded-xl font-bold outline-none"
                 >
                   <option value="">Seleccionar trabajo garantizado...</option>
                   {certificados.map((c) => (
@@ -420,14 +420,14 @@ export default function GarantiasPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Descripción de la Falla Reportada</label>
+                <label className="block font-bold text-secondary mb-1">Descripción de la Falla Reportada</label>
                 <textarea
                   rows={3}
                   required
                   value={nuevoReclamoData.descripcionFalla}
                   onChange={(e) => setNuevoReclamoData({ ...nuevoReclamoData, descripcionFalla: e.target.value })}
                   placeholder="Detalle la anomalía informada por el cliente..."
-                  className="w-full p-2.5 bg-slate-50 border rounded-xl font-medium outline-none"
+                  className="w-full p-2.5 bg-canvas border rounded-xl font-medium outline-none"
                 />
               </div>
 

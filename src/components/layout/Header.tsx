@@ -1,65 +1,27 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Clock, PlusCircle, Bell, Search, User, ShieldCheck } from "lucide-react";
+import { Plus, Menu, Clock3 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
 
-export function Header({ title }: { title?: string }) {
+export function Header({ title, onMenu }: { title?: string; onMenu?: () => void }) {
   const { user } = useAuth();
-  const [time, setTime] = useState<string>("");
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setTime(
-        now.toLocaleTimeString("es-CL", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-      );
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs">
-      <div className="flex items-center gap-4">
-        <h1 className="text-lg font-black text-[#0F2C59] tracking-tight">
-          {title || "Panel Operativo Servigaz"}
-        </h1>
+  const pathname = usePathname();
+  const sections: Record<string, string> = { dashboard: "Resumen general", trabajos: "Trabajos y órdenes", clientes: "Clientes", cotizador: "Cotizador", inventario: "Inventario", garantias: "Garantías", configuracion: "Precios y tarifas", asistencia: "Asistencia", finanzas: "Finanzas" };
+  return <header className="app-header">
+    <div className="flex items-center gap-3 min-w-0">
+      <button type="button" onClick={onMenu} className="theme-toggle mobile-menu-toggle" aria-label="Abrir menú" aria-controls="main-navigation"><Menu size={20} /></button>
+      <div className="min-w-0">
+        <p className="hidden sm:block text-[11px] text-muted mb-0.5">Tu espacio de trabajo</p>
+        <h1 className="font-semibold text-sm sm:text-base text-ink truncate">{title || sections[pathname.split("/")[1]] || "Servigaz"}</h1>
       </div>
-
-      <div className="flex items-center gap-3">
-        {/* Clock display */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-bold">
-          <Clock className="h-3.5 w-3.5 text-[#F06529]" />
-          <span>{time}</span>
-        </div>
-
-        {/* Quick Action: New Job */}
-        {(user?.rol === "ADMIN" || user?.rol === "ENCARGADO") && (
-          <Link
-            href="/trabajos/nuevo"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#F06529] hover:bg-[#D94E15] text-white text-xs font-bold shadow-sm hover:shadow transition-all cursor-pointer"
-          >
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span>Nuevo Trabajo</span>
-          </Link>
-        )}
-
-        {/* Attendance Fast Clock-in */}
-        <Link
-          href="/asistencia"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0F2C59] hover:bg-[#1A3E72] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-        >
-          <Clock className="h-3.5 w-3.5 text-amber-400" />
-          <span className="hidden md:inline">Marcar Asistencia</span>
-        </Link>
-      </div>
-    </header>
-  );
+    </div>
+    <div className="flex items-center gap-2 sm:gap-3">
+      <ThemeToggle />
+      <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>
+      {(user?.rol === "ADMIN" || user?.rol === "ENCARGADO") &&
+        <Link href="/trabajos/nuevo" className="primary-action"><Plus size={17} /><span className="hidden sm:inline">Nuevo trabajo</span><span className="sm:hidden">Nuevo</span></Link>}
+    </div>
+  </header>;
 }
