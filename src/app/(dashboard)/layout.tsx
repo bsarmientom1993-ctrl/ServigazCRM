@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { HelpProvider } from "@/components/help/HelpProvider";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -26,12 +27,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [sidebarOpen]);
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-canvas text-ink"><div className="flex flex-col items-center gap-4"><Loader2 className="h-7 w-7 animate-spin text-[#F06529]" /><p className="text-sm text-muted">Preparando tu espacio...</p></div></div>;
   if (!user) return null;
-  return <div className="app-shell">
+  return <HelpProvider><div className="app-shell">
     <Sidebar open={sidebarOpen} onClose={closeSidebar} />
     <div className="flex-1 flex flex-col min-w-0" inert={sidebarOpen}>
       <Header onMenu={() => setSidebarOpen(true)} />
       <main id="main-content" className="app-content">{children}</main>
       <footer className="app-footer"><span>Servigaz · Gestión de servicios</span><span>Todo conectado. Cada día.</span></footer>
     </div>
-  </div>;
+  </div></HelpProvider>;
 }

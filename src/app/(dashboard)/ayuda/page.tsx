@@ -1,0 +1,29 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { BookOpen, PlayCircle, Search } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useHelp } from "@/components/help/HelpProvider";
+import { PracticeJobs } from "@/components/help/PracticeJobs";
+const topics = [
+  { title: "Crear una solicitud de trabajo", text: "Busca al cliente existente o registra nombre, teléfono y dirección. Añade indicaciones para llegar y su horario de preferencia. Elige la categoría y el trabajo específico; después revisa el resumen.", href: "/trabajos/nuevo", action: "Abrir Nuevo trabajo", manager: true },
+  { title: "Coordinar con todos los técnicos", text: "En el último paso de Nuevo trabajo consulta las agendas de los técnicos de tu sucursal. Ajusta la duración y el traslado, compara espacios y confirma con el cliente antes de elegir una hora. Si no puedes coordinar, guarda pendiente.", href: "/trabajos/nuevo", action: "Coordinar una solicitud", manager: true },
+  { title: "Revisar tus órdenes y visitas", text: "En Trabajos y órdenes abre la ficha para ver el próximo paso, las indicaciones del cliente y la visita coordinada. El técnico consulta los trabajos asignados; el encargado gestiona los de su ámbito de trabajo.", href: "/trabajos", action: "Ver trabajos", manager: false },
+  { title: "Presupuesto, aceptación y anticipo", text: "Prepara el presupuesto con importes revisados. Registra la aceptación del cliente y luego los pagos. Para iniciar el trabajo deben existir un técnico asignado, aceptación y anticipo suficiente. Un pago por sí solo no acepta el presupuesto.", href: "/trabajos", action: "Abrir órdenes", manager: true },
+  { title: "Materiales desde un almacén o tienda", text: "Al registrar materiales durante la ejecución elige la ubicación de salida y el producto. El servidor usa el costo del inventario y comprueba el disponible. Coordina con el encargado si falta stock en tu sucursal.", href: "/trabajos", action: "Ir a mis trabajos", manager: false },
+  { title: "Abastecer las tiendas de las sucursales", text: "El almacén guarda el material. Las compras ingresan a una ubicación y los traspasos descuentan el origen. El destino confirma la recepción para que el stock quede disponible. El administrador puede configurar más almacenes y tiendas.", href: "/inventario", action: "Ver almacenes y tiendas", manager: true },
+  { title: "Finalizar y revisar calidad", text: "El técnico registra lo realizado y adjunta las fotos requeridas. Después el encargado revisa la calidad. Finalizar técnicamente, aprobar la calidad y cerrar financieramente son etapas distintas.", href: "/trabajos", action: "Ver trabajos", manager: false },
+  { title: "Cobrar el saldo y cerrar", text: "Antes del cierre revisa los pagos y los costos reales. La orden debe tener calidad aprobada y saldo cero. El cierre calcula el resultado y emite la garantía con la configuración del servicio.", href: "/trabajos", action: "Revisar órdenes", manager: true },
+  { title: "Si algo no te deja continuar", text: "Lee el mensaje mostrado en la pantalla. Revisa los campos obligatorios, tu sucursal, el anticipo, el técnico asignado y el estado actual. Si no hay servicios o técnicos disponibles, pide al administrador revisar la configuración y la asignación de personal.", href: "/trabajos", action: "Revisar una orden", manager: false },
+];
+export default function HelpPage() {
+  const { user } = useAuth(); const { openGuide } = useHelp();
+  const [search, setSearch] = useState("");
+  const manager = user?.rol === "ADMIN" || user?.rol === "ENCARGADO";
+  const filtered = topics.filter(topic => (!topic.manager || manager) && (topic.title + " " + topic.text).toLowerCase().includes(search.trim().toLowerCase()));
+  return <div className="max-w-5xl mx-auto space-y-8">
+    <section className="module-card space-y-5"><div className="flex flex-wrap justify-between items-start gap-4"><div><p className="module-eyebrow">TE ACOMPAÑAMOS PASO A PASO</p><h2 className="text-2xl sm:text-3xl font-semibold text-ink">Ayuda y práctica</h2><p className="text-sm text-secondary mt-3 max-w-2xl">Conoce el recorrido del sistema, encuentra instrucciones para tu rol y aprende con trabajos de ejemplo.</p></div><BookOpen size={30} className="text-[#F06529]" /></div><div className="flex flex-wrap gap-3"><button type="button" className="primary-action" onClick={openGuide}><PlayCircle size={17} />Ver guía de bienvenida</button><a className="theme-toggle" href="#ejemplos">Probar trabajos de ejemplo</a></div></section>
+    <section className="space-y-4" aria-label="Instrucciones de uso"><div className="flex flex-wrap items-end justify-between gap-4"><div><h3 className="text-xl font-semibold text-ink">¿Qué necesitas hacer?</h3><p className="text-xs text-muted mt-1">Instrucciones para {user?.rol === "TECNICO_FIJO" ? "técnicos" : user?.rol === "ADMIN" ? "administradores" : "encargados"}.</p></div><label className="relative w-full sm:max-w-xs"><Search className="absolute left-3 top-3 text-faint" size={16} /><input className="module-input pl-9" aria-label="Buscar en la ayuda" placeholder="Buscar: anticipo, visita, materiales…" value={search} onChange={e => setSearch(e.target.value)} /></label></div><div className="space-y-3">{filtered.map(topic => <details key={topic.title} className="module-card !p-0"><summary className="px-5 py-4 cursor-pointer font-semibold text-sm text-ink">{topic.title}</summary><div className="px-5 pb-5 space-y-3"><p className="text-sm text-secondary leading-relaxed">{topic.text}</p><Link className="text-sm text-[#F06529] font-semibold underline" href={topic.href}>{topic.action}</Link></div></details>)}{!filtered.length && <p role="status" className="module-note">No encontramos esa consulta. Prueba con “visita”, “materiales” o “trabajo”.</p>}</div></section>
+    <PracticeJobs />
+  </div>;
+}
