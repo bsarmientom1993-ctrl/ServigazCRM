@@ -40,6 +40,7 @@ export default function ConfiguracionPage() {
   const [catalogoServicios, setCatalogoServicios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+  const [errorCatalogo, setErrorCatalogo] = useState("");
   const [msgExito, setMsgExito] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -96,6 +97,18 @@ export default function ConfiguracionPage() {
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  const cargarEjemplos = async () => {
+    if (guardando) return;
+    setGuardando(true); setErrorCatalogo(""); setMsgExito("");
+    try {
+      const response = await fetch("/api/catalogo/servicios", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "CARGAR_EJEMPLOS" }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No se pudo completar el catálogo.");
+      setMsgExito(result.resumen.categoriasCreadas || result.resumen.serviciosCreados ? "Catálogo completado: " + result.resumen.categoriasCreadas + " categorías y " + result.resumen.serviciosCreados + " servicios añadidos." : "Los ejemplos ya están configurados. Se conservaron tus nombres y los servicios desactivados.");
+      await cargarDatos();
+    } catch (error: any) { setErrorCatalogo(error.message); } finally { setGuardando(false); }
+  };
 
   // Guardar Edición de Categoría
   const handleGuardarCategoria = async (e: React.FormEvent) => {
@@ -350,6 +363,8 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {tabActiva === "catalogo" && (
         <div className="space-y-4">
+          <div className="module-note flex flex-wrap items-center justify-between gap-3"><div><strong>Catálogo inicial con ejemplos</strong><p className="text-xs">Gas, plomería, calefacción y otros servicios. Puedes editar sus nombres y añadir trabajos específicos. Los importes se revisan en cada presupuesto.</p></div>{isAdmin && <button type="button" disabled={guardando} className="theme-toggle" onClick={cargarEjemplos}>{guardando ? "Completando…" : "Añadir ejemplos que falten"}</button>}</div>
+          {errorCatalogo && <p role="alert" className="module-error">{errorCatalogo}</p>}
           <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-300 flex items-center justify-between">
             <div>
               <p className="font-bold">🗂️ Control del Catálogo Oficial de Servicios</p>

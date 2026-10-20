@@ -1,0 +1,106 @@
+[
+  {
+    "codigo": "GAS",
+    "nombre": "Gas",
+    "descripcion": "Instalación, modificación y ampliación de redes de gas.",
+    "icono": "Flame",
+    "color": "orange",
+    "requiereVisita": true,
+    "orden": 1,
+    "subtipos": [
+      {
+        "codigo": "1.1.1",
+        "nombre": "Instalación nueva de gas",
+        "descripcion": "Evaluar el trazado, los puntos de consumo y los materiales necesarios."
+      },
+      {
+        "codigo": "1.1.2",
+        "nombre": "Modificación de una red de gas",
+        "descripcion": "Revisar la instalación existente y definir los cambios solicitados."
+      },
+      {
+        "codigo": "1.1.3",
+        "nombre": "Ampliación de una red de gas",
+        "descripcion": "Evaluar nuevos puntos y el recorrido de la ampliación."
+      }
+    ]
+  },
+  {
+    "codigo": "CALEFACCION",
+    "nombre": "Calefacción",
+    "descripcion": "Redes de calefacción, radiadores y piso radiante.",
+    "icono": "Thermometer",
+    "color": "blue",
+    "requiereVisita": true,
+    "orden": 2,
+    "subtipos": [
+      {
+        "codigo": "1.2.1",
+        "nombre": "Instalación de red de calefacción",
+        "descripcion": "Medir el recorrido y revisar los puntos que necesitan calefacción."
+      },
+      {
+        "codigo": "1.2.2",
+        "nombre": "Instalación de radiadores",
+        "descripcion": "Evaluar la ubicación, las conexiones y la cantidad de radiadores."
+      },
+      {
+        "codigo": "1.2.3",
+        "nombre": "Instalación de piso radiante",
+        "descripcion": "Medir la superficie y revisar las condiciones de instalación."
+      }
+    ]
+  },
+  {
+    "codigo": "PLOMERIA",
+    "nombre": "Plomería",
+    "descripcion": "Redes de agua, puntos sanitarios y reparación de cañerías.",
+    "icono": "Droplets",
+    "color": "teal",
+    "requiereVisita": true,
+    "orden": 3,
+    "subtipos": [
+      {
+        "codigo": "1.3.1",
+        "nombre": "Instalación de red de agua",
+        "descripcion": "Evaluar tuberías de agua fría y caliente, recorrido y conexiones."
+      },
+      {
+        "codigo": "1.3.2",
+        "nombre": "Instalación de puntos sanitarios y desagües",
+        "descripcion": "Revisar ubicación de artefactos y conexiones de desagüe."
+      },
+      {
+        "codigo": "1.3.3",
+        "nombre": "Reparación de fugas o cañerías",
+        "descripcion": "Identificar el punto afectado y evaluar la reparación antes de cotizar."
+      }
+    ]
+  },
+  {
+    "codigo": "OTROS",
+    "nombre": "Otros servicios",
+    "descripcion": "Revisiones, mantenimiento y diagnóstico de equipos.",
+    "icono": "Wrench",
+    "color": "purple",
+    "requiereVisita": false,
+    "orden": 4,
+    "subtipos": [
+      {
+        "codigo": "OTR.REVISION",
+        "nombre": "Revisión técnica de equipo",
+        "descripcion": "Revisión inicial de un equipo según la solicitud del cliente."
+      },
+      {
+        "codigo": "OTR.MANTENIMIENTO",
+        "nombre": "Mantenimiento preventivo",
+        "descripcion": "Servicio de mantenimiento de equipo con alcance e importe por confirmar."
+      },
+      {
+        "codigo": "OTR.DIAGNOSTICO",
+        "nombre": "Diagnóstico de una falla",
+        "descripcion": "Identificar la falla reportada y preparar una propuesta de reparación."
+      }
+    ]
+  }
+]

@@ -1,3 +1,4 @@
+import { configureExampleCatalog } from "@/lib/catalog-examples.cjs";
 import { requireSession } from "@/lib/auth";
 import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -33,6 +34,11 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { accion, data } = body;
+
+    if (accion === "CARGAR_EJEMPLOS") {
+      const resumen = await configureExampleCatalog(prisma, { userId: session.id });
+      return NextResponse.json({ success: true, resumen });
+    }
 
     // EDITAR CATEGORIA (Nombre, Descripción, Requiere Visita)
     if (accion === "EDITAR_CATEGORIA") {
