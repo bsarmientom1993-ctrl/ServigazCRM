@@ -571,6 +571,12 @@ export default function TrabajoDetallePage({
         </div>
       </div>
 
+      <details className="module-card space-y-4">
+        <summary className="font-semibold text-ink cursor-pointer">Quién realizó cada operación</summary>
+        <p className="text-xs text-muted">Responsable de la orden: {trabajo.encargado?.nombre || "Por asignar"} · Técnico: {trabajo.tecnico?.nombre || "Por asignar"}. Últimas 100 operaciones.</p>
+        {trabajo.historialActividad?.length ? <ol className="space-y-3">{trabajo.historialActividad.map((event: any) => <li key={event.id} className="border-l-2 border-line pl-4"><p className="text-sm font-semibold text-ink">{event.accion}</p><p className="text-sm text-secondary">{event.nombre}</p><time className="text-xs text-muted" dateTime={event.fecha}>{new Date(event.fecha).toLocaleString("es")}</time></li>)}</ol> : <p className="module-note">Esta orden todavía no tiene actividad registrada.</p>}
+      </details>
+
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column (4 cols) */}

@@ -43,7 +43,7 @@ beforeEach(() => {
     $queryRaw: async () => [{ id: work.id }],
     trabajo: { findUniqueOrThrow: async () => work, update: async ({ data }) => { writes.push(["work", data]); return { ...work, ...data }; } },
     pago: { findUnique: async () => previous, create: writer("payment") },
-    usuario: { findUnique: async () => ({ id: "tech-1", nombre: "Ana Pérez", rol: "TECNICO_FIJO", estado: "ACTIVO", sucursalId: "branch-1" }) },
+    usuario: { findUniqueOrThrow: async () => ({ id: user.id, nombre: "Ana Pérez" }), findUnique: async () => ({ id: "tech-1", nombre: "Ana Pérez", rol: "TECNICO_FIJO", estado: "ACTIVO", sucursalId: "branch-1" }) },
     auditoriaLog: { create: writer("audit") },
     cotizacion: { update: writer("quote"), updateMany: async () => ({ count: 1 }), create: writer("quote") },
     configuracionGarantia: { findUnique: async () => ({ activo: true, mesesDefecto: 2, condiciones: "Cobertura del diagnóstico" }) },
@@ -212,6 +212,7 @@ test("all internal handlers reject missing sessions before accessing business da
     ["inventario/traspasos", ["GET", "POST", "PATCH"]], ["inventario/movimientos", ["GET"]], ["inventario/minimos", ["PATCH"]],
     ["inventario", ["GET", "POST"]], ["inventario/compras", ["GET", "POST"]], ["tecnicos", ["GET"]], ["tecnicos/disponibilidad", ["GET"]],
     ["trabajos", ["GET", "POST"]], ["trabajos/[id]", ["GET"]],
+    ["usuarios", ["GET"]], ["usuarios/[id]", ["PATCH"]], ["auth/me", ["PATCH"]],
     ...["pagos", "decision", "ejecucion", "cierre-financiero", "visita", "cotizacion", "gas"].map(name => ["trabajos/[id]/" + name, ["POST"]]),
   ];
   for (const [name, methods] of routes) {

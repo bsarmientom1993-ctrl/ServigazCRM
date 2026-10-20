@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const key = z.string().uuid("Falta una clave válida para evitar cobros duplicados.").parse(req.headers.get("Idempotency-Key"));
     const body = schema.parse(await req.json());
     const amount = cents(body.monto);
-    const result = await withWork(id, user, async (tx) => {
+    const result = await withWork(id, user, async (tx, actor) => {
       // The client UUID is the payment primary key; no schema migration is needed.
       const previous = await tx.pago.findUnique({ where: { id: key } });
       if (previous && (previous.trabajoId !== id || cents(previous.monto) !== amount ||
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await tx.trabajo.update({ where: { id }, data: { estado: outcome.nextState as EstadoTrabajo } });
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "PAGOS", accion: "CREATE", entidadTipo: "Pago", entidadId: pago.id,
-        valoresNuevos: { trabajoId: id, cotizacionId: quote.id, monto: money(amount), tipoPago: outcome.type, nuevoEstadoTrabajo: outcome.nextState },
+        valoresNuevos: { realizadoPor: actor.nombre, trabajoId: id, cotizacionId: quote.id, monto: money(amount), tipoPago: outcome.type, nuevoEstadoTrabajo: outcome.nextState },
       } });
       return { success: true, pago, nuevoEstado: outcome.nextState, totalPagado: outcome.accumulated / 100, saldoPendiente: outcome.remaining / 100 };
     });

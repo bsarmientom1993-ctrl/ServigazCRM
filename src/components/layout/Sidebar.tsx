@@ -45,6 +45,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     { name: "Finanzas", href: "/finanzas", icon: Wallet, show: user.rol === "ADMIN", group: "gestion" },
     { name: "Garantías", href: "/garantias", icon: Award, show: manager, group: "gestion" },
     { name: "Ayuda y práctica", href: "/ayuda", icon: CircleHelp, show: true, group: "gestion" },
+    { name: "Mi perfil", href: "/perfil", icon: Users, show: true, group: "gestion" },
     { name: "Asistencia", href: "/asistencia", icon: Clock3, show: true, group: "gestion" },
     { name: "Precios y tarifas", href: "/configuracion", icon: Settings2, show: manager, group: "gestion" },
   ];

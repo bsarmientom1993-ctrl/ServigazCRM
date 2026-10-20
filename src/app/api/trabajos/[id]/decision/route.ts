@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       cotizacionId: z.string().min(1),
       motivoRechazo: z.string().trim().max(1000).optional(),
     }).parse(await req.json());
-    const result = await withWork(id, user, async (tx) => {
+    const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: {
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 }, pagos: true, egreso: true,
       } });
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "TRABAJOS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
         valoresAnteriores: { estado: work.estado },
-        valoresNuevos: { estado: state, cotizacionId: quote.id, motivo: body.motivoRechazo || null },
+        valoresNuevos: { realizadoPor: actor.nombre, estado: state, cotizacionId: quote.id, motivo: body.motivoRechazo || null },
       } });
       return { success: true, trabajo };
     });

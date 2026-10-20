@@ -53,6 +53,23 @@ export async function GET(
     const names = new Map<string, string>();
     for (const entry of issuers) if (entry.entidadId && entry.usuario?.nombre && !names.has(entry.entidadId)) names.set(entry.entidadId, entry.usuario.nombre);
     const cotizaciones = trabajo.cotizaciones.map(quote => ({ ...quote, emitidoPorNombre: objectRecord(objectRecord(quote.datosFormularioJson).carta).cotizadoPorNombre || names.get(quote.id) || null }));
-    return NextResponse.json({ ...trabajo, cotizaciones, evidenciasTermino, historialProyectoGas });
+    const activity = await prisma.auditoriaLog.findMany({
+      where: { OR: [
+        { entidadTipo: "Trabajo", entidadId: id },
+        { entidadTipo: "Cotizacion", entidadId: { in: trabajo.cotizaciones.map(item => item.id) } },
+        { entidadTipo: "Pago", entidadId: { in: trabajo.pagos.map(item => item.id) } },
+        { entidadTipo: "MaterialEjecucion", entidadId: { in: trabajo.materiales.map(item => item.id) } },
+        ...(trabajo.egreso ? [{ entidadTipo: "EgresoTrabajo", entidadId: trabajo.egreso.id }] : []),
+      ] },
+      orderBy: { timestamp: "desc" }, take: 100,
+      select: { id: true, timestamp: true, modulo: true, accion: true, valoresNuevos: true, usuarioId: true, usuario: { select: { nombre: true } } },
+    });
+    const labels: Record<string, string> = { AGENDAR_VISITA: "Visita coordinada", COMPLETAR_VISITA: "Evaluación técnica registrada", GUARDAR_EVALUACION: "Evaluación técnica registrada", INICIAR_EJECUCION: "Trabajo iniciado", FINALIZAR_TECNICO: "Trabajo terminado por el técnico", VALIDAR_ENCARGADO: "Calidad validada", ACTUALIZAR_PROYECTO: "Avance del proyecto registrado", INCLUIR_PROYECTO: "Alcance del proyecto actualizado", REVISAR_MEDICION: "Medición revisada" };
+    const historialActividad = activity.map(event => {
+      const values = objectRecord(event.valoresNuevos);
+      const label = labels[values.accion] || (event.modulo === "COTIZACIONES" ? "Cotización emitida" : event.modulo === "PAGOS" ? "Pago registrado" : event.modulo === "CIERRE_FINANCIERO" ? "Cierre financiero realizado" : event.modulo === "EJECUCION" && event.accion === "CREATE" ? "Material registrado" : event.modulo === "TRABAJOS" && values.cotizacionId ? (values.estado === "RECHAZADO" ? "Cotización rechazada" : "Venta confirmada") : event.modulo === "TRABAJOS" && event.accion === "CREATE" ? "Solicitud registrada" : "Orden actualizada");
+      return { id: event.id, fecha: event.timestamp, accion: label, usuarioId: event.usuarioId, nombre: typeof values.realizadoPor === "string" ? values.realizadoPor : event.usuario?.nombre || "Usuario no disponible" };
+    });
+    return NextResponse.json({ ...trabajo, cotizaciones, evidenciasTermino, historialProyectoGas, historialActividad });
   } catch (error) { return apiError(error); }
 }

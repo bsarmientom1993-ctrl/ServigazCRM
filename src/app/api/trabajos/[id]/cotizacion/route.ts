@@ -19,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       carta: z.object({ alcance: z.string().trim().min(10).max(5000), condiciones: z.string().trim().max(3000).default(""), fechaValidez: z.string().datetime({ offset: true }) }).optional(),
     }).parse(await req.json());
     const transport = cents(body.montoTransporte);
-    const result = await withWork(id, user, async (tx) => {
+    const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: {
         cliente: true, sucursal: true, cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 }, pagos: true, egreso: true,
       } });
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const minimum = new Prisma.Decimal(total).mul(percentage).div(100).toDecimalPlaces(0, Prisma.Decimal.ROUND_CEIL).toNumber();
       const expiry = body.carta ? new Date(body.carta.fechaValidez) : new Date(Date.now() + 15 * 86400000);
       if (expiry.getTime() <= Date.now() || expiry.getTime() > Date.now() + 90 * 86400000) throw new ApiError(400, "La validez debe ser futura y de hasta 90 días.");
-      const issuer = await tx.usuario.findUnique({ where: { id: user.id }, select: { nombre: true } });
+      const issuer = actor;
       if (!issuer?.nombre.trim()) throw new ApiError(409, "Completa tu nombre de usuario antes de emitir la cotización.");
       const letter = { cotizadoPorId: user.id, cotizadoPorNombre: issuer.nombre.trim(), alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
       const version = (work.cotizaciones[0]?.numeroVersion || 0) + 1;
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const trabajo = await tx.trabajo.update({ where: { id }, data: { estado: "COTIZADO" } });
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "COTIZACIONES", accion: "CREATE", entidadTipo: "Cotizacion", entidadId: cotizacion.id,
-        valoresNuevos: { trabajoId: id, numeroVersion: version, totalCotizado: money(total) },
+        valoresNuevos: { realizadoPor: actor.nombre, trabajoId: id, numeroVersion: version, totalCotizado: money(total) },
       } });
       return { success: true, cotizacion, trabajo };
     });

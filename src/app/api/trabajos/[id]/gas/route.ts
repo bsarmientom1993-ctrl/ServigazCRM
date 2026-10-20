@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       z.object({ accion: z.literal("INCLUIR_PROYECTO"), incluido: z.boolean() }),
       z.object({ accion: z.literal("ACTUALIZAR_PROYECTO"), estado: z.enum(projectStages), responsable: z.string().trim().max(150), fechaObjetivo: z.string().date().or(z.literal("")), referencia: z.string().trim().max(200), observaciones: z.string().trim().min(5).max(3000), documentosUrls: z.array(documentUrl).max(20) }),
     ]).parse(await req.json());
-    const result = await withWork(id, user, async tx => {
+    const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: { pagos: true, egreso: true, cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 } } });
       if (!isGasWork(work)) throw new ApiError(400, "Este seguimiento corresponde a trabajos de gas.");
       const metadata = objectRecord(work.fechasSla), gas = structuredClone(gasData(work)), project = gas.proyecto || newGasProject(false);
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const state = body.accion === "ACTUALIZAR_PROYECTO" ? work.estado : body.accion === "REVISAR_MEDICION" && body.decision === "CORREGIR" ? "EVALUACION_PENDIENTE" : ["COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado) ? "EVALUADO" : work.estado;
       gas.aplica = true;
       await tx.trabajo.update({ where: { id }, data: { fechasSla: JSON.parse(JSON.stringify({ ...metadata, gas })), estado: state } });
-      await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: body.accion === "REVISAR_MEDICION" ? "SUPERVISION_GAS" : "PROYECTO_GAS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id, valoresAnteriores: JSON.parse(JSON.stringify({ gas: gasData(work) })), valoresNuevos: JSON.parse(JSON.stringify({ accion: body.accion, gas, estado: state })) } });
+      await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: body.accion === "REVISAR_MEDICION" ? "SUPERVISION_GAS" : "PROYECTO_GAS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id, valoresAnteriores: JSON.parse(JSON.stringify({ gas: gasData(work) })), valoresNuevos: JSON.parse(JSON.stringify({ realizadoPor: actor.nombre, accion: body.accion, gas, estado: state })) } });
       return { success: true, gas };
     });
     return NextResponse.json(result);

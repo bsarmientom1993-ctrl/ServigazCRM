@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const body = await req.json();
     const action = z.enum(["AGENDAR_VISITA", "COMPLETAR_VISITA", "GUARDAR_EVALUACION"]).parse(body.accion);
     if (action === "AGENDAR_VISITA" && !managers.includes(user.rol)) throw new ApiError(403, "El encargado debe programar la visita.");
-    const result = await withWork(id, user, async (tx) => {
+    const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id } });
       if (action === "AGENDAR_VISITA") {
         if (!["BORRADOR", "EVALUACION_PENDIENTE", "COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(work.estado)) throw new ApiError(409, "No se puede programar en este estado.");
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         await tx.trabajo.update({ where: { id }, data: { tecnicoId: data.tecnicoId, estado: state } });
         await tx.auditoriaLog.create({ data: {
           usuarioId: user.id, modulo: "TRABAJOS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
-          valoresNuevos: { accion: action, visitaId: visit.id, tecnicoId: data.tecnicoId, fechaProgramada: data.fechaProgramada },
+          valoresNuevos: { realizadoPor: actor.nombre, accion: action, visitaId: visit.id, tecnicoId: data.tecnicoId, fechaProgramada: data.fechaProgramada },
         } });
         return { success: true, visita: visit };
       }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } });
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "TRABAJOS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
-        valoresNuevos: { accion: action, estado: "EVALUADO", visitaId: visit.id },
+        valoresNuevos: { realizadoPor: actor.nombre, accion: action, estado: "EVALUADO", visitaId: visit.id },
       } });
       return { success: true, trabajo };
     });

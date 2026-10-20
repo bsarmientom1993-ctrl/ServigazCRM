@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }).parse(await req.json());
     const labor = cents(body.costoManoObraReal);
     const transport = cents(body.costoTransporteReal);
-    const result = await withWork(id, user, async (tx) => {
+    const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: {
         materiales: true, pagos: true, egreso: true, garantia: true,
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 },
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await tx.trabajo.update({ where: { id }, data: { estado: "FINALIZADO_FINANCIERO" } });
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "CIERRE_FINANCIERO", accion: "CREATE", entidadTipo: "EgresoTrabajo", entidadId: egreso.id,
-        valoresNuevos: { trabajoId: id, cotizacionId: quote.id, totalIngreso: money(paid), totalEgreso: money(expense),
+        valoresNuevos: { realizadoPor: actor.nombre, trabajoId: id, cotizacionId: quote.id, totalIngreso: money(paid), totalEgreso: money(expense),
           utilidadNeta: money(profit), garantiaId: garantia.id, condicionesGarantia: config.condiciones },
       } });
       return { success: true, egreso, utilidadReal: profit / 100, garantia };

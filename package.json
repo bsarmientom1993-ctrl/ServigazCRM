@@ -19,6 +19,7 @@
     "db:inventory": "node scripts/migrate-inventory.cjs",
     "test:wizard": "node --require ./tests/register.cjs --test tests/work-wizard.integration.cjs",
     "catalogo:ejemplos": "node scripts/configure-example-catalog.cjs",
+    "test:profiles": "node --require ./tests/register.cjs --test tests/profiles.integration.cjs",
     "test:gas": "node --require ./tests/register.cjs --test tests/gas.integration.cjs",
     "test:catalog": "node --require ./tests/register.cjs --test tests/catalog.integration.cjs"
   },

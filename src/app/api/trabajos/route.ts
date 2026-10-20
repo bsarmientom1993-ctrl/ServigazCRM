@@ -94,8 +94,9 @@ export async function POST(req: NextRequest) {
         trabajoId: trabajo.id, tecnicoId: body.tecnicoId, fechaProgramada: new Date(body.fechaProgramada),
         observaciones: direct ? "Atención directa del servicio" : "Visita de evaluación", condicionesJson: { agenda },
       } });
+      const actor = await tx.usuario.findUniqueOrThrow({ where: { id: user.id }, select: { nombre: true } });
       await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: "TRABAJOS", accion: "CREATE", entidadTipo: "Trabajo", entidadId: trabajo.id,
-        valoresNuevos: { codigo: trabajo.codigoCorrelativo, estado: trabajo.estado, servicioDirecto: direct, ...(requestId ? { requestFingerprint: fingerprint } : {}) } } });
+        valoresNuevos: { realizadoPor: actor.nombre, codigo: trabajo.codigoCorrelativo, estado: trabajo.estado, servicioDirecto: direct, ...(requestId ? { requestFingerprint: fingerprint } : {}) } } });
       return trabajo;
     }, { timeout: 15000 });
     return NextResponse.json(work, { status: 201 });

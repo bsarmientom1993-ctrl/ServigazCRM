@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const body = z.object({ accion: z.enum(["INICIAR_EJECUCION", "REGISTRAR_MATERIAL", "FINALIZAR_TECNICO", "VALIDAR_ENCARGADO"]), data: z.unknown().optional() }).parse(await req.json());
     if (body.accion === "VALIDAR_ENCARGADO" && !managers.includes(user.rol)) throw new ApiError(403, "La calidad debe aprobarla el encargado.");
-    const result = await withWork(id, user, async (tx) => {
+    const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: {
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 }, pagos: true, egreso: true,
       } });
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         } });
         await tx.auditoriaLog.create({ data: {
           usuarioId: user.id, modulo: "EJECUCION", accion: "CREATE", entidadTipo: "MaterialEjecucion", entidadId: material.id,
-          valoresNuevos: { trabajoId: id, cantidad: String(quantity), costoUnitario: String(unitCost), subtotal: String(material.subtotalCosto) },
+          valoresNuevos: { realizadoPor: actor.nombre, trabajoId: id, cantidad: String(quantity), costoUnitario: String(unitCost), subtotal: String(material.subtotalCosto) },
         } });
         return { success: true, material };
       } else if (body.accion === "FINALIZAR_TECNICO") {
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const trabajo = await tx.trabajo.update({ where: { id }, data: changes });
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "EJECUCION", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
-        valoresAnteriores: { estado: work.estado }, valoresNuevos: { ...details, estado: trabajo.estado },
+        valoresAnteriores: { estado: work.estado }, valoresNuevos: { realizadoPor: actor.nombre, ...details, estado: trabajo.estado },
       } });
       return { success: true, trabajo };
     });

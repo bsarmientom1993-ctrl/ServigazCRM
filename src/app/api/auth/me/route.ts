@@ -1,4 +1,5 @@
-import { jwtSecret } from "@/lib/auth";
+import { updateProfile } from "@/lib/user-profile";
+import { jwtSecret, requireSession } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -45,4 +46,12 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     return NextResponse.json({ user: null });
   }
+}
+
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await requireSession(req);
+    return NextResponse.json({ user: await updateProfile(session, session.id, await req.json()) });
+  } catch (error) { return apiError(error); }
 }
