@@ -26,19 +26,19 @@ before(async () => {
 }, { timeout: 60000 });
 after(async () => { await prisma.$disconnect(); if (/^catalog_test_[a-f0-9]{32}$/.test(schema)) await root.$executeRawUnsafe('DROP SCHEMA "' + schema + '" CASCADE'); await root.$disconnect(); });
 
-test("empty catalog receives four categories and twelve selectable services", async () => {
+test("empty catalog receives seven categories and fifteen selectable services", async () => {
   const summary = await configureExampleCatalog(prisma, { once: true });
-  assert.equal(summary.categoriasCreadas, 4); assert.equal(summary.serviciosCreados, 12);
+  assert.equal(summary.categoriasCreadas, 7); assert.equal(summary.serviciosCreados, 15);
   const catalog = await body(await route.GET(req(admin, undefined, "GET")));
-  assert.deepEqual(catalog.map(c => c.codigo).sort(), ["GAS", "CALEFACCION", "PLOMERIA", "OTROS"].sort());
-  assert.ok(catalog.every(c => c.subtipos.length === 3));
+  assert.deepEqual(catalog.map(c => c.codigo).sort(), ["GAS", "CALEFACCION", "PLOMERIA", "OTROS", "MANTENIMIENTO", "PROVISION", "PROVISION_INSTALACION"].sort());
+  assert.equal(catalog.reduce((sum, c) => sum + c.subtipos.length, 0), 15);
   assert.equal(await prisma.configuracionPrecio.count(), 0); assert.equal(await prisma.configuracionManoObra.count(), 0);
 });
 test("deployment and manual repeats do not duplicate catalog entries or audit", async () => {
   assert.equal((await configureExampleCatalog(prisma, { once: true })).yaConfigurado, true);
   assert.equal((await configureExampleCatalog(prisma, { userId: admin.id })).serviciosCreados, 0);
-  assert.equal(await prisma.catalogoCategoria.count(), 4); assert.equal(await prisma.catalogoSubtipo.count(), 12);
-  assert.equal(await prisma.auditoriaLog.count({ where: { entidadTipo: "CatalogoEjemplos" } }), 1);
+  assert.equal(await prisma.catalogoCategoria.count(), 7); assert.equal(await prisma.catalogoSubtipo.count(), 15);
+  assert.equal(await prisma.auditoriaLog.count({ where: { entidadTipo: "CatalogoEjemplos" } }), 2);
 });
 test("custom names, visit settings, inactive services and prices remain unchanged", async () => {
   const gas = await prisma.catalogoCategoria.update({ where: { codigo: "GAS" }, data: { nombre: "Gas personalizado", requiereVisita: false } });
@@ -87,4 +87,22 @@ test("only an authenticated admin can complete the catalog from configuration", 
 test("a configured service can create a real work request through the wizard API", async () => {
   const work = await body(await works.POST(req(manager, { nuevoCliente: { nombreCompleto: "Cliente catálogo prueba", telefono: "76543210", direccion: "Calle 123" }, subtipoCodigo: "1.3.1", subtipoCodigos: ["1.3.1"], subtipoNombre: "Instalación de red de agua", tipoFlujo: "COMPLETO" })), 201);
   assert.equal(work.estado, "BORRADOR"); assert.equal(work.subtipoCodigo, "1.3.1"); assert.equal(work.subtipoNombre, "Instalación de red de agua");
+});
+
+test("new services create the right registration flow without gas-meter approval for maintenance or supply", async () => {
+  for (const [code, flow, state] of [["MANT.CALEFON", "SIMPLIFICADO", "EVALUADO"], ["EQUIPO.PROVISION", "SIMPLIFICADO", "EVALUADO"], ["EQUIPO.INSTALACION", "COMPLETO", "BORRADOR"]]) {
+    const work = await body(await works.POST(req(manager, { nuevoCliente: { nombreCompleto: "Cliente nuevo servicio", telefono: "76543210", direccion: "Calle 456" }, subtipoCodigo: code, subtipoCodigos: [code], subtipoNombre: "Texto no confiable", tipoFlujo: flow })), 201);
+    assert.equal(work.tipoFlujo, flow); assert.equal(work.estado, state);
+    assert.ok(!work.fechasSla?.gas); assert.notEqual(work.subtipoNombre, "Texto no confiable");
+  }
+  await body(await works.POST(req(manager, { nuevoCliente: { nombreCompleto: "Cliente instalación", telefono: "76543210", direccion: "Calle 456" }, subtipoCodigo: "EQUIPO.INSTALACION", subtipoCodigos: ["EQUIPO.INSTALACION"], subtipoNombre: "Instalación", tipoFlujo: "SIMPLIFICADO" })), 400);
+});
+
+test("upgrade from v1 adds only new services without restoring removed original entries", async () => {
+  await prisma.auditoriaLog.deleteMany({ where: { entidadTipo: "CatalogoEjemplos", entidadId: "catalogo-ejemplos-v2" } });
+  await prisma.catalogoSubtipo.deleteMany({ where: { codigo: { in: ["MANT.CALEFON", "EQUIPO.PROVISION", "EQUIPO.INSTALACION", "OTR.REVISION"] } } });
+  const result = await configureExampleCatalog(prisma, { once: true });
+  assert.equal(result.serviciosCreados, 3);
+  assert.equal(await prisma.catalogoSubtipo.findUnique({ where: { codigo: "OTR.REVISION" } }), null);
+  assert.equal((await configureExampleCatalog(prisma, { once: true })).yaConfigurado, true);
 });

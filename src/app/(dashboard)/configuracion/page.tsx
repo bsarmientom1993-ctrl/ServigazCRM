@@ -363,7 +363,7 @@ export default function ConfiguracionPage() {
       {/* ============================================================ */}
       {tabActiva === "catalogo" && (
         <div className="space-y-4">
-          <div className="module-note flex flex-wrap items-center justify-between gap-3"><div><strong>Catálogo inicial con ejemplos</strong><p className="text-xs">Gas, plomería, calefacción y otros servicios. Puedes editar sus nombres y añadir trabajos específicos. Los importes se revisan en cada presupuesto.</p></div>{isAdmin && <button type="button" disabled={guardando} className="theme-toggle" onClick={cargarEjemplos}>{guardando ? "Completando…" : "Añadir ejemplos que falten"}</button>}</div>
+          <div className="module-note flex flex-wrap items-center justify-between gap-3"><div><strong>Catálogo inicial con ejemplos</strong><p className="text-xs">Gas, plomería, calefacción, mantenimiento de calefones y provisión de equipos con o sin instalación. Puedes editar sus nombres y añadir trabajos específicos. Los importes se revisan en cada presupuesto.</p></div>{isAdmin && <button type="button" disabled={guardando} className="theme-toggle" onClick={cargarEjemplos}>{guardando ? "Completando…" : "Añadir ejemplos que falten"}</button>}</div>
           {errorCatalogo && <p role="alert" className="module-error">{errorCatalogo}</p>}
           <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-300 flex items-center justify-between">
             <div>

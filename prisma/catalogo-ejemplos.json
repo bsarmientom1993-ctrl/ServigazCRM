@@ -102,5 +102,53 @@
         "descripcion": "Identificar la falla reportada y preparar una propuesta de reparación."
       }
     ]
+  },
+  {
+    "codigo": "MANTENIMIENTO",
+    "nombre": "Mantenimiento de equipos",
+    "descripcion": "Mantenimiento de calefones y otros equipos, con alcance e importe por confirmar.",
+    "icono": "Wrench",
+    "color": "purple",
+    "requiereVisita": false,
+    "orden": 5,
+    "subtipos": [
+      {
+        "codigo": "MANT.CALEFON",
+        "nombre": "Mantenimiento de calefones",
+        "descripcion": "Registrar marca, modelo, falla reportada y tareas de mantenimiento solicitadas. No incluye provisión ni instalación de otro equipo."
+      }
+    ]
+  },
+  {
+    "codigo": "PROVISION",
+    "nombre": "Equipos sin instalación",
+    "descripcion": "Venta y entrega de equipos sin trabajos de instalación.",
+    "icono": "Package",
+    "color": "teal",
+    "requiereVisita": false,
+    "orden": 6,
+    "subtipos": [
+      {
+        "codigo": "EQUIPO.PROVISION",
+        "nombre": "Provisión de equipos sin instalación",
+        "descripcion": "Detallar equipo, marca, modelo, cantidad, accesorios y condiciones de entrega. La cotización excluye la instalación."
+      }
+    ]
+  },
+  {
+    "codigo": "PROVISION_INSTALACION",
+    "nombre": "Equipos con instalación",
+    "descripcion": "Provisión de equipos e instalación, con evaluación de las condiciones del lugar.",
+    "icono": "Wrench",
+    "color": "blue",
+    "requiereVisita": true,
+    "orden": 7,
+    "subtipos": [
+      {
+        "codigo": "EQUIPO.INSTALACION",
+        "nombre": "Provisión de equipos con instalación",
+        "descripcion": "Evaluar el equipo requerido, ubicación, conexiones, materiales y alcance de la instalación antes de cotizar."
+      }
+    ]
   }
 ]
