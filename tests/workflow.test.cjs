@@ -212,7 +212,7 @@ test("all internal handlers reject missing sessions before accessing business da
     ["inventario/traspasos", ["GET", "POST", "PATCH"]], ["inventario/movimientos", ["GET"]], ["inventario/minimos", ["PATCH"]],
     ["inventario", ["GET", "POST"]], ["inventario/compras", ["GET", "POST"]], ["tecnicos", ["GET"]], ["tecnicos/disponibilidad", ["GET"]],
     ["trabajos", ["GET", "POST"]], ["trabajos/[id]", ["GET"]],
-    ...["pagos", "decision", "ejecucion", "cierre-financiero", "visita", "cotizacion"].map(name => ["trabajos/[id]/" + name, ["POST"]]),
+    ...["pagos", "decision", "ejecucion", "cierre-financiero", "visita", "cotizacion", "gas"].map(name => ["trabajos/[id]/" + name, ["POST"]]),
   ];
   for (const [name, methods] of routes) {
     const route = require("../src/app/api/" + name + "/route.ts");

@@ -26,6 +26,7 @@ const draftSchema = z.object({
   version: z.literal(2), step: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   customerId: z.string().nullable(), customer: z.object({ nombreCompleto: z.string(), telefono: z.string(), direccion: z.string(), email: z.string() }),
   categories: z.array(z.string()), subtypes: z.record(z.string()), notes: z.string(),
+  includesGasProject: z.boolean().default(false),
   details: z.string().default(""),
   preference: z.object({ fecha: z.string(), desde: z.string(), hasta: z.string() }).default({ fecha: "", desde: "", hasta: "" }),
   duration: z.number().int().min(15).max(480).default(60), margin: z.number().int().min(0).max(120).default(30),

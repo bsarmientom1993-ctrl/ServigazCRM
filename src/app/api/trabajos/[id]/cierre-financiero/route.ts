@@ -1,3 +1,4 @@
+import { gasData } from "@/lib/gas-data";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { addMonths } from "date-fns";
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
         return { success: true, egreso: work.egreso, utilidadReal: Number(work.egreso.utilidadNeta), garantia: work.garantia, yaCerrado: true };
       }
+      const project = gasData(work).proyecto;
+      if (project?.incluido && project.estado !== "ENTREGADO") throw new ApiError(409, "El proyecto de gas debe estar entregado antes del cierre final.");
       const quote = work.cotizaciones[0];
       if (!quote || quote.estado !== "APROBADA") throw new ApiError(409, "Falta la cotización aceptada.");
       const paid = work.pagos.reduce((sum, p) => sum + cents(p.monto), 0);

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
+import { GasWorkflow } from "@/components/trabajos/GasWorkflow";
+import { gasData, isGasWork } from "@/lib/gas-data";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -79,7 +81,7 @@ export default function TrabajoDetallePage({
   const [successMsg, setSuccessMsg] = useState("");
 
   // Modales
-  const [modalPdf, setModalPdf] = useState(false);
+  const [carta, setCarta] = useState({ alcance: "", condiciones: "", fecha: new Date(Date.now() + 15 * 86400000).toLocaleDateString("en-CA") });
   const [modalPago, setModalPago] = useState(false);
   const [modalMaterial, setModalMaterial] = useState(false);
   const [modalCierreFinanciero, setModalCierreFinanciero] = useState(false);
@@ -253,30 +255,21 @@ export default function TrabajoDetallePage({
   // Fase 6
   const handleEmitirCotizacion = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subtotalBruto =
-      Number(fase6Calculo.subtotalMateriales) + Number(fase6Calculo.subtotalManoObra) + Number(fase6Calculo.montoTransporte);
-    const montoDescuento = (subtotalBruto * fase6Calculo.porcentajeDescuento) / 100;
-    const totalCotizado = subtotalBruto - montoDescuento;
-
     try {
       const res = await mutate(`/api/trabajos/${id}/cotizacion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           datosFormulario: { trabajo: trabajo.subtipoNombre },
-          snapshotCalculo: { subtotalMateriales: Number(fase6Calculo.subtotalMateriales), subtotalManoObra: Number(fase6Calculo.subtotalManoObra) },
-          subtotalMateriales: Number(fase6Calculo.subtotalMateriales),
-          subtotalManoObra: Number(fase6Calculo.subtotalManoObra),
+          carta: { alcance: carta.alcance || trabajo.subtipoNombre, condiciones: carta.condiciones, fechaValidez: new Date(carta.fecha + "T23:59:59").toISOString() },
+          subtotalMateriales: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalMateriales : fase6Calculo.subtotalMateriales),
+          subtotalManoObra: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalManoObra : fase6Calculo.subtotalManoObra),
           montoTransporte: Number(fase6Calculo.montoTransporte),
           porcentajeDescuento: fase6Calculo.porcentajeDescuento,
-          montoDescuento,
-          totalCotizado,
-          anticipoMinimo: totalCotizado * 0.5,
-          alertaBajoMargen: false,
         }),
       });
       if (res.ok) {
-        setSuccessMsg("✅ Fase 6 completada: Cotización emitida con Snapshot.");
+        setSuccessMsg("Cotización emitida. Abre la carta para imprimirla o guardar el PDF.");
         cargarDatos();
       }
     } catch (e: any) {
@@ -430,7 +423,9 @@ export default function TrabajoDetallePage({
   if (loading) return <div className="p-8 text-center text-muted font-semibold text-xs">Cargando orden de trabajo...</div>;
   if (!trabajo) return <div className="p-8 text-center text-red-600 dark:text-red-300 font-bold">{errorMsg || "Trabajo no encontrado"}</div>;
 
-  const isGas = trabajo.subtipoCodigo?.startsWith("1.1.") || trabajo.subtipoCodigo?.toLowerCase().includes("gas") || trabajo.subtipoNombre?.toLowerCase().includes("gas");
+  const isGas = isGasWork(trabajo);
+  const gas = gasData(trabajo);
+  const proyectoPendiente = gas.proyecto?.incluido && gas.proyecto.estado !== "ENTREGADO";
   const estado = trabajo.estado;
   const cotizacionVigente = trabajo.cotizaciones?.[0];
   const garantia = trabajo.garantia;
@@ -449,7 +444,7 @@ export default function TrabajoDetallePage({
   const listoParaIniciar = Boolean(trabajo.tecnicoId) && cotizacionVigente?.estado === "APROBADA" && anticipoPendiente === 0;
   const proximaAccion = estado === "BORRADOR" ? "Programar la visita de evaluación" :
     estado === "EVALUACION_PENDIENTE" ? "Registrar evaluación y fotos de la visita" :
-    estado === "EVALUADO" ? "Preparar y emitir el presupuesto" :
+    estado === "EVALUADO" ? (isGas && gas.supervision?.estado !== "APROBADO" ? "Revisar la medición y registrar el visto bueno del supervisor" : "Preparar y emitir la carta de cotización") :
     estado === "COTIZADO" ? "Registrar la respuesta del cliente a esta versión" :
     ["APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(estado) ?
       (anticipoPendiente > 0 ? "Completar anticipo: Bs. " + anticipoPendiente.toLocaleString("es-BO") : !trabajo.tecnicoId ? "Asignar técnico y programar atención" : "Iniciar ejecución") :
@@ -513,13 +508,13 @@ export default function TrabajoDetallePage({
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           {cotizacionVigente && (
-            <button
-              onClick={() => setModalPdf(true)}
+            <Link
+              href={"/trabajos/" + id + "/cotizacion/" + cotizacionVigente.id + "/carta"}
               className="px-3.5 py-2 bg-surface border border-line hover:bg-canvas text-secondary rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
               <Printer className="h-3.5 w-3.5 text-ink" />
               <span>Ver Cotización (PDF)</span>
-            </button>
+            </Link>
           )}
 
           {canManage && saldoPendiente > 0 && ["COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO", "EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO"].includes(estado) && (
@@ -764,8 +759,9 @@ export default function TrabajoDetallePage({
             </div>
           )}
 
+          {isGas && <GasWorkflow work={trabajo} canManage={canManage} onSaved={cargarDatos} />}
           {/* FASE 6: EMISIÓN DE COTIZACIÓN POR EL ENCARGADO */}
-          {canManage && estado === "EVALUADO" && (
+          {canManage && estado === "EVALUADO" && (!isGas || gas.supervision?.estado === "APROBADO") && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-line-soft pb-3">
                 <div>
@@ -782,6 +778,10 @@ export default function TrabajoDetallePage({
               </div>
 
               <form onSubmit={handleEmitirCotizacion} className="space-y-4 text-xs">
+                <label className="form-label block">Detalle y alcance del trabajo<textarea required minLength={10} maxLength={5000} rows={4} className="module-input mt-2" value={carta.alcance} placeholder={trabajo.subtipoNombre} onChange={e => setCarta({ ...carta, alcance: e.target.value })} /></label>
+                <label className="form-label block">Condiciones y exclusiones<textarea maxLength={3000} rows={2} className="module-input mt-2" value={carta.condiciones} onChange={e => setCarta({ ...carta, condiciones: e.target.value })} /></label>
+                <label className="form-label block">Cotización válida hasta<input required type="date" className="module-input mt-2" value={carta.fecha} onChange={e => setCarta({ ...carta, fecha: e.target.value })} /></label>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-bold text-secondary mb-1">Costo de Materiales (Bs.)</label>
@@ -790,19 +790,21 @@ export default function TrabajoDetallePage({
                       min="0"
                       step="0.01"
                       required
-                      value={fase6Calculo.subtotalMateriales}
+                      readOnly={isGas}
+                      value={isGas ? gas.calculo?.subtotalMateriales || "" : fase6Calculo.subtotalMateriales}
                       onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalMateriales: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-secondary mb-1">Costo de Mano de Obra (Bs.)</label>
+                    <label className="block font-bold text-secondary mb-1">Mano de obra y proyecto, si corresponde (Bs.)</label>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       required
-                      value={fase6Calculo.subtotalManoObra}
+                      readOnly={isGas}
+                      value={isGas ? gas.calculo?.subtotalManoObra || "" : fase6Calculo.subtotalManoObra}
                       onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalManoObra: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
@@ -847,7 +849,7 @@ export default function TrabajoDetallePage({
                   </p>
                 </div>
                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300">
-                  Válido por 15 Días
+                  Válido hasta {new Date(cotizacionVigente.fechaVencimiento).toLocaleDateString("es")}
                 </span>
               </div>
 
@@ -868,13 +870,13 @@ export default function TrabajoDetallePage({
                     <span>📱 Enviar por WhatsApp al Cliente</span>
                   </a>
 
-                  <button
-                    onClick={() => setModalPdf(true)}
+                  <Link
+                    href={"/trabajos/" + id + "/cotizacion/" + cotizacionVigente.id + "/carta"}
                     className="px-4 py-2 bg-[#0F2C59] hover:bg-[#1A3E72] text-white font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                   >
                     <Printer className="h-3.5 w-3.5" />
                     <span>Ver / Descargar Presupuesto PDF</span>
-                  </button>
+                  </Link>
                 </div>
               </div>
 
@@ -1141,8 +1143,9 @@ export default function TrabajoDetallePage({
 
                 {canManage && estado === "VALIDADO" && (
                   <button
+                    disabled={Boolean(proyectoPendiente) || saldoPendiente > 0}
+                    title={proyectoPendiente ? "Registra la entrega del proyecto de gas antes del cierre final." : undefined}
                     onClick={() => setModalCierreFinanciero(true)}
-                    disabled={saldoPendiente > 0}
                     className="px-6 py-2.5 bg-[#0F2C59] hover:bg-[#1A3E72] text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0"
                   >
                     <Lock className="h-4 w-4 text-[#F06529]" />
@@ -1544,37 +1547,6 @@ export default function TrabajoDetallePage({
         </div>
       )}
 
-      {/* MODAL PDF */}
-      {modalPdf && cotizacionVigente && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
-          <div className="bg-surface rounded-2xl max-w-2xl w-full shadow-2xl border border-line-soft overflow-hidden my-8">
-            <div className="bg-[#0F2C59] text-white p-6 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold text-[#FF7B42] uppercase tracking-wider block">Presupuesto Oficial</span>
-                <h2 className="text-xl font-black">SERVIGAZ • Equipos e Instalaciones</h2>
-                <p className="text-[11px] text-slate-300">NIT: 102938475 • contacto@servigaz.bo</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xs font-mono font-bold px-3 py-1 bg-white/10 rounded-lg block">COT-{trabajo.codigoCorrelativo}</span>
-              </div>
-            </div>
-            <div className="p-6 space-y-6 text-xs text-ink">
-              <div className="p-3 bg-canvas rounded-xl border border-line-soft">
-                <p className="font-bold text-ink">{trabajo.subtipoNombre}</p>
-              </div>
-              <div className="text-right font-black text-lg text-ink">
-                Total: Bs. {totalCotizado.toLocaleString("es-CL")}
-              </div>
-            </div>
-            <div className="p-4 bg-wash border-t flex justify-between">
-              <button onClick={() => setModalPdf(false)} className="px-4 py-2 bg-surface border rounded-xl font-bold text-xs text-secondary">Cerrar</button>
-              <button onClick={() => window.print()} className="px-5 py-2 bg-[#0F2C59] text-white rounded-xl font-bold text-xs flex items-center gap-1.5">
-                <Printer className="h-4 w-4" /> Imprimir
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       </fieldset>
     </div>
   );

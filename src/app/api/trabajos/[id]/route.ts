@@ -43,6 +43,7 @@ export async function GET(
       where: { entidadId: id, entidadTipo: "Trabajo", modulo: "EJECUCION", valoresNuevos: { path: ["accion"], equals: "FINALIZAR_TECNICO" } },
       orderBy: { timestamp: "desc" }, select: { valoresNuevos: true, timestamp: true },
     });
-    return NextResponse.json({ ...trabajo, evidenciasTermino });
+    const historialProyectoGas = await prisma.auditoriaLog.findMany({ where: { entidadId: id, entidadTipo: "Trabajo", modulo: { in: ["PROYECTO_GAS", "SUPERVISION_GAS"] } }, orderBy: { timestamp: "desc" }, take: 30, select: { id: true, timestamp: true, modulo: true, valoresNuevos: true, usuario: { select: { nombre: true } } } });
+    return NextResponse.json({ ...trabajo, evidenciasTermino, historialProyectoGas });
   } catch (error) { return apiError(error); }
 }

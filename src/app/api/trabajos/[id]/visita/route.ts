@@ -1,3 +1,4 @@
+import { gasData, isGasWork, objectRecord } from "@/lib/gas-data";
 import { assertTechnicianSlot, schedulingSchema } from "@/lib/scheduling";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -54,11 +55,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const isGas = subtype?.categoria.codigo === "GAS" || work.subtipoCodigo.startsWith("1.1.") || work.subtipoNombre.toLowerCase().includes("gas");
       if (isGas && data.ventilacionVasaOk !== true) throw new ApiError(400, "Confirma la revisión de ventilación antes de completar la visita de gas.");
       await tx.visitaTecnica.update({ where: { id: visit.id }, data: {
-        fechaEjecutada: new Date(), medidasJson: data.medidasJson, condicionesJson: data.condicionesJson,
+        fechaEjecutada: new Date(), medidasJson: data.medidasJson, condicionesJson: { ...objectRecord(visit.condicionesJson), ...data.condicionesJson },
         ventilacionVasaOk: data.ventilacionVasaOk ?? null, fotosUrls: data.fotosUrls,
         dificultadSugerida: data.dificultadSugerida, observaciones: data.observaciones, completada: true,
       } });
+      const gas = gasData(work);
+      if (isGasWork(work) && gas.supervision) { gas.supervision = { ...gas.supervision, estado: "PENDIENTE" }; delete gas.calculo; }
       const trabajo = await tx.trabajo.update({ where: { id }, data: {
+        ...(isGasWork(work) ? { fechasSla: JSON.parse(JSON.stringify({ ...objectRecord(work.fechasSla), gas: { ...gas, aplica: true } })) } : {}),
         estado: "EVALUADO", dificultadNivel: data.dificultadSugerida, requiereInstaladorExtra: data.dificultadSugerida >= 4,
       } });
       await tx.auditoriaLog.create({ data: {

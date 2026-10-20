@@ -230,3 +230,27 @@ input, textarea, select { scroll-margin-top: 100px; }
 .primary-action:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 639px), (max-height: 760px) { .welcome-dialog { padding: 22px; gap: 16px; } .welcome-art { min-height: 110px; padding: 16px; } .welcome-icon { width: 60px; height: 60px; border-radius: 18px; } }
 @media print { .welcome-backdrop { display: none !important; } }
+
+.quote-letter { max-width: 816px; margin: 0 auto; padding: 48px; background: white; color: #15243a; border: 1px solid #d9dfe6; box-shadow: 0 8px 32px #1024400a; font-size: 12px; line-height: 1.65; }
+.quote-letter section, .quote-letter footer { margin-top: 24px; }
+.quote-letter h1 { font-size: 22px; font-weight: 700; letter-spacing: .1em; }
+.quote-letter h2 { font-size: 13px; font-weight: 700; padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px solid #d9dfe6; }
+.letter-heading { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 22px; border-bottom: 3px solid #ed692f; }
+.letter-heading > div:last-child { text-align: right; }
+.letter-brand { font-size: 28px; font-weight: 800; color: #183e65; letter-spacing: .08em; }
+.quote-letter table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.quote-letter th, .quote-letter td { padding: 9px 10px; text-align: right; border-bottom: 1px solid #e3e7eb; }
+.quote-letter th:first-child, .quote-letter td:first-child { text-align: left; }
+.quote-letter th { background: #f1f4f7; font-weight: 600; }
+.letter-total { font-weight: 800; font-size: 15px; }
+.quote-letter footer { font-size: 11px; color: #4c5c6e; }
+@media(max-width: 640px) { .quote-letter { padding: 22px 16px; } .letter-heading { flex-direction: column; } .letter-heading > div:last-child { text-align: left; } }
+@media print {
+  @page { size: letter; margin: 18mm; }
+  .letter-toolbar { display: none !important; }
+  .quote-letter { max-width: none; padding: 0; border: 0; box-shadow: none; font-size: 10pt; }
+  .letter-heading { flex-direction: row; } .letter-heading > div:last-child { text-align: right; }
+  .quote-letter h2, .quote-letter tr, .quote-letter footer { break-inside: avoid; }
+  .quote-letter h2 { break-after: avoid; }
+  .app-main, .app-content { width: 100%; min-height: 0; overflow: visible; }
+}

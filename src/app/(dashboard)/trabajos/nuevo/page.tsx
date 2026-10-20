@@ -21,6 +21,7 @@ export default function NuevoTrabajoWizardPage() {
   const [query, setQuery] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [subtypes, setSubtypes] = useState<Record<string, string>>({});
+  const [includesGasProject, setIncludesGasProject] = useState(false);
   const [notes, setNotes] = useState("");
   const [details, setDetails] = useState("");
   const [preference, setPreference] = useState({ fecha: "", desde: "", hasta: "" });
@@ -66,7 +67,7 @@ export default function NuevoTrabajoWizardPage() {
         const draft = saved ? restoreWizardDraft(saved, clients, cats, techs) : null;
         if (draft) {
           setCustomer(draft.customer); setCustomerId(draft.customerId); setCategories(draft.categories); setSubtypes(draft.subtypes);
-          setDetails(draft.details); setPreference(draft.preference); setDuration(draft.duration); setMargin(draft.margin);
+          setIncludesGasProject(draft.includesGasProject); setDetails(draft.details); setPreference(draft.preference); setDuration(draft.duration); setMargin(draft.margin);
           setNotes(draft.notes); setSchedule(draft.schedule); setTechnicianId(draft.technicianId); setDate(draft.date);
           setStep(draft.step); requestKey.current = draft.requestKey; setRestored(true);
         }
@@ -79,8 +80,8 @@ export default function NuevoTrabajoWizardPage() {
 
   useEffect(() => {
     if (loading || loadError || !draftKey || completed.current || !requestKey.current) return;
-    try { localStorage.setItem(draftKey, JSON.stringify({ version: 2, step, customerId, customer, categories, subtypes, notes, details, preference, duration, margin, schedule, technicianId, date, requestKey: requestKey.current })); } catch { /* Optional local draft. */ }
-  }, [draftKey, loading, loadError, step, customerId, customer, categories, subtypes, notes, details, preference, duration, margin, schedule, technicianId, date]);
+    try { localStorage.setItem(draftKey, JSON.stringify({ version: 2, step, customerId, customer, categories, subtypes, notes, includesGasProject, details, preference, duration, margin, schedule, technicianId, date, requestKey: requestKey.current })); } catch { /* Optional local draft. */ }
+  }, [draftKey, loading, loadError, step, customerId, customer, categories, subtypes, notes, includesGasProject, details, preference, duration, margin, schedule, technicianId, date]);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
 
   const clearSlot = useCallback(() => { setSchedule(false); setTechnicianId(""); setDate(""); }, []);
@@ -122,6 +123,7 @@ export default function NuevoTrabajoWizardPage() {
         nuevoCliente: selectedCustomer ? null : { ...customer, email: customer.email.trim() || null },
         tipoFlujo: direct ? "SIMPLIFICADO" : "COMPLETO", subtipoCodigos: services.map(s => s.subtype.codigo),
         subtipoCodigo: services.map(s => s.subtype.codigo).join("_"), subtipoNombre: services.map(s => s.subtype.nombre).join(" + "),
+        incluyeProyectoGas: services.some(s => s.category.codigo === "GAS") && includesGasProject,
         observaciones: notes, detallesCliente: details, preferenciaCliente: (preference.fecha || preference.desde || preference.hasta) ? { ...preference, desde: preference.desde || "00:00", hasta: preference.hasta || "23:59" } : null,
         agenda: { duracionMinutos: duration, margenMinutos: margin, zonaHoraria: Intl.DateTimeFormat().resolvedOptions().timeZone }, tecnicoId: schedule ? technicianId : null, fechaProgramada: schedule ? scheduledDate!.toISOString() : null,
       }) });
@@ -165,6 +167,7 @@ export default function NuevoTrabajoWizardPage() {
             {category.descripcion && <p className="text-xs text-muted">{category.descripcion}</p>}
             {category.subtipos.length ? <label className="form-label block">Servicio de {category.nombre}<select className="module-input mt-2" disabled={!checked} value={subtypes[category.codigo] || category.subtipos[0]?.codigo} onChange={e => setSubtypes({ ...subtypes, [category.codigo]: e.target.value })}>{category.subtipos.map(subtype => <option value={subtype.codigo} key={subtype.id}>{subtype.nombre}</option>)}</select></label> : <p className="text-xs text-muted">Sin subtipos activos. Configura esta categoría antes de usarla.</p>}
           </div>; })}</div>
+          {services.some(s => s.category.codigo === "GAS") && <label className="flex gap-3 items-start text-sm text-ink"><input type="checkbox" className="mt-1 accent-[#F06529]" checked={includesGasProject} onChange={e => setIncludesGasProject(e.target.checked)} /><span>La instalación incluye proyecto de gas<small className="block text-muted mt-1">Se hará seguimiento a su elaboración, revisión y entrega antes del cierre final.</small></span></label>}
           {services.length > 0 && <p className="module-note">{direct ? "Servicio directo: podrás preparar la cotización desde la ficha del trabajo. No requiere visita de medición." : "Incluye un servicio que requiere evaluación. Puedes agendar la visita en el siguiente paso o dejarla pendiente."}</p>}
           <label className="form-label block">Observaciones (opcional)<textarea rows={3} className="module-input mt-2" maxLength={3000} value={notes} onChange={e => setNotes(e.target.value)} /></label>
         </>}

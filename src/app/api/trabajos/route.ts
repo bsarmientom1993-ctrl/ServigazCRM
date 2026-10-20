@@ -1,3 +1,4 @@
+import { newGasProject } from "@/lib/gas-data";
 import { createHash } from "node:crypto";
 import { newCustomerSchema } from "@/lib/work-wizard";
 import { assertTechnicianSlot, schedulingSchema } from "@/lib/scheduling";
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
       detallesCliente: z.string().trim().max(2000).optional(),
       preferenciaCliente: z.object({ fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")), desde: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/), hasta: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/) }).nullish(),
       agenda: schedulingSchema.optional(),
+      incluyeProyectoGas: z.boolean().default(false),
       observaciones: z.string().trim().max(3000).optional(),
       dificultadNivel: z.number().int().min(1).max(5).default(1),
       tecnicoId: z.string().min(1).nullish(), fechaProgramada: z.string().datetime({ offset: true, message: "Selecciona una fecha válida con zona horaria." }).nullish(),
@@ -61,6 +63,8 @@ export async function POST(req: NextRequest) {
       if (new Set(codes).size !== codes.length || codes.join("_").length > 300) throw new ApiError(400, "Revisa los servicios seleccionados.");
       const subtypes = await tx.catalogoSubtipo.findMany({ where: { codigo: { in: codes }, activo: true }, include: { categoria: true } });
       if (subtypes.length !== codes.length || subtypes.some(s => !s.categoria.activo)) throw new ApiError(400, "Selecciona servicios activos del catálogo.");
+      const hasGas = subtypes.some(s => s.categoria.codigo === "GAS");
+      if (body.incluyeProyectoGas && !hasGas) throw new ApiError(400, "El proyecto de gas requiere un servicio de gas.");
       const direct = subtypes.every(s => !s.categoria.requiereVisita);
       if (body.tipoFlujo === "SIMPLIFICADO" && !direct) throw new ApiError(400, "El servicio requiere evaluación previa.");
       const agenda = schedulingSchema.parse(body.agenda || {});
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
         ...(requestId ? { id: requestId } : {}), codigoCorrelativo: prefix + String(sequence).padStart(4, "0"), clienteId: clientId!, encargadoId: user.id, sucursalId: user.sucursalId,
         tecnicoId: body.tecnicoId || null, tipoFlujo: direct ? "SIMPLIFICADO" : "COMPLETO", subtipoCodigo: codes.join("_"),
         subtipoNombre: subtypes.map(s => s.nombre).join(" + "), observaciones: [body.detallesCliente ? "Detalles del cliente: " + body.detallesCliente : "", body.observaciones || ""].filter(Boolean).join("\n\n"),
-        ...(body.preferenciaCliente ? { fechasSla: { preferenciaCliente: body.preferenciaCliente } } : {}),
+        fechasSla: { ...(body.preferenciaCliente ? { preferenciaCliente: body.preferenciaCliente } : {}), ...(hasGas ? { gas: JSON.parse(JSON.stringify({ aplica: true, proyecto: newGasProject(body.incluyeProyectoGas) })) } : {}) },
         dificultadNivel: body.dificultadNivel, requiereInstaladorExtra: body.dificultadNivel >= 4,
         estado: direct ? "EVALUADO" : body.tecnicoId ? "EVALUACION_PENDIENTE" : "BORRADOR",
       } });
