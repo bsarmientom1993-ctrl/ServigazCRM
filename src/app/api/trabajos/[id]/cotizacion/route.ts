@@ -41,7 +41,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const minimum = new Prisma.Decimal(total).mul(percentage).div(100).toDecimalPlaces(0, Prisma.Decimal.ROUND_CEIL).toNumber();
       const expiry = body.carta ? new Date(body.carta.fechaValidez) : new Date(Date.now() + 15 * 86400000);
       if (expiry.getTime() <= Date.now() || expiry.getTime() > Date.now() + 90 * 86400000) throw new ApiError(400, "La validez debe ser futura y de hasta 90 días.");
-      const letter = { alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
+      const issuer = await tx.usuario.findUnique({ where: { id: user.id }, select: { nombre: true } });
+      if (!issuer?.nombre.trim()) throw new ApiError(409, "Completa tu nombre de usuario antes de emitir la cotización.");
+      const letter = { cotizadoPorId: user.id, cotizadoPorNombre: issuer.nombre.trim(), alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
       const version = (work.cotizaciones[0]?.numeroVersion || 0) + 1;
       await tx.cotizacion.updateMany({ where: { trabajoId: id, estado: "VIGENTE" }, data: { estado: "SUPERADA" } });
       const cotizacion = await tx.cotizacion.create({ data: {

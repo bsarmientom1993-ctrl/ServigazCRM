@@ -147,3 +147,25 @@ test("wizard persists optional gas project and refuses it for another service", 
   await prisma.catalogoSubtipo.create({ data: { nombre: "Servicio", codigo: "OTHER_TEST", categoriaId: other.id } });
   await body(await works.POST(req(manager, { ...input, subtipoCodigo: "OTHER_TEST", subtipoCodigos: ["OTHER_TEST"] })), 400);
 });
+
+test("only managers and admins issue quotes, with their own frozen name and legacy audit attribution", async () => {
+  const detail = require("../src/app/api/trabajos/[id]/route.ts");
+  await prisma.usuario.update({ where: { id: manager.id }, data: { nombre: "Ana Pérez" } });
+  await prisma.usuario.update({ where: { id: admin.id }, data: { nombre: "Luis Torres" } });
+  for (const [actor, name] of [[manager, "Ana Pérez"], [admin, "Luis Torres"]]) {
+    const { work, visit } = await fixture(); await approve(work, visit);
+    await body(await quotes.POST(req(technician, quoteInput), context(work)), 403);
+    assert.equal(await prisma.cotizacion.count({ where: { trabajoId: work.id } }), 0);
+    const { cotizacion } = await body(await quotes.POST(req(actor, { ...quoteInput, datosFormulario: { carta: { cotizadoPorNombre: "Firma falsa" } }, carta: { ...quoteInput.carta, cotizadoPorNombre: "Otra persona" } }), context(work)));
+    assert.equal(cotizacion.datosFormularioJson.carta.cotizadoPorNombre, name);
+    assert.equal(cotizacion.datosFormularioJson.carta.cotizadoPorId, actor.id);
+    await prisma.usuario.update({ where: { id: actor.id }, data: { nombre: "Nombre cambiado" } });
+    const frozen = await body(await detail.GET(req(manager, undefined, "GET"), context(work)));
+    assert.equal(frozen.cotizaciones[0].emitidoPorNombre, name);
+    await prisma.usuario.update({ where: { id: actor.id }, data: { nombre: name } });
+    const { cotizadoPorId, cotizadoPorNombre, ...legacyLetter } = cotizacion.datosFormularioJson.carta;
+    await prisma.cotizacion.update({ where: { id: cotizacion.id }, data: { datosFormularioJson: { carta: legacyLetter } } });
+    const legacy = await body(await detail.GET(req(manager, undefined, "GET"), context(work)));
+    assert.equal(legacy.cotizaciones[0].emitidoPorNombre, name);
+  }
+});

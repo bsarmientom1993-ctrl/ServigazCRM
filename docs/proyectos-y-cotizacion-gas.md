@@ -17,6 +17,8 @@
 
 Los valores son revisados por cada orden; no se incorporan precios comerciales inventados. El servidor calcula los importes con precisión decimal desde la medición y aprobación guardadas. La carta separa materiales, mano de obra, proyecto y transporte.
 
+Solo los encargados y administradores pueden emitir cotizaciones. La firma muestra el nombre de la persona que emitió cada versión, sin su cargo, y lo conserva aunque después cambie su perfil. Las versiones anteriores utilizan su registro de emisión cuando está disponible.
+
 Cada versión conserva una copia del cliente, alcance, condiciones, medición, tarifas y supervisor. La validez se elige al emitir; por defecto la API utiliza 15 días. Las cotizaciones vencidas no se aceptan.
 
 Cambiar la inclusión del proyecto o corregir la medición invalida el visto bueno y reemplaza las cotizaciones pendientes. El alcance y las tarifas se fijan antes de aceptación o pagos. El avance documental puede continuar durante la ejecución y queda auditado por usuario y fecha.

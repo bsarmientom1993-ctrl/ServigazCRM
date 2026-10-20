@@ -1,4 +1,5 @@
 import { requireSession, assertWorkAccess } from "@/lib/auth";
+import { objectRecord } from "@/lib/gas-data";
 import { apiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -44,6 +45,14 @@ export async function GET(
       orderBy: { timestamp: "desc" }, select: { valoresNuevos: true, timestamp: true },
     });
     const historialProyectoGas = await prisma.auditoriaLog.findMany({ where: { entidadId: id, entidadTipo: "Trabajo", modulo: { in: ["PROYECTO_GAS", "SUPERVISION_GAS"] } }, orderBy: { timestamp: "desc" }, take: 30, select: { id: true, timestamp: true, modulo: true, valoresNuevos: true, usuario: { select: { nombre: true } } } });
-    return NextResponse.json({ ...trabajo, evidenciasTermino, historialProyectoGas });
+    const legacyIds = trabajo.cotizaciones.filter(quote => !objectRecord(objectRecord(quote.datosFormularioJson).carta).cotizadoPorNombre).map(quote => quote.id);
+    const issuers = legacyIds.length ? await prisma.auditoriaLog.findMany({
+      where: { entidadTipo: "Cotizacion", entidadId: { in: legacyIds }, modulo: "COTIZACIONES", accion: "CREATE" },
+      orderBy: { timestamp: "asc" }, select: { entidadId: true, usuario: { select: { nombre: true } } },
+    }) : [];
+    const names = new Map<string, string>();
+    for (const entry of issuers) if (entry.entidadId && entry.usuario?.nombre && !names.has(entry.entidadId)) names.set(entry.entidadId, entry.usuario.nombre);
+    const cotizaciones = trabajo.cotizaciones.map(quote => ({ ...quote, emitidoPorNombre: objectRecord(objectRecord(quote.datosFormularioJson).carta).cotizadoPorNombre || names.get(quote.id) || null }));
+    return NextResponse.json({ ...trabajo, cotizaciones, evidenciasTermino, historialProyectoGas });
   } catch (error) { return apiError(error); }
 }

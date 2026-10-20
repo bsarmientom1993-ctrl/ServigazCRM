@@ -43,7 +43,7 @@ beforeEach(() => {
     $queryRaw: async () => [{ id: work.id }],
     trabajo: { findUniqueOrThrow: async () => work, update: async ({ data }) => { writes.push(["work", data]); return { ...work, ...data }; } },
     pago: { findUnique: async () => previous, create: writer("payment") },
-    usuario: { findUnique: async () => ({ id: "tech-1", rol: "TECNICO_FIJO", estado: "ACTIVO", sucursalId: "branch-1" }) },
+    usuario: { findUnique: async () => ({ id: "tech-1", nombre: "Ana Pérez", rol: "TECNICO_FIJO", estado: "ACTIVO", sucursalId: "branch-1" }) },
     auditoriaLog: { create: writer("audit") },
     cotizacion: { update: writer("quote"), updateMany: async () => ({ count: 1 }), create: writer("quote") },
     configuracionGarantia: { findUnique: async () => ({ activo: true, mesesDefecto: 2, condiciones: "Cobertura del diagnóstico" }) },
