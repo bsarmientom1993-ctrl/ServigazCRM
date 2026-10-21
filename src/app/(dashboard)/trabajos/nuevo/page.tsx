@@ -9,9 +9,12 @@ import { useAuth } from "@/context/AuthContext";
 import { Category, Customer, CustomerForm, customerError, emptyCustomer, localDateInput, restoreWizardDraft, selectedServices } from "@/lib/work-wizard";
 
 type Technician = { id: string; nombre: string };
+const customerDetails = (client: Customer): CustomerForm => ({ nombreCompleto: client.nombreCompleto, telefono: client.telefonos?.[0] || "", direccion: client.direccion || "", email: client.email || "" });
 export default function NuevoTrabajoWizardPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const [intent, setIntent] = useState<{ clientId: string; newClient: boolean } | null>(null);
+  useEffect(() => { const params = new URLSearchParams(window.location.search); setIntent({ clientId: params.get("clienteId") || "", newClient: params.get("nuevoCliente") === "1" }); }, []);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [catalog, setCatalog] = useState<Category[]>([]);
@@ -40,7 +43,7 @@ export default function NuevoTrabajoWizardPage() {
   const busy = useRef(false);
   const completed = useRef(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
-  const draftKey = user ? "servigaz_wizard_draft:" + user.id : "";
+  const draftKey = user && intent ? "servigaz_wizard_draft:" + user.id + (intent.clientId ? ":cliente:" + intent.clientId : intent.newClient ? ":nuevo" : "") : "";
   const selectedCustomer = customers.find(c => c.id === customerId);
   const services = selectedServices(catalog, categories, subtypes);
   const direct = services.length > 0 && services.every(s => !s.category.requiereVisita);
@@ -58,15 +61,19 @@ export default function NuevoTrabajoWizardPage() {
     })).then(([clients, techs, cats]) => {
       if (controller.signal.aborted) return;
       clients = clients.map((client: Customer) => ({ ...client, telefonos: Array.isArray(client.telefonos) ? client.telefonos.map(String) : [String(client.telefonos || "")] }));
+      const initialClient = intent?.clientId ? clients.find((client: Customer) => client.id === intent.clientId) : null;
+      if (intent?.clientId && !initialClient) throw new Error("El cliente seleccionado no está disponible. Vuelve al cotizador y elige un cliente registrado.");
       setCustomers(clients); setTechnicians(techs); setCatalog(cats);
+      if (initialClient) { setCustomerId(initialClient.id); setCustomer(customerDetails(initialClient)); setStep(2); }
       requestKey.current = crypto.randomUUID();
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(10, 0, 0, 0);
       setDate(localDateInput(tomorrow));
       try {
         const saved = localStorage.getItem(draftKey);
         const draft = saved ? restoreWizardDraft(saved, clients, cats, techs) : null;
-        if (draft) {
-          setCustomer(draft.customer); setCustomerId(draft.customerId); setCategories(draft.categories); setSubtypes(draft.subtypes);
+        if (draft && (!intent?.clientId || draft.customerId === intent.clientId)) {
+          const restoredClient = clients.find((client: Customer) => client.id === draft.customerId);
+          setCustomer(restoredClient ? customerDetails(restoredClient) : draft.customer); setCustomerId(draft.customerId); setCategories(draft.categories); setSubtypes(draft.subtypes);
           setIncludesGasProject(draft.includesGasProject); setDetails(draft.details); setPreference(draft.preference); setDuration(draft.duration); setMargin(draft.margin);
           setNotes(draft.notes); setSchedule(draft.schedule); setTechnicianId(draft.technicianId); setDate(draft.date);
           setStep(draft.step); requestKey.current = draft.requestKey; setRestored(true);
@@ -76,7 +83,7 @@ export default function NuevoTrabajoWizardPage() {
     }).catch(err => { if (!controller.signal.aborted) setLoadError(err.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [draftKey, reload]);
+  }, [draftKey, reload, intent]);
 
   useEffect(() => {
     if (loading || loadError || !draftKey || completed.current || !requestKey.current) return;
@@ -101,7 +108,7 @@ export default function NuevoTrabajoWizardPage() {
   }
   function selectCustomer(client: Customer) {
     setCustomerId(client.id); setQuery(""); setError("");
-    setCustomer({ nombreCompleto: client.nombreCompleto, telefono: client.telefonos?.[0] || "", direccion: client.direccion || "", email: client.email || "" });
+    setCustomer(customerDetails(client));
   }
   function toggleCategory(category: Category) {
     setError("");
@@ -143,6 +150,7 @@ export default function NuevoTrabajoWizardPage() {
   return <div className="max-w-4xl mx-auto space-y-5 pb-8">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="module-eyebrow">NUEVA SOLICITUD</p><h2 className="text-2xl font-semibold text-ink">Nuevo trabajo</h2><p className="text-sm text-muted mt-2">Selecciona el cliente, define el servicio y revisa antes de guardar.</p></div><Link className="theme-toggle" href="/trabajos"><ArrowLeft size={16} />Trabajos</Link></div>
     {restored && <p className="module-note">Recuperamos tu borrador. Revisa los datos antes de crear el trabajo.</p>}
+    {selectedCustomer && <p className="module-note">Cliente seleccionado: <strong>{selectedCustomer.nombreCompleto}</strong> · {selectedCustomer.telefonos.join(", ")} · {selectedCustomer.direccion}</p>}
     <nav aria-label="Pasos del nuevo trabajo" className="grid grid-cols-3 gap-2">{[{ number: 1, name: "Cliente", icon: User }, { number: 2, name: "Servicio", icon: Wrench }, { number: 3, name: "Coordinar", icon: ClipboardCheck }].map(item => <button type="button" key={item.number} disabled={saving} aria-current={step === item.number ? "step" : undefined} onClick={() => go(item.number as 1 | 2 | 3)} className={"module-card flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 !p-3 text-left " + (step === item.number ? "ring-2 ring-[#F06529]" : "")}><span className="rounded-full bg-wash w-7 h-7 flex items-center justify-center shrink-0 text-ink text-sm">{step > item.number ? <Check size={16} /> : item.number}</span><span className="text-xs sm:text-sm font-semibold text-ink">{item.name}</span></button>)}</nav>
     {error && <p ref={errorRef} tabIndex={-1} role="alert" className="module-error">{error}</p>}
     <form onSubmit={event => { event.preventDefault(); if (step === 3) submit(event); else go((step + 1) as 2 | 3); }} className="space-y-5">

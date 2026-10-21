@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import {
   Users,
@@ -57,7 +58,7 @@ export default function ClientesPage() {
   const filtered = clientes.filter(
     (c) =>
       c.nombreCompleto.toLowerCase().includes(busqueda.toLowerCase()) ||
-      c.direccion.toLowerCase().includes(busqueda.toLowerCase())
+      (c.direccion || "").toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
@@ -147,6 +148,7 @@ export default function ClientesPage() {
                 {c._count?.trabajos ?? 0}
               </span>
             </div>
+            <Link className="theme-toggle mt-4 inline-flex" href={"/cotizador?clienteId=" + encodeURIComponent(c.id)}>Cotizar / Ver historial</Link>
           </div>
         ))}
       </div>

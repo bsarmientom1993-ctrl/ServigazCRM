@@ -783,7 +783,7 @@ export default function TrabajoDetallePage({
                 </span>
               </div>
 
-              <form onSubmit={handleEmitirCotizacion} className="space-y-4 text-xs">
+              <form id="cotizacion" onSubmit={handleEmitirCotizacion} className="space-y-4 text-xs">
                 <label className="form-label block">Detalle y alcance del trabajo<textarea required minLength={10} maxLength={5000} rows={4} className="module-input mt-2" value={carta.alcance} placeholder={trabajo.subtipoNombre} onChange={e => setCarta({ ...carta, alcance: e.target.value })} /></label>
                 <label className="form-label block">Condiciones y exclusiones<textarea maxLength={3000} rows={2} className="module-input mt-2" value={carta.condiciones} onChange={e => setCarta({ ...carta, condiciones: e.target.value })} /></label>
                 <label className="form-label block">Cotización válida hasta<input required type="date" className="module-input mt-2" value={carta.fecha} onChange={e => setCarta({ ...carta, fecha: e.target.value })} /></label>
