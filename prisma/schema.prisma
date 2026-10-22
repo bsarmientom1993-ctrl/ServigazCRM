@@ -804,7 +804,8 @@ model FotoTrabajo {
   autorNombre String
   etapa       String
   descripcion String   @default("")
-  contenido   Bytes
+  contenido   Bytes?
+  objectKey   String?  @unique
   sha256      String
   ancho       Int
   alto        Int

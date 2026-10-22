@@ -10,6 +10,14 @@ async function migratePhotos(client) {
       "contenido" BYTEA NOT NULL CHECK (octet_length("contenido") <= 786432), "sha256" TEXT NOT NULL,
       "ancho" INTEGER NOT NULL, "alto" INTEGER NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`);
+    await tx.$executeRawUnsafe('ALTER TABLE "FotoTrabajo" ALTER COLUMN "contenido" DROP NOT NULL');
+    await tx.$executeRawUnsafe('ALTER TABLE "FotoTrabajo" ADD COLUMN IF NOT EXISTS "objectKey" TEXT');
+    await tx.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "FotoTrabajo_objectKey_key" ON "FotoTrabajo" ("objectKey")');
+    await tx.$executeRawUnsafe(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FotoTrabajo_storage_check' AND conrelid = '"FotoTrabajo"'::regclass) THEN
+        ALTER TABLE "FotoTrabajo" ADD CONSTRAINT "FotoTrabajo_storage_check" CHECK ("contenido" IS NOT NULL OR "objectKey" IS NOT NULL);
+      END IF;
+    END $$`);
     await tx.$executeRawUnsafe('CREATE UNIQUE INDEX IF NOT EXISTS "FotoTrabajo_trabajoId_etapa_sha256_key" ON "FotoTrabajo" ("trabajoId", "etapa", "sha256")');
     await tx.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS "FotoTrabajo_trabajoId_etapa_createdAt_idx" ON "FotoTrabajo" ("trabajoId", "etapa", "createdAt")');
   }, { timeout: 60000 });

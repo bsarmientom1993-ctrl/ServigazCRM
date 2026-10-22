@@ -2,6 +2,7 @@ const {test,before,after}=require('node:test');const assert=require('node:assert
 const supplied=process.env.TEST_DATABASE_URL;if(!supplied)throw new Error('TEST_DATABASE_URL debe apuntar a PostgreSQL local _test.');const base=new URL(supplied);if(!['localhost','127.0.0.1'].includes(base.hostname)||!base.pathname.endsWith('_test'))throw new Error('Solo se permiten bases locales de prueba.');
 const schema='photos_test_'+randomUUID().replaceAll('-',''),root=new PrismaClient({datasources:{db:{url:base.toString()}}}),scoped=new URL(base);scoped.searchParams.set('schema',schema);process.env.DATABASE_URL=scoped.toString();process.env.JWT_SECRET='local-photos-integration-tests-secret-only';
 const {prisma}=require('../src/lib/prisma.ts');const photos=require('../src/app/api/trabajos/[id]/fotos/route.ts');const binary=require('../src/app/api/trabajos/[id]/fotos/[fotoId]/route.ts');const directory=require('../src/app/api/fotos/trabajos/route.ts');const visits=require('../src/app/api/trabajos/[id]/visita/route.ts');const execution=require('../src/app/api/trabajos/[id]/ejecucion/route.ts');
+process.env.PHOTO_STORAGE='postgres';
 let manager,tech,helper,outsider,branch,client;
 const cookie=user=>'servigaz_token='+jwt.sign({id:user.id},process.env.JWT_SECRET);const ctx=(work,photo)=>({params:Promise.resolve({id:work.id,fotoId:photo?.id})});
 function read(user,query=''){return new NextRequest('http://localhost/api/photos'+query,{headers:user?{Cookie:cookie(user)}:{}});}
@@ -11,6 +12,33 @@ async function upload(user,work,stage='INICIAL',n=1,key=randomUUID(),override){c
 async function fixture(accepted=false){const work=await prisma.trabajo.create({data:{codigoCorrelativo:'PHOTO-'+randomUUID(),clienteId:client.id,encargadoId:manager.id,tecnicoId:tech.id,sucursalId:branch.id,tipoFlujo:'COMPLETO',subtipoCodigo:'OTR.1',subtipoNombre:'Instalación de prueba',estado:accepted?'EN_PROCESO':'EVALUACION_PENDIENTE'}});if(accepted)await prisma.cotizacion.create({data:{trabajoId:work.id,estado:'APROBADA',datosFormularioJson:{},snapshotCalculoJson:{},subtotalMateriales:100,subtotalManoObra:100,totalCotizado:200,anticipoMinimoRequerido:100,fechaVencimiento:new Date('2030-01-01')}});return work;}
 before(async()=>{await root.$executeRawUnsafe('CREATE SCHEMA "'+schema+'"');const sql=fs.readFileSync(path.join(__dirname,'fixtures/inventory-baseline.sql'),'utf8');await prisma.$transaction(async tx=>{for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await tx.$executeRawUnsafe(statement);},{timeout:60000});await require('../scripts/migrate-photos.cjs').migratePhotos(prisma);await require('../scripts/migrate-photos.cjs').migratePhotos(prisma);branch=await prisma.sucursal.create({data:{nombre:'Sucursal de fotos'}});const other=await prisma.sucursal.create({data:{nombre:'Otra sucursal'}});async function actor(role,branchId){return prisma.usuario.create({data:{nombre:'Autor '+role,email:randomUUID()+'@example.invalid',passwordHash:'none',rol:role,sucursalId:branchId}});}manager=await actor('ENCARGADO',branch.id);tech=await actor('TECNICO_FIJO',branch.id);helper=await actor('TECNICO_FIJO',branch.id);outsider=await actor('TECNICO_FIJO',other.id);client=await prisma.cliente.create({data:{nombreCompleto:'Cliente ficticio',direccion:'Calle de prueba',telefonos:[],sucursalId:branch.id}});},{timeout:60000});
 after(async()=>{await prisma.$disconnect();if(/^photos_test_[a-f0-9]{32}$/.test(schema))await root.$executeRawUnsafe('DROP SCHEMA "'+schema+'" CASCADE');await root.$disconnect();});
+
+test('R2 migration verifies content before releasing database bytes and uploads stay private and atomic',async()=>{
+  const {S3Client,PutObjectCommand}=require('@aws-sdk/client-s3'),{Readable}=require('node:stream');
+  const {createR2Storage}=require('../scripts/lib/photo-r2.cjs'),{movePhotosToR2}=require('../scripts/move-photos-to-r2.cjs');
+  const original=S3Client.prototype.send,objects=new Map();let failPut=false,failGet=false,calls=0;
+  const previous=Object.fromEntries(['PHOTO_STORAGE','R2_ACCOUNT_ID','R2_BUCKET_NAME','R2_ACCESS_KEY_ID','R2_SECRET_ACCESS_KEY'].map(k=>[k,process.env[k]]));
+  Object.assign(process.env,{R2_ACCOUNT_ID:'a'.repeat(32),R2_BUCKET_NAME:'servigaz-tests',R2_ACCESS_KEY_ID:'test',R2_SECRET_ACCESS_KEY:'test'});
+  S3Client.prototype.send=async function(command){calls++;if(command instanceof PutObjectCommand){if(failPut)throw new Error('PRIVATE_CREDENTIAL_MUST_NOT_LEAK');objects.set(command.input.Key,Buffer.from(command.input.Body));return {};}if(failGet)throw new Error('read failed');const bytes=objects.get(command.input.Key);if(!bytes)throw new Error('missing');return {Body:Readable.from([bytes]),ContentLength:bytes.length};};
+  const storage=createR2Storage();
+  try{
+    const work=await fixture(),legacy=await body(await upload(tech,work,'INICIAL',61),201);
+    const before=await prisma.fotoTrabajo.findUnique({where:{id:legacy.id}});
+    failGet=true;await assert.rejects(movePhotosToR2(prisma,storage));
+    assert.deepEqual((await prisma.fotoTrabajo.findUnique({where:{id:legacy.id}})).contenido,before.contenido);
+    failGet=false;assert.equal(await movePhotosToR2(prisma,storage),1);assert.equal(await movePhotosToR2(prisma,storage),0);
+    const migrated=await prisma.fotoTrabajo.findUnique({where:{id:legacy.id}});assert.equal(migrated.contenido,null);assert.ok(migrated.objectKey);assert.equal(migrated.autorNombre,before.autorNombre);assert.deepEqual(migrated.createdAt,before.createdAt);
+    assert.deepEqual(Buffer.from(await (await binary.GET(read(tech),ctx(work,legacy))).arrayBuffer()),Buffer.from(before.contenido));
+    process.env.PHOTO_STORAGE='r2';const key=randomUUID();const photo=await body(await upload(tech,work,'INICIAL',62,key),201);
+    const record=await prisma.fotoTrabajo.findUnique({where:{id:photo.id}});assert.equal(record.contenido,null);assert.ok(objects.has(record.objectKey));assert.equal(photo.objectKey,undefined);
+    assert.equal((await binary.GET(read(tech,'?mini=1'),ctx(work,photo))).status,200);
+    const count=objects.size;await body(await upload(tech,work,'INICIAL',62,key),201);assert.equal(objects.size,count);
+    const priorCalls=calls;await body(await binary.GET(read(outsider),ctx(work,photo)),403);assert.equal(calls,priorCalls);
+    failPut=true;const failure=await body(await upload(tech,work,'INICIAL',63),503);assert.ok(!JSON.stringify(failure).includes('PRIVATE_CREDENTIAL'));assert.equal(await prisma.fotoTrabajo.count({where:{trabajoId:work.id}}),2);
+    assert.equal(await prisma.auditoriaLog.count({where:{modulo:'FOTOS_TRABAJO',entidadId:photo.id}}),1);
+    failPut=false;delete process.env.R2_SECRET_ACCESS_KEY;await body(await upload(tech,work,'INICIAL',64),503);assert.equal(await prisma.fotoTrabajo.count({where:{trabajoId:work.id}}),2);
+  }finally{storage.close();S3Client.prototype.send=original;for(const[k,v]of Object.entries(previous)){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
+});
 
 test('initial photos persist privately with author, timestamp, safe JPEG and no binary data in folder metadata',async()=>{const work=await fixture();const photo=await body(await upload(tech,work),201);assert.equal(photo.autorNombre,tech.nombre);assert.ok(photo.createdAt);assert.equal(photo.contenido,undefined);assert.match(photo.url,/\/api\/trabajos\/.+\/fotos\/.+/);const list=await body(await photos.GET(read(tech),ctx(work)));assert.equal(list.fotos.length,1);assert.equal(list.fotos[0].descripcion,photo.descripcion);assert.equal(list.fotos[0].contenido,undefined);const saved=await binary.GET(read(tech),ctx(work,photo));assert.equal(saved.status,200);assert.match(saved.headers.get('Cache-Control'),/private/);assert.equal(saved.headers.get('Content-Type'),'image/jpeg');const metadata=await sharp(Buffer.from(await saved.arrayBuffer())).metadata();assert.equal(metadata.width,240);assert.equal(metadata.exif,undefined);assert.equal((await binary.GET(read(null),ctx(work,photo))).status,401);await body(await binary.GET(read(outsider),ctx(work,photo)),403);await prisma.usuario.update({where:{id:tech.id},data:{nombre:'Nombre posterior'}});assert.equal((await body(await photos.GET(read(manager),ctx(work)))).fotos[0].autorNombre,tech.nombre);await prisma.usuario.update({where:{id:tech.id},data:{nombre:tech.nombre}});});
 

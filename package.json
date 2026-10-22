@@ -24,12 +24,14 @@
     "test:profiles": "node --require ./tests/register.cjs --test tests/profiles.integration.cjs",
     "test:gas": "node --require ./tests/register.cjs --test tests/gas.integration.cjs",
     "test:catalog": "node --require ./tests/register.cjs --test tests/catalog.integration.cjs",
-    "test:photos": "node --require ./tests/register.cjs --test tests/photos.integration.cjs"
+    "test:photos": "node --require ./tests/register.cjs --test tests/photos.integration.cjs",
+    "photos:r2": "node scripts/move-photos-to-r2.cjs"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
     "@prisma/client": "^6.4.1",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",

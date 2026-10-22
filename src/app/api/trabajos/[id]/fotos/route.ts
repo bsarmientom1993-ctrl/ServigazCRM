@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
+import { storePhoto } from "@/lib/photo-storage";
 import { photoPermissions, photoWorkSelect, photoMetadataSelect, photoStages, photoLimit, photoUrl } from "@/lib/work-photos";
 export const runtime = "nodejs";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -56,10 +57,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const duplicate=await tx.fotoTrabajo.findUnique({where:{trabajoId_etapa_sha256:{trabajoId:id,etapa,sha256:hash}},select:photoMetadataSelect});if(duplicate)return duplicate;
       if(await tx.fotoTrabajo.count({where:{trabajoId:id,etapa}})>=photoLimit)throw new ApiError(409,"La carpeta ya alcanzó el límite de "+photoLimit+" fotos para esta etapa.");
       const actor=await tx.usuario.findUniqueOrThrow({where:{id:user.id},select:{nombre:true}});
-      const saved=await tx.fotoTrabajo.create({data:{id:key,trabajoId:id,autorId:user.id,autorNombre:actor.nombre,etapa,descripcion,contenido:new Uint8Array(image.data),sha256:hash,ancho:image.info.width,alto:image.info.height},select:photoMetadataSelect});
+      const stored=await storePhoto(id,etapa,key,hash,image.data);
+      const saved=await tx.fotoTrabajo.create({data:{id:key,trabajoId:id,autorId:user.id,autorNombre:actor.nombre,etapa,descripcion,...stored,sha256:hash,ancho:image.info.width,alto:image.info.height},select:photoMetadataSelect});
       await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:"FOTOS_TRABAJO",accion:"CREATE",entidadTipo:"FotoTrabajo",entidadId:saved.id,valoresNuevos:{trabajoId:id,etapa,realizadoPor:actor.nombre,descripcion}}});
       return saved;
-    });
+    }, { timeout: 25000, maxWait: 10000 });
     return NextResponse.json({...photo,url:photoUrl(id,photo.id)},{status:201});
   }catch(error){return apiError(error);}
 }
