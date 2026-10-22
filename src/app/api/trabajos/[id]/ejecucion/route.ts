@@ -1,3 +1,4 @@
+import { evidencePhoto, assertPhotoReferences } from "@/lib/work-photos";
 import { lockLocations, locationForOperation, lockProduct, takeStock } from "@/lib/inventory";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -7,7 +8,7 @@ import { ApiError, apiError } from "@/lib/api";
 import { withWork } from "@/lib/workflow";
 import { cents, assertStart } from "@/lib/workflow-policy";
 
-const evidence = z.array(z.string().url().max(2000).refine(url => /^https?:\/\//.test(url), "Usa un enlace HTTP o HTTPS.").refine(url => !url.includes("unsplash.com"), "Adjunta evidencia del trabajo, no fotos de ejemplo.")).min(2, "Adjunta al menos dos fotos del trabajo.").max(20);
+const evidence = z.array(evidencePhoto).min(2, "Adjunta al menos dos fotos del resultado final.").max(20).refine(values => new Set(values).size === values.length, "Usa fotografías distintas.");
 const materialSchema = z.object({
   descripcion: z.string().trim().min(1).max(500),
   cantidad: z.number().finite().positive().max(99999999.99),
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } else if (body.accion === "FINALIZAR_TECNICO") {
         if (work.estado !== "EN_PROCESO") throw new ApiError(409, "Solo puede terminarse un trabajo en ejecución.");
         const data = z.object({ fotosTermino: evidence, observacionesTermino: z.string().trim().min(5, "Describe el resultado de las pruebas y el trabajo realizado.").max(3000) }).parse(body.data);
+        await assertPhotoReferences(tx, data.fotosTermino, id, "FINAL");
         changes = { estado: "TERMINADO_TECNICO", fechaFinEjecucion: new Date(), porcentajeAvance: 100 };
         // Persist evidence with author and timestamp instead of discarding it.
         details = { ...details, fotosTermino: data.fotosTermino, observacionesTermino: data.observacionesTermino };

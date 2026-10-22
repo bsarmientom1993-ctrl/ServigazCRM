@@ -167,6 +167,7 @@ model Usuario {
   permisosAprobados   PermisoPersonal[]    @relation("PermisosAprobador")
   egresosRegistrados  EgresoGeneralManual[]
   auditorias          AuditoriaLog[]
+  fotosTrabajo        FotoTrabajo[]
   traspasosEnviados   TraspasoInventario[] @relation("TraspasoEnviado")
   traspasosResueltos  TraspasoInventario[] @relation("TraspasoResuelto")
   movimientosInv      MovimientoInventario[]
@@ -408,6 +409,7 @@ model Trabajo {
   
   // Relaciones
   visitas                  VisitaTecnica[]
+  fotosRegistro            FotoTrabajo[]
   cotizaciones             Cotizacion[]
   pagos                    Pago[]
   materiales               MaterialEjecucion[]
@@ -791,4 +793,23 @@ model TraspasoInventario {
 
   @@index([origenId, estado])
   @@index([destinoId, estado])
+}
+
+model FotoTrabajo {
+  id          String   @id @default(uuid())
+  trabajoId   String
+  trabajo     Trabajo  @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  autorId     String
+  autor       Usuario  @relation(fields: [autorId], references: [id])
+  autorNombre String
+  etapa       String
+  descripcion String   @default("")
+  contenido   Bytes
+  sha256      String
+  ancho       Int
+  alto        Int
+  createdAt   DateTime @default(now())
+
+  @@unique([trabajoId, etapa, sha256])
+  @@index([trabajoId, etapa, createdAt])
 }

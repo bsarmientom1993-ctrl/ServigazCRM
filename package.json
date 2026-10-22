@@ -23,7 +23,8 @@
     "test:clients": "node --require ./tests/register.cjs --test tests/client-history.integration.cjs",
     "test:profiles": "node --require ./tests/register.cjs --test tests/profiles.integration.cjs",
     "test:gas": "node --require ./tests/register.cjs --test tests/gas.integration.cjs",
-    "test:catalog": "node --require ./tests/register.cjs --test tests/catalog.integration.cjs"
+    "test:catalog": "node --require ./tests/register.cjs --test tests/catalog.integration.cjs",
+    "test:photos": "node --require ./tests/register.cjs --test tests/photos.integration.cjs"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -38,6 +39,7 @@
     "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sharp": "0.35.4",
     "tailwind-merge": "^3.0.2",
     "zod": "^3.24.2"
   },

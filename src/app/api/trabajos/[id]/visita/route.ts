@@ -1,3 +1,4 @@
+import { evidencePhoto, assertPhotoReferences } from "@/lib/work-photos";
 import { gasData, isGasWork, objectRecord } from "@/lib/gas-data";
 import { assertTechnicianSlot, schedulingSchema } from "@/lib/scheduling";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,13 +7,13 @@ import { requireSession, managers } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { withWork } from "@/lib/workflow";
 
-const photo = z.string().url().max(2000).refine(url => /^https?:\/\//.test(url), "Usa un enlace HTTP o HTTPS.").refine(url => !url.includes("unsplash.com"), "Usa fotografías del trabajo.");
+
 const evaluation = z.object({
   visitaId: z.string().min(1),
   medidasJson: z.object({ metrosVisto: z.number().finite().nonnegative(), metrosEmpotrado: z.number().finite().nonnegative() }),
   condicionesJson: z.object({ condiciones: z.string().trim().min(5).max(3000) }),
   ventilacionVasaOk: z.boolean().optional(),
-  fotosUrls: z.array(photo).min(3, "Adjunta al menos tres fotos de la visita.").max(20),
+  fotosUrls: z.array(evidencePhoto).min(3, "Adjunta al menos tres fotos del requerimiento inicial.").max(20).refine(values => new Set(values).size === values.length, "Usa fotografías distintas."),
   dificultadSugerida: z.number().int().min(1).max(5),
   observaciones: z.string().trim().max(3000).optional(),
 });
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const subtype = await tx.catalogoSubtipo.findUnique({ where: { codigo: work.subtipoCodigo }, include: { categoria: true } });
       const isGas = subtype?.categoria.codigo === "GAS" || work.subtipoCodigo.startsWith("1.1.") || work.subtipoNombre.toLowerCase().includes("gas");
       if (isGas && data.ventilacionVasaOk !== true) throw new ApiError(400, "Confirma la revisión de ventilación antes de completar la visita de gas.");
+      await assertPhotoReferences(tx, data.fotosUrls, id, "INICIAL");
       await tx.visitaTecnica.update({ where: { id: visit.id }, data: {
         fechaEjecutada: new Date(), medidasJson: data.medidasJson, condicionesJson: { ...objectRecord(visit.condicionesJson), ...data.condicionesJson },
         ventilacionVasaOk: data.ventilacionVasaOk ?? null, fotosUrls: data.fotosUrls,

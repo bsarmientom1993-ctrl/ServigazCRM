@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { activeAssignedVisit } from "@/lib/technician-agenda";
+import { WorkPhotoFolders, type PhotoReferences } from "@/components/trabajos/WorkPhotoFolders";
 import { ClientQuickActions } from "@/components/trabajos/ClientQuickActions";
 import { GasWorkflow } from "@/components/trabajos/GasWorkflow";
 import { gasData, isGasWork } from "@/lib/gas-data";
@@ -107,6 +108,11 @@ export default function TrabajoDetallePage({
     observaciones: "",
     fotosUrls: [] as string[],
   });
+
+  const handlePhotoReferences = React.useCallback((photos: PhotoReferences) => {
+    setFase5Data(previous => ({ ...previous, fotosUrls: photos.initial }));
+    setTerminoData(previous => ({ ...previous, fotos: photos.final.join("\n") }));
+  }, []);
 
   // Fase 6: Cotizador embebido
   const [fase6Calculo, setFase6Calculo] = useState({
@@ -564,6 +570,7 @@ export default function TrabajoDetallePage({
             <a key={index} href={url} target="_blank" rel="noopener noreferrer" className="inline-block mr-4 text-blue-700 dark:text-blue-300 underline">Foto {index + 1}</a>)}
         </div>
       )}
+      <WorkPhotoFolders key={trabajo.estado} workId={id} onPhotosChange={handlePhotoReferences} />
       {/* Timeline */}
       <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs overflow-x-auto">
         <div className={canManage ? "flex items-center justify-between min-w-[750px] gap-2" : "grid grid-cols-4 gap-2"}>
@@ -698,9 +705,7 @@ export default function TrabajoDetallePage({
                 <label className="block font-bold">Condiciones observadas
                   <textarea required minLength={5} value={fase5Data.condiciones} onChange={e => setFase5Data({ ...fase5Data, condiciones: e.target.value })} className="w-full border rounded-xl p-3 mt-1" />
                 </label>
-                <label className="block font-bold">Fotos de la visita: mínimo tres enlaces, uno por línea
-                  <textarea required value={fase5Data.fotosUrls.join("\n")} onChange={e => setFase5Data({ ...fase5Data, fotosUrls: e.target.value.split("\n") })} className="w-full border rounded-xl p-3 mt-1" placeholder="https://..." />
-                </label>
+                <p className="module-note">Fotos del requerimiento inicial: {fase5Data.fotosUrls.length} guardadas · mínimo 3. <a href="#registro-fotografico" className="underline">Abrir carpeta y adjuntar fotos</a></p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-bold text-secondary mb-1">
@@ -1192,9 +1197,8 @@ export default function TrabajoDetallePage({
             <label className="block text-sm">Trabajo realizado y resultado de pruebas
               <textarea required minLength={5} maxLength={3000} value={terminoData.observaciones} onChange={e => setTerminoData({ ...terminoData, observaciones: e.target.value })} className="w-full border rounded-xl p-3 mt-1" />
             </label>
-            <label className="block text-sm">Fotos del resultado: mínimo dos enlaces, uno por línea
-              <textarea required value={terminoData.fotos} onChange={e => setTerminoData({ ...terminoData, fotos: e.target.value })} className="w-full border rounded-xl p-3 mt-1" placeholder="https://..." />
-            </label>
+            <p className="module-note">Fotos del resultado: {terminoData.fotos.split("\n").filter(Boolean).length} guardadas · mínimo 2.</p>
+            <button type="button" className="theme-toggle" onClick={() => { setModalTermino(false); document.getElementById("registro-fotografico")?.scrollIntoView({ behavior: "smooth" }); }}>Abrir carpeta de fotos finales</button>
             <div className="flex justify-end gap-3">
               <button type="button" onClick={() => setModalTermino(false)}>Volver</button>
               <button type="submit" className="px-4 py-2 bg-blue-700 text-white rounded-xl">Guardar término</button>
