@@ -347,7 +347,7 @@ export default function TrabajoDetallePage({
         body: JSON.stringify({ accion: "REGISTRAR_MATERIAL", data: materialData }),
       });
       if (res.ok) {
-        setSuccessMsg("✅ Material consumido registrado y cargado al costo real del trabajo.");
+        setSuccessMsg("Material utilizado registrado correctamente.");
         setModalMaterial(false);
         setMaterialData({
           descripcion: "",
@@ -446,8 +446,9 @@ export default function TrabajoDetallePage({
   const esSimplificado = trabajo.tipoFlujo === "SIMPLIFICADO";
   const anticipoRequerido = Number(cotizacionVigente?.anticipoMinimoRequerido ?? 0);
   const anticipoPendiente = Math.max(0, anticipoRequerido - totalPagado);
-  const listoParaIniciar = Boolean(trabajo.tecnicoId) && cotizacionVigente?.estado === "APROBADA" && anticipoPendiente === 0;
-  const proximaAccion = estado === "BORRADOR" ? "Programar la visita de evaluación" :
+  const listoParaIniciar = canManage ? Boolean(trabajo.tecnicoId) && cotizacionVigente?.estado === "APROBADA" && anticipoPendiente === 0 : estado === "ANTICIPO_RECIBIDO";
+  const proximaAccionTecnica = estado === "EVALUACION_PENDIENTE" ? "Registrar evaluación y fotos de la visita" : estado === "EN_PROCESO" ? "Registrar materiales utilizados y terminar con evidencia" : estado === "ANTICIPO_RECIBIDO" ? "Iniciar la atención asignada" : estado === "TERMINADO_TECNICO" ? "Esperar la revisión de calidad del encargado" : ["VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) ? "Atención técnica completada" : "Coordinar la siguiente atención con el encargado";
+  const proximaAccion = !canManage ? proximaAccionTecnica : estado === "BORRADOR" ? "Programar la visita de evaluación" :
     estado === "EVALUACION_PENDIENTE" ? "Registrar evaluación y fotos de la visita" :
     estado === "EVALUADO" ? (isGas && gas.supervision?.estado !== "APROBADO" ? "Revisar la medición y registrar el visto bueno del supervisor" : "Preparar y emitir la carta de cotización") :
     estado === "COTIZADO" ? "Registrar la respuesta del cliente a esta versión" :
@@ -459,7 +460,12 @@ export default function TrabajoDetallePage({
     estado === "RECHAZADO" ? "Cotización rechazada por el cliente" :
     estado === "FINALIZADO_FINANCIERO" ? "Cierre completado; entregar documentación al cliente" : "Revisar la situación de la orden";
 
-  const steps = esSimplificado
+  const steps = !canManage ? [
+    { label: "Asignación", done: true },
+    { label: "Visita y evaluación", done: trabajo.visitas?.some((v: any) => v.completada) || false },
+    { label: "Ejecución", done: ["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
+    { label: "Finalización técnica", done: ["TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
+  ] : esSimplificado
     ? [
         { label: "1. Recepción & Tarifa", done: true },
         { label: "2. Presupuesto", done: Boolean(cotizacionVigente) },
@@ -486,7 +492,7 @@ export default function TrabajoDetallePage({
       <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl">
         <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Próximo paso</p>
         <p className="font-bold text-ink">{proximaAccion}</p>
-        <p className="text-xs text-secondary mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"} · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</p>
+        <p className="text-xs text-secondary mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"}{canManage && <> · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</>}</p>
       </div>
       {user?.rol === "TECNICO_FIJO" && trabajo.cliente && <ClientQuickActions client={trabajo.cliente} />}
       {(trabajo.observaciones || trabajo.fechasSla?.preferenciaCliente) && <div className="module-card space-y-3"><h3 className="font-semibold text-ink">Requerimiento e indicaciones del cliente</h3>{trabajo.observaciones && <p className="text-sm text-secondary whitespace-pre-wrap">{trabajo.observaciones}</p>}{trabajo.fechasSla?.preferenciaCliente && <p className="text-sm text-muted">Horario preferido: {trabajo.fechasSla.preferenciaCliente.fecha || "Día por coordinar"} · {trabajo.fechasSla.preferenciaCliente.desde} – {trabajo.fechasSla.preferenciaCliente.hasta}</p>}</div>}
@@ -514,7 +520,7 @@ export default function TrabajoDetallePage({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {cotizacionVigente && (
+          {canManage && cotizacionVigente && (
             <Link
               href={"/trabajos/" + id + "/cotizacion/" + cotizacionVigente.id + "/carta"}
               className="px-3.5 py-2 bg-surface border border-line hover:bg-canvas text-secondary rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer"
@@ -560,7 +566,7 @@ export default function TrabajoDetallePage({
       )}
       {/* Timeline */}
       <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs overflow-x-auto">
-        <div className="flex items-center justify-between min-w-[750px] gap-2">
+        <div className={canManage ? "flex items-center justify-between min-w-[750px] gap-2" : "grid grid-cols-4 gap-2"}>
           {steps.map((s, idx) => (
             <div key={idx} className="flex-1 flex flex-col items-center text-center">
               <div
@@ -578,11 +584,11 @@ export default function TrabajoDetallePage({
         </div>
       </div>
 
-      <details className="module-card space-y-4">
+      {canManage && <details className="module-card space-y-4">
         <summary className="font-semibold text-ink cursor-pointer">Quién realizó cada operación</summary>
         <p className="text-xs text-muted">Responsable de la orden: {trabajo.encargado?.nombre || "Por asignar"} · Técnico: {trabajo.tecnico?.nombre || "Por asignar"}. Últimas 100 operaciones.</p>
         {trabajo.historialActividad?.length ? <ol className="space-y-3">{trabajo.historialActividad.map((event: any) => <li key={event.id} className="border-l-2 border-line pl-4"><p className="text-sm font-semibold text-ink">{event.accion}</p><p className="text-sm text-secondary">{event.nombre}</p><time className="text-xs text-muted" dateTime={event.fecha}>{new Date(event.fecha).toLocaleString("es")}</time></li>)}</ol> : <p className="module-note">Esta orden todavía no tiene actividad registrada.</p>}
-      </details>
+      </details>}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -594,9 +600,9 @@ export default function TrabajoDetallePage({
             </h3>
             <div>
               <p className="text-sm font-black text-ink">{trabajo.cliente?.nombreCompleto}</p>
-              <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300">
+              {canManage && <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300">
                 Fidelización: {trabajo.cliente?.nivelFidelizacion}
-              </span>
+              </span>}
             </div>
             <div className="text-xs text-secondary space-y-1.5 pt-2 border-t border-line-soft">
               <p className="flex items-center gap-2">
@@ -967,10 +973,10 @@ export default function TrabajoDetallePage({
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" /> Anticipo confirmado
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" /> {canManage ? "Anticipo confirmado" : "Atención habilitada"}
                   </h3>
                   <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
-                    El cliente pagó el anticipo requerido. El trabajo está listo para realizarse.
+                    {canManage ? "El cliente pagó el anticipo requerido. El trabajo está listo para realizarse." : "Puedes iniciar el trabajo técnico asignado."}
                   </p>
                 </div>
               </div>
@@ -1013,7 +1019,7 @@ export default function TrabajoDetallePage({
                     )}
                   </h3>
                   <p className="text-xs text-muted mt-0.5">
-                    {trabajo.subtipoCodigo?.toLowerCase().includes("alquiler") || trabajo.subtipoCodigo?.startsWith("OTR.3") || trabajo.subtipoNombre?.toLowerCase().includes("alquiler")
+                    {!canManage ? "Registra los materiales del inventario y las cantidades utilizadas. Coordina los faltantes con el encargado." : trabajo.subtipoCodigo?.toLowerCase().includes("alquiler") || trabajo.subtipoCodigo?.startsWith("OTR.3") || trabajo.subtipoNombre?.toLowerCase().includes("alquiler")
                       ? "Herramientas o equipos entregados al cliente bajo contrato de alquiler (termofusoras, bombas, etc.)."
                       : trabajo.subtipoCodigo?.startsWith("OTR") || trabajo.subtipoNombre?.toLowerCase().includes("hermeticidad") || trabajo.subtipoNombre?.toLowerCase().includes("trámite")
                       ? "Servicio puntual de prueba de hermeticidad o trámite SEC (no requiere cañerías ni materiales de obra obligatorios)."
@@ -1085,8 +1091,8 @@ export default function TrabajoDetallePage({
                           <th className="py-2.5 px-3">Descripción</th>
                           <th className="py-2.5 px-3">Origen</th>
                           <th className="py-2.5 px-3 text-right">Cant.</th>
-                          <th className="py-2.5 px-3 text-right">Costo Unit. (Bs.)</th>
-                          <th className="py-2.5 px-3 text-right">Subtotal (Bs.)</th>
+                          {canManage && <th className="py-2.5 px-3 text-right">Costo Unit. (Bs.)</th>}
+                          {canManage && <th className="py-2.5 px-3 text-right">Subtotal (Bs.)</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-ink">
@@ -1105,12 +1111,12 @@ export default function TrabajoDetallePage({
                               )}
                             </td>
                             <td className="py-2.5 px-3 text-right font-mono">{Number(m.cantidad)}</td>
-                            <td className="py-2.5 px-3 text-right font-mono">Bs. {Number(m.costoUnitario).toLocaleString("es-CL")}</td>
-                            <td className="py-2.5 px-3 text-right font-black text-ink">Bs. {Number(m.subtotalCosto).toLocaleString("es-CL")}</td>
+                            {canManage && <td className="py-2.5 px-3 text-right font-mono">Bs. {Number(m.costoUnitario).toLocaleString("es-CL")}</td>}
+                            {canManage && <td className="py-2.5 px-3 text-right font-black text-ink">Bs. {Number(m.subtotalCosto).toLocaleString("es-CL")}</td>}
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="bg-canvas border-t border-line font-black text-ink">
+                      {canManage && <tfoot className="bg-canvas border-t border-line font-black text-ink">
                         <tr>
                           <td colSpan={4} className="py-2.5 px-3 text-right uppercase text-[10px]">
                             {trabajo.subtipoCodigo?.startsWith("3.") || trabajo.subtipoNombre?.toLowerCase().includes("calef") || trabajo.subtipoNombre?.toLowerCase().includes("equipo")
@@ -1119,7 +1125,7 @@ export default function TrabajoDetallePage({
                           </td>
                           <td className="py-2.5 px-3 text-right text-sm text-[#F06529]">Bs. {totalMaterialesReales.toLocaleString("es-CL")}</td>
                         </tr>
-                      </tfoot>
+                      </tfoot>}
                     </table>
                   </div>
                 )}
@@ -1130,7 +1136,7 @@ export default function TrabajoDetallePage({
                 <span className="text-[11px] text-muted font-medium">
                   {estado === "EN_PROCESO" && "👉 Trabajo en curso. Cuando el técnico termine en el lugar, presiona 'Trabajo Físico Terminado'."}
                   {estado === "TERMINADO_TECNICO" && "👉 El técnico terminó. El Encargado debe revisar y presionar 'Aprobar Calidad del Trabajo'."}
-                  {estado === "VALIDADO" && "👉 Trabajo aprobado. Presiona 'Finalizar Trabajo y Ver Ganancia' para emitir la garantía oficial con QR."}
+                  {canManage && estado === "VALIDADO" && "👉 Trabajo aprobado. Presiona 'Finalizar Trabajo y Ver Ganancia' para emitir la garantía oficial con QR."}
                   {estado === "FINALIZADO_FINANCIERO" && "✅ Trabajo finalizado con éxito. Garantía oficial activa."}
                 </span>
 
@@ -1214,7 +1220,7 @@ export default function TrabajoDetallePage({
                   )}
                 </h3>
                 <p className="text-[11px] text-muted mt-0.5">
-                  Selecciona si el ítem sale de la tienda Servigaz (descontará inventario) o si se compró afuera.
+                  {canManage ? "Selecciona si el ítem sale de la tienda Servigaz (descontará inventario) o si se compró afuera." : "Registra el material del almacén o tienda y la cantidad utilizada. Las compras externas las registra el encargado."}
                 </p>
               </div>
               <button
@@ -1252,7 +1258,7 @@ export default function TrabajoDetallePage({
                   </span>
                 </button>
 
-                <button
+                {canManage && <button
                   type="button"
                   onClick={() => setMaterialData({ ...materialData, esDeInventario: false, productoId: "", costoUnitario: 0 })}
                   className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
@@ -1267,7 +1273,7 @@ export default function TrabajoDetallePage({
                   <span className="text-[10px] text-orange-700 dark:text-orange-300 block mt-0.5 font-semibold">
                     Ferretería / Proveedor externo
                   </span>
-                </button>
+                </button>}
               </div>
 
               {materialData.esDeInventario && <label className="block font-bold text-secondary">Almacén o tienda de origen
@@ -1299,7 +1305,7 @@ export default function TrabajoDetallePage({
                     <option value="">-- Elige un producto en existencia --</option>
                     {productosInventario.map((p) => (
                       <option key={p.id} value={p.id} disabled={p.stockActual <= 0}>
-                        {p.nombre} — [Stock: {p.stockActual} {p.unidadMedida || p.unidad || "un"}] — Costo: Bs. {Number(p.costoPromedio || 0).toLocaleString("es-CL")}
+                        {p.nombre} — [Stock: {p.stockActual} {p.unidadMedida || p.unidad || "un"}]{canManage ? " — Costo: Bs. " + Number(p.costoPromedio || 0).toLocaleString("es-CL") : ""}
                       </option>
                     ))}
                   </select>
@@ -1346,7 +1352,7 @@ export default function TrabajoDetallePage({
                     className="w-full p-2.5 bg-canvas border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div>
+                {canManage && <div>
                   <label className="block font-bold text-secondary mb-1">Costo Unitario (Bs.) <span className="text-red-500">*</span></label>
                   <input
                     type="number"
@@ -1358,16 +1364,16 @@ export default function TrabajoDetallePage({
                     onChange={(e) => setMaterialData({ ...materialData, costoUnitario: Number(e.target.value) })}
                     className="w-full p-2.5 bg-canvas border border-line-strong rounded-xl font-bold text-ink outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </div>
+                </div>}
               </div>
 
               {/* Subtotal Calculado */}
-              <div className="p-3 bg-wash rounded-xl flex items-center justify-between text-xs font-bold text-secondary">
+              {canManage && <div className="p-3 bg-wash rounded-xl flex items-center justify-between text-xs font-bold text-secondary">
                 <span>Subtotal de este ítem:</span>
                 <span className="text-sm font-black text-ink">
                   Bs. {(Number(materialData.cantidad || 0) * Number(materialData.costoUnitario || 0)).toLocaleString("es-CL")}
                 </span>
-              </div>
+              </div>}
 
               <div className="flex justify-end gap-2 pt-3 border-t border-line-soft">
                 <button
@@ -1395,7 +1401,7 @@ export default function TrabajoDetallePage({
       )}
 
       {/* MODAL CIERRE FINANCIERO (FASE 13) */}
-      {modalCierreFinanciero && (
+      {canManage && modalCierreFinanciero && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
             <div className="flex items-center justify-between border-b border-line-soft pb-3">
@@ -1460,7 +1466,7 @@ export default function TrabajoDetallePage({
       )}
 
       {/* MODAL PAGO CON MÚLTIPLES MÉTODOS (EFECTIVO, TRANSFERENCIA, QR, TARJETA) */}
-      {modalPago && (
+      {canManage && modalPago && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
             <div className="flex items-center justify-between border-b border-line-soft pb-3">

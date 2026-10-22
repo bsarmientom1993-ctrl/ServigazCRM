@@ -15,3 +15,9 @@ El técnico solo consulta su propia agenda. Debe coincidir tanto la asignación 
 Abrir orden y visita conserva el identificador de la visita elegida. Al evaluar, se usa esa visita pendiente y asignada, no la última creada ni una visita ya completada. Los controles del servidor siguen comprobando asignación y estado al guardar. Los técnicos no reprograman visitas.
 
 Las pruebas verifican roles, aislamiento por técnico, reasignaciones, límites de fechas en Bolivia, márgenes de traslado, estados y selección correcta de visitas. Ejecutar npm test y npm run test:agenda; la integración exige TEST_DATABASE_URL local terminada en _test y usa un esquema temporal propio.
+
+## Información exclusiva para el trabajo técnico
+
+Las cuentas técnicas no reciben cotizaciones, pagos, saldos, costos, precios del catálogo o del inventario, tarifas por metro ni márgenes. El detalle y la lista de trabajos usan una selección explícita de datos operativos y conservan el control de asignación. El seguimiento de gas conserva mediciones, visto bueno y proyecto, sin tarifas ni cálculos. Las respuestas de evaluación y ejecución tampoco devuelven los datos financieros internos. El resumen comercial y el catálogo de servicios requieren encargado o administrador.
+
+El técnico registra consumos del inventario por producto y cantidad; el servidor calcula el costo interno sin enviárselo. Las compras externas y sus costos corresponden al encargado. La pantalla técnica muestra sus próximas acciones, mediciones, contacto, materiales por cantidad y evidencias; no presenta importes ni acceso a cartas de cotización. Las prácticas comerciales de ejemplo se reservan a encargados y administradores.

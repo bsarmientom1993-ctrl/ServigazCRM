@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         usuarioId: user.id, modulo: "TRABAJOS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
         valoresNuevos: { realizadoPor: actor.nombre, accion: action, estado: "EVALUADO", visitaId: visit.id },
       } });
-      return { success: true, trabajo };
+      return user.rol === "TECNICO_FIJO" ? { success: true, trabajo: { id: trabajo.id, estado: trabajo.estado } } : { success: true, trabajo };
     });
     return NextResponse.json(result);
   } catch (error) { return apiError(error); }

@@ -42,7 +42,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         changes = { estado: "EN_PROCESO", fechaInicioEjecucion: new Date() };
       } else if (body.accion === "REGISTRAR_MATERIAL") {
         if (work.estado !== "EN_PROCESO") throw new ApiError(409, "Registra materiales durante la ejecución.");
-        const data = materialSchema.parse(body.data);
+        const input = body.data && typeof body.data === "object" ? body.data as Record<string, unknown> : {};
+        if (user.rol === "TECNICO_FIJO" && input.esDeInventario !== true) throw new ApiError(403, "Las compras externas las registra el encargado. Solicita el material necesario.");
+        const data = materialSchema.parse(user.rol === "TECNICO_FIJO" ? { ...input, costoUnitario: 0 } : body.data);
         const quantity = new Prisma.Decimal(data.cantidad);
         if (quantity.decimalPlaces() > 2) throw new ApiError(400, "La cantidad admite hasta dos decimales.");
         let unitCost = new Prisma.Decimal(cents(data.costoUnitario)).div(100);
@@ -74,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           usuarioId: user.id, modulo: "EJECUCION", accion: "CREATE", entidadTipo: "MaterialEjecucion", entidadId: material.id,
           valoresNuevos: { realizadoPor: actor.nombre, trabajoId: id, cantidad: String(quantity), costoUnitario: String(unitCost), subtotal: String(material.subtotalCosto) },
         } });
-        return { success: true, material };
+        return user.rol === "TECNICO_FIJO" ? { success: true, material: { id: material.id, descripcion: material.descripcion, cantidad: material.cantidad } } : { success: true, material };
       } else if (body.accion === "FINALIZAR_TECNICO") {
         if (work.estado !== "EN_PROCESO") throw new ApiError(409, "Solo puede terminarse un trabajo en ejecución.");
         const data = z.object({ fotosTermino: evidence, observacionesTermino: z.string().trim().min(5, "Describe el resultado de las pruebas y el trabajo realizado.").max(3000) }).parse(body.data);
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         usuarioId: user.id, modulo: "EJECUCION", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id,
         valoresAnteriores: { estado: work.estado }, valoresNuevos: { realizadoPor: actor.nombre, ...details, estado: trabajo.estado },
       } });
-      return { success: true, trabajo };
+      return user.rol === "TECNICO_FIJO" ? { success: true, trabajo: { id: trabajo.id, estado: trabajo.estado } } : { success: true, trabajo };
     });
     return NextResponse.json(result);
   } catch (error) { return apiError(error); }

@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+import { technicalWorkSelect, technicalSchedule } from "@/lib/technical-work";
 import { newGasProject } from "@/lib/gas-data";
 import { createHash } from "node:crypto";
 import { newCustomerSchema } from "@/lib/work-wizard";
@@ -13,8 +15,13 @@ export async function GET(req: NextRequest) {
     const user = await requireSession(req);
     const estado = req.nextUrl.searchParams.get("estado");
     const tecnicoId = req.nextUrl.searchParams.get("tecnicoId");
+    const where: Prisma.TrabajoWhereInput = { AND: [workScope(user), ...(estado ? [{ estado: z.enum(["BORRADOR", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "PAGO_A_CUENTA_VENCIDO", "RECHAZADO", "ANTICIPO_RECIBIDO", "EN_PROCESO", "EN_PAUSA", "CANCELADO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO", "RECLAMO_GARANTIA"]).parse(estado) }] : []), ...(tecnicoId ? [{ tecnicoId }] : [])] };
+    if (user.rol === "TECNICO_FIJO") {
+      const trabajos = await prisma.trabajo.findMany({ where, select: technicalWorkSelect, orderBy: { createdAt: "desc" } });
+      return NextResponse.json(trabajos.map(work => ({ ...work, fechasSla: technicalSchedule(work.fechasSla) })));
+    }
     const trabajos = await prisma.trabajo.findMany({
-      where: { AND: [workScope(user), ...(estado ? [{ estado: z.enum(["BORRADOR", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "PAGO_A_CUENTA_VENCIDO", "RECHAZADO", "ANTICIPO_RECIBIDO", "EN_PROCESO", "EN_PAUSA", "CANCELADO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO", "RECLAMO_GARANTIA"]).parse(estado) }] : []), ...(tecnicoId ? [{ tecnicoId }] : [])] },
+      where,
       include: { cliente: true, tecnico: { select: { id: true, nombre: true, email: true, telefono: true } },
         encargado: { select: { id: true, nombre: true, email: true } },
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 },

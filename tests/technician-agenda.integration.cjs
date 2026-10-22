@@ -17,6 +17,9 @@ const personalAgenda = require("../src/app/api/tecnicos/mi-agenda/route.ts");
 const works = require("../src/app/api/trabajos/route.ts");
 const availability = require("../src/app/api/tecnicos/disponibilidad/route.ts");
 const visits = require("../src/app/api/trabajos/[id]/visita/route.ts");
+const detail = require("../src/app/api/trabajos/[id]/route.ts");
+const execution = require("../src/app/api/trabajos/[id]/ejecucion/route.ts");
+const inventory = require("../src/app/api/inventario/route.ts");
 let manager, otherManager, techA, techB, outsider, branch, otherBranch, client;
 const config = { duracionMinutos: 60, margenMinutos: 30, zonaHoraria: "America/La_Paz" };
 function request(user, data, key = randomUUID(), method = "POST", query = "") {
@@ -33,6 +36,7 @@ before(async () => {
   await root.$executeRawUnsafe('CREATE SCHEMA "' + schema + '"');
   const sql = fs.readFileSync(path.join(__dirname, "fixtures/inventory-baseline.sql"), "utf8");
   await prisma.$transaction(async tx => { for (const statement of sql.split(";").map(s => s.trim()).filter(Boolean)) await tx.$executeRawUnsafe(statement); }, { timeout: 60000 });
+  await require("../scripts/migrate-inventory.cjs").migrateInventory(prisma);
   branch = await prisma.sucursal.create({ data: { nombre: "Sucursal pruebas" } }); otherBranch = await prisma.sucursal.create({ data: { nombre: "Otra sucursal" } });
   async function user(name, role, branchId) { return prisma.usuario.create({ data: { nombre: name, email: randomUUID() + "@example.invalid", passwordHash: "not-a-password", rol: role, sucursalId: branchId } }); }
   manager = await user("Encargado", "ENCARGADO", branch.id); otherManager = await user("Otro encargado", "ENCARGADO", otherBranch.id);
@@ -101,4 +105,60 @@ test("orders without a next visit stay assigned to their technician and disappea
   await prisma.visitaTecnica.create({ data: { trabajoId: mine.work.id, tecnicoId: techA.id, fechaProgramada: new Date("2030-06-22T13:00:00Z") } });
   assert.ok(!(await result(await query(techA), 200)).sinProximaVisita.some(w => w.id === mine.work.id));
   assert.equal((await result(await query(outsider), 200)).visitas.length, 0);
+});
+
+function noFinancialData(value) {
+  const serialized = JSON.stringify(value);
+  for (const key of ["cotizaciones", "pagos", "egreso", "totalCotizado", "anticipoMinimoRequerido", "costoUnitario", "subtotalCosto", "costoPromedio", "precioVenta", "tarifas", "calculo", "pdfUrl", "snapshotCalculoJson"]) assert.ok(!serialized.includes('"' + key + '"'), key + " must stay private");
+}
+test("technician detail and list omit real financial data while managers retain access", async () => {
+  const { work } = await fixture(techA, "2030-06-25T13:00:00Z", { work: { fechasSla: { gas: { aplica: true, calculo: { promedioPorMetro: "999" }, supervision: { estado: "APROBADO", criterio: "Medición correcta", tarifas: { materialVisto: 999 } }, proyecto: { incluido: true, estado: "EN_ELABORACION", documentosUrls: [] } } } } });
+  await prisma.cotizacion.create({ data: { trabajoId: work.id, datosFormularioJson: {}, snapshotCalculoJson: {}, subtotalMateriales: 500, subtotalManoObra: 200, totalCotizado: 700, anticipoMinimoRequerido: 350, fechaVencimiento: new Date("2030-07-01") } });
+  await prisma.pago.create({ data: { trabajoId: work.id, tipoPago: "ANTICIPO", monto: 350, registradoPorId: manager.id } });
+  await prisma.materialEjecucion.create({ data: { trabajoId: work.id, descripcion: "Tubería", cantidad: 2, costoUnitario: 100, subtotalCosto: 200 } });
+  const ctx = { params: Promise.resolve({ id: work.id }) };
+  const tech = await result(await detail.GET(request(techA, undefined, undefined, "GET"), ctx), 200);
+  noFinancialData(tech);
+  assert.equal(tech.materiales[0].descripcion, "Tubería"); assert.equal(Number(tech.materiales[0].cantidad), 2);
+  assert.deepEqual(tech.cliente.telefonos, client.telefonos);
+  assert.equal(tech.fechasSla.gas.supervision.criterio, "Medición correcta");
+  noFinancialData(await result(await works.GET(request(techA, undefined, undefined, "GET")), 200));
+  const managed = await result(await detail.GET(request(manager, undefined, undefined, "GET"), ctx), 200);
+  assert.equal(Number(managed.cotizaciones[0].totalCotizado), 700); assert.equal(Number(managed.pagos[0].monto), 350);
+  await result(await detail.GET(request(techB, undefined, undefined, "GET"), ctx), 403);
+});
+
+test("technician inventory and consumption preserve quantities and hide internal cost", async () => {
+  const location = await prisma.ubicacionInventario.create({ data: { nombre: "Tienda de prueba", tipo: "TIENDA", sucursalId: branch.id } });
+  const product = await prisma.productoInventario.create({ data: { codigoSku: randomUUID(), nombre: "Codo", categoria: "Accesorios", unidadMedida: "un", stockActual: 10, costoPromedio: 123, precioVenta: 456 } });
+  await prisma.existenciaInventario.create({ data: { productoId: product.id, ubicacionId: location.id, stockActual: 10 } });
+  const query = "?ubicacionId=" + location.id;
+  const available = await result(await inventory.GET(request(techA, undefined, undefined, "GET", query)), 200);
+  noFinancialData(available); assert.equal(available.find(p => p.id === product.id).stockActual, 10);
+  const managed = await result(await inventory.GET(request(manager, undefined, undefined, "GET", query)), 200);
+  assert.equal(Number(managed.find(p => p.id === product.id).precioVenta), 456);
+  const { work } = await fixture(techA, "2030-06-26T13:00:00Z", { work: { estado: "EN_PROCESO" } });
+  const ctx = { params: Promise.resolve({ id: work.id }) };
+  const consumed = await result(await execution.POST(request(techA, { accion: "REGISTRAR_MATERIAL", data: { descripcion: "Codo", cantidad: 2, costoUnitario: 9999, esDeInventario: true, productoId: product.id, ubicacionId: location.id } }), ctx), 200);
+  noFinancialData(consumed);
+  const saved = await prisma.materialEjecucion.findUnique({ where: { id: consumed.material.id } });
+  assert.equal(Number(saved.costoUnitario), 123); assert.equal(Number(saved.subtotalCosto), 246);
+  assert.equal(Number((await prisma.productoInventario.findUnique({ where: { id: product.id } })).stockActual), 8);
+  await result(await execution.POST(request(techA, { accion: "REGISTRAR_MATERIAL", data: { descripcion: "Compra externa", cantidad: 1, costoUnitario: 1, esDeInventario: false } }), ctx), 403);
+  const finished = await result(await execution.POST(request(techA, { accion: "FINALIZAR_TECNICO", data: { observacionesTermino: "Pruebas realizadas correctamente", fotosTermino: ["https://example.invalid/fin1.jpg", "https://example.invalid/fin2.jpg"] } }), ctx), 200);
+  assert.deepEqual(Object.keys(finished.trabajo).sort(), ["estado", "id"]);
+});
+
+test("technical evaluation response never returns pricing metadata stored in work", async () => {
+  const { work, visit } = await fixture(techA, "2030-06-27T13:00:00Z", { work: { fechasSla: { gas: { aplica: true, supervision: { estado: "APROBADO", tarifas: { materialVisto: 999 } } } } } });
+  const response = await result(await visits.POST(request(techA, { accion: "COMPLETAR_VISITA", visitaId: visit.id, medidasJson: { metrosVisto: 12, metrosEmpotrado: 3 }, condicionesJson: { condiciones: "Acceso al recinto adecuado" }, ventilacionVasaOk: true, dificultadSugerida: 2, fotosUrls: [1,2,3].map(i => "https://example.invalid/foto" + i + ".jpg") }), { params: Promise.resolve({ id: work.id }) }), 200);
+  assert.deepEqual(Object.keys(response.trabajo).sort(), ["estado", "id"]);
+  assert.equal(response.trabajo.estado, "EVALUADO");
+});
+
+test("technicians cannot retrieve prices through commercial endpoints", async () => {
+  for (const [path, method] of [["dashboard/stats", "GET"], ["catalogo/servicios", "GET"], ["configuracion/precios", "GET"], ["finanzas", "GET"], ["cotizador/calcular", "POST"], ["trabajos/[id]/cotizacion", "POST"], ["trabajos/[id]/pagos", "POST"], ["trabajos/[id]/cierre-financiero", "POST"]]) {
+    const route = require("../src/app/api/" + path + "/route.ts");
+    await result(await route[method](request(techA, {}, undefined, method), { params: Promise.resolve({ id: randomUUID() }) }), 403);
+  }
 });

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireSession(req);
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
     const scope = workScope(session);
 
     // Métricas globales

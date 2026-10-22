@@ -24,7 +24,10 @@ export async function GET(req: NextRequest) {
       bajoMinimo: product.existencias.some(item => item.stockMinimo.gt(0) && item.stockActual.lte(item.stockMinimo)),
     }));
     // Keep the array contract used by the order detail and other existing clients.
-    return NextResponse.json(result);
+    return NextResponse.json(user.rol === "TECNICO_FIJO" ? result.map(product => ({
+      id: product.id, codigoSku: product.codigoSku, nombre: product.nombre, categoria: product.categoria,
+      unidadMedida: product.unidadMedida, stockActual: product.stockActual,
+    })) : result);
   } catch (error) { return apiError(error); }
 }
 export async function POST(req: NextRequest) {

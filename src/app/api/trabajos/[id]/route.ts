@@ -1,3 +1,4 @@
+import { technicalWorkSelect, technicalSchedule } from "@/lib/technical-work";
 import { requireSession, assertWorkAccess } from "@/lib/auth";
 import { objectRecord } from "@/lib/gas-data";
 import { apiError } from "@/lib/api";
@@ -11,6 +12,14 @@ export async function GET(
   try {
     const user = await requireSession(req);
     const { id } = await params;
+    if (user.rol === "TECNICO_FIJO") {
+      const work = await prisma.trabajo.findUnique({ where: { id }, select: technicalWorkSelect });
+      if (!work) return NextResponse.json({ error: "Trabajo no encontrado" }, { status: 404 });
+      assertWorkAccess(user, work);
+      const evidence = await prisma.auditoriaLog.findFirst({ where: { entidadId: id, entidadTipo: "Trabajo", modulo: "EJECUCION", valoresNuevos: { path: ["accion"], equals: "FINALIZAR_TECNICO" } }, orderBy: { timestamp: "desc" }, select: { valoresNuevos: true, timestamp: true } });
+      const values = objectRecord(evidence?.valoresNuevos);
+      return NextResponse.json({ ...work, fechasSla: technicalSchedule(work.fechasSla), evidenciasTermino: evidence ? { timestamp: evidence.timestamp, valoresNuevos: { fotosTermino: values.fotosTermino, observacionesTermino: values.observacionesTermino } } : null });
+    }
     const trabajo = await prisma.trabajo.findUnique({
       where: { id },
       include: {
