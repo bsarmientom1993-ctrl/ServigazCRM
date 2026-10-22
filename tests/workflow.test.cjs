@@ -210,7 +210,7 @@ test("all internal handlers reject missing sessions before accessing business da
     ["ubicaciones", ["GET", "POST"]], ["ubicaciones/[id]", ["PATCH"]],
     ["sucursales", ["GET", "POST"]], ["sucursales/[id]", ["PATCH"]],
     ["inventario/traspasos", ["GET", "POST", "PATCH"]], ["inventario/movimientos", ["GET"]], ["inventario/minimos", ["PATCH"]],
-    ["inventario", ["GET", "POST"]], ["inventario/compras", ["GET", "POST"]], ["tecnicos", ["GET"]], ["tecnicos/disponibilidad", ["GET"]],
+    ["inventario", ["GET", "POST"]], ["inventario/compras", ["GET", "POST"]], ["tecnicos", ["GET"]], ["tecnicos/disponibilidad", ["GET"]], ["tecnicos/mi-agenda", ["GET"]],
     ["trabajos", ["GET", "POST"]], ["trabajos/[id]", ["GET"]],
     ["usuarios", ["GET"]], ["usuarios/[id]", ["PATCH"]], ["auth/me", ["PATCH"]],
     ...["pagos", "decision", "ejecucion", "cierre-financiero", "visita", "cotizacion", "gas"].map(name => ["trabajos/[id]/" + name, ["POST"]]),

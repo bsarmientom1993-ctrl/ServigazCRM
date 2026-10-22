@@ -36,8 +36,8 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
   if (!user) return null;
   const manager = user.rol === "ADMIN" || user.rol === "ENCARGADO";
   const navigation = [
-    { name: "Resumen", href: "/dashboard", icon: LayoutDashboard, show: true, group: "principal" },
-    { name: "Trabajos y órdenes", href: "/trabajos", icon: BriefcaseBusiness, show: true, group: "principal" },
+    { name: manager ? "Resumen" : "Mi agenda", href: manager ? "/dashboard" : "/agenda", icon: LayoutDashboard, show: true, group: "principal" },
+    { name: manager ? "Trabajos y órdenes" : "Mis trabajos", href: "/trabajos", icon: BriefcaseBusiness, show: true, group: "principal" },
     { name: "Clientes", href: "/clientes", icon: Users, show: manager, group: "principal" },
     { name: "Cotizador", href: "/cotizador", icon: Calculator, show: manager, group: "principal" },
     { name: "Sucursales y ubicaciones", href: "/sucursales", icon: Building2, show: manager, group: "gestion" },

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import {
   Briefcase,
   PlusCircle,
@@ -21,6 +22,8 @@ import {
 } from "lucide-react";
 
 export default function TrabajosPage() {
+  const { user } = useAuth();
+  const canManage = user?.rol === "ADMIN" || user?.rol === "ENCARGADO";
   const [trabajos, setTrabajos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
@@ -112,13 +115,13 @@ export default function TrabajosPage() {
           </p>
         </div>
 
-        <Link
+        {canManage && <Link
           href="/trabajos/nuevo"
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#F06529] hover:bg-[#D94E15] text-white rounded-xl text-xs font-black shadow-sm transition-all cursor-pointer"
         >
           <PlusCircle className="h-4 w-4" />
           <span>+ Nueva Orden de Trabajo</span>
-        </Link>
+        </Link>}
       </div>
 
       <div className="module-note flex flex-wrap items-center justify-between gap-3"><div><strong>¿Quieres practicar primero?</strong><p className="text-xs">Explora cuatro trabajos ficticios y aprende el recorrido sin afectar tus órdenes reales.</p></div><Link className="theme-toggle" href="/ayuda#ejemplos">Abrir trabajos de ejemplo</Link></div>

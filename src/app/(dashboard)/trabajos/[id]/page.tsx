@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
+import { activeAssignedVisit } from "@/lib/technician-agenda";
 import { GasWorkflow } from "@/components/trabajos/GasWorkflow";
 import { gasData, isGasWork } from "@/lib/gas-data";
 import { useRouter } from "next/navigation";
@@ -45,6 +46,8 @@ export default function TrabajoDetallePage({
   const { id } = use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const [requestedVisitId, setRequestedVisitId] = useState("");
+  useEffect(() => { setRequestedVisitId(new URLSearchParams(window.location.search).get("visitaId") || ""); }, [id]);
   const isAdmin = user?.rol === "ADMIN";
   const canManage = isAdmin || user?.rol === "ENCARGADO";
   const [saving, setSaving] = useState(false);
@@ -227,7 +230,8 @@ export default function TrabajoDetallePage({
   // Fase 5
   const handleCompletarVisita = async (e: React.FormEvent) => {
     e.preventDefault();
-    const visitaActiva = trabajo?.visitas?.[0];
+    const visitaActiva = activeAssignedVisit(trabajo?.visitas || [], user?.rol === "TECNICO_FIJO" ? user.id : undefined, requestedVisitId);
+    if (!visitaActiva) { setErrorMsg("La visita seleccionada ya no está disponible. Actualiza tu agenda."); return; }
     try {
       const res = await mutate(`/api/trabajos/${id}/visita`, {
         method: "POST",
@@ -429,7 +433,7 @@ export default function TrabajoDetallePage({
   const estado = trabajo.estado;
   const cotizacionVigente = trabajo.cotizaciones?.[0];
   const garantia = trabajo.garantia;
-  const visitaProgramada = trabajo.visitas?.find((v: any) => !v.completada);
+  const visitaProgramada = activeAssignedVisit<any>(trabajo.visitas || [], user?.rol === "TECNICO_FIJO" ? user.id : undefined, requestedVisitId);
 
   const totalPagado = trabajo.pagos?.reduce((acc: number, p: any) => acc + Number(p.monto), 0) || 0;
   const totalCotizado = Number(cotizacionVigente?.totalCotizado || 0);
@@ -484,6 +488,7 @@ export default function TrabajoDetallePage({
         <p className="text-xs text-secondary mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"} · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</p>
       </div>
       {(trabajo.observaciones || trabajo.fechasSla?.preferenciaCliente) && <div className="module-card space-y-3"><h3 className="font-semibold text-ink">Requerimiento e indicaciones del cliente</h3>{trabajo.observaciones && <p className="text-sm text-secondary whitespace-pre-wrap">{trabajo.observaciones}</p>}{trabajo.fechasSla?.preferenciaCliente && <p className="text-sm text-muted">Horario preferido: {trabajo.fechasSla.preferenciaCliente.fecha || "Día por coordinar"} · {trabajo.fechasSla.preferenciaCliente.desde} – {trabajo.fechasSla.preferenciaCliente.hasta}</p>}</div>}
+      {requestedVisitId && !visitaProgramada && estado === "EVALUACION_PENDIENTE" && <p role="alert" className="module-error">La visita seleccionada ya no está disponible para evaluar. Actualiza tu agenda o consulta al encargado.</p>}
       {visitaProgramada && <div className="module-note"><strong>Visita coordinada:</strong> {visitaProgramada.tecnico?.nombre || trabajo.tecnico?.nombre} · {new Date(visitaProgramada.fechaProgramada).toLocaleString("es")}<span className="block text-xs mt-1">Duración estimada: {visitaProgramada.condicionesJson?.agenda?.duracionMinutos || 60} min · Traslado: {visitaProgramada.condicionesJson?.agenda?.margenMinutos ?? 30} min</span></div>}
       <fieldset disabled={saving} className="space-y-6 min-w-0">
       {/* Header */}
@@ -665,7 +670,7 @@ export default function TrabajoDetallePage({
           )}
 
           {/* FASE 5: MEDICIÓN EN TERRENO */}
-          {estado === "EVALUACION_PENDIENTE" && (
+          {estado === "EVALUACION_PENDIENTE" && visitaProgramada && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-line-soft pb-3">
                 <div>

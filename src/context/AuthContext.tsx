@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (res.ok && data.success) {
         setUser(data.user);
-        router.push("/dashboard");
+        router.push(data.user.rol === "TECNICO_FIJO" ? "/agenda" : "/dashboard");
         return { success: true };
       } else {
         return { success: false, error: data.error || "Error al iniciar sesión" };

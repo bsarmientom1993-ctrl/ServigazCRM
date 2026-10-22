@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Briefcase,
   Users,
@@ -25,10 +26,13 @@ import {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) return;
+    if (user.rol === "TECNICO_FIJO") { router.replace("/agenda"); return; }
     fetch("/api/dashboard/stats")
       .then((r) => r.json())
       .then((res) => {
@@ -36,12 +40,13 @@ export default function DashboardPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [user?.id, user?.rol, router]);
 
   const isAdmin = user?.rol === "ADMIN";
   const isEncargado = user?.rol === "ENCARGADO";
   const isTecnico = user?.rol === "TECNICO_FIJO";
 
+  if (isTecnico) return <p className="module-note">Abriendo tu agenda… <Link className="underline" href="/agenda">Ir a mi agenda</Link></p>;
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
