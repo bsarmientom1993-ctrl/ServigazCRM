@@ -53,7 +53,7 @@ export async function GET(
       where: { entidadId: id, entidadTipo: "Trabajo", modulo: "EJECUCION", valoresNuevos: { path: ["accion"], equals: "FINALIZAR_TECNICO" } },
       orderBy: { timestamp: "desc" }, select: { valoresNuevos: true, timestamp: true },
     });
-    const historialProyectoGas = await prisma.auditoriaLog.findMany({ where: { entidadId: id, entidadTipo: "Trabajo", modulo: { in: ["PROYECTO_GAS", "SUPERVISION_GAS"] } }, orderBy: { timestamp: "desc" }, take: 30, select: { id: true, timestamp: true, modulo: true, valoresNuevos: true, usuario: { select: { nombre: true } } } });
+
     const legacyIds = trabajo.cotizaciones.filter(quote => !objectRecord(objectRecord(quote.datosFormularioJson).carta).cotizadoPorNombre).map(quote => quote.id);
     const issuers = legacyIds.length ? await prisma.auditoriaLog.findMany({
       where: { entidadTipo: "Cotizacion", entidadId: { in: legacyIds }, modulo: "COTIZACIONES", accion: "CREATE" },
@@ -64,7 +64,7 @@ export async function GET(
     const cotizaciones = trabajo.cotizaciones.map(quote => ({ ...quote, emitidoPorNombre: objectRecord(objectRecord(quote.datosFormularioJson).carta).cotizadoPorNombre || names.get(quote.id) || null }));
     const activity = await prisma.auditoriaLog.findMany({
       where: { OR: [
-        { entidadTipo: "Trabajo", entidadId: id },
+        { entidadTipo: "Trabajo", entidadId: id, modulo: { not: "PROYECTO_GAS" } },
         { entidadTipo: "Cotizacion", entidadId: { in: trabajo.cotizaciones.map(item => item.id) } },
         { entidadTipo: "Pago", entidadId: { in: trabajo.pagos.map(item => item.id) } },
         { entidadTipo: "MaterialEjecucion", entidadId: { in: trabajo.materiales.map(item => item.id) } },
@@ -79,6 +79,6 @@ export async function GET(
       const label = labels[values.accion] || (event.modulo === "COTIZACIONES" ? "Cotización emitida" : event.modulo === "PAGOS" ? "Pago registrado" : event.modulo === "CIERRE_FINANCIERO" ? "Cierre financiero realizado" : event.modulo === "EJECUCION" && event.accion === "CREATE" ? "Material registrado" : event.modulo === "TRABAJOS" && values.cotizacionId ? (values.estado === "RECHAZADO" ? "Cotización rechazada" : "Venta confirmada") : event.modulo === "TRABAJOS" && event.accion === "CREATE" ? "Solicitud registrada" : "Orden actualizada");
       return { id: event.id, fecha: event.timestamp, accion: label, usuarioId: event.usuarioId, nombre: typeof values.realizadoPor === "string" ? values.realizadoPor : event.usuario?.nombre || "Usuario no disponible" };
     });
-    return NextResponse.json({ ...trabajo, cotizaciones, evidenciasTermino, historialProyectoGas, historialActividad });
+    return NextResponse.json({ ...trabajo, cotizaciones, evidenciasTermino, historialActividad });
   } catch (error) { return apiError(error); }
 }

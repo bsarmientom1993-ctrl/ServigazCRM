@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession, managers } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
+import { agendaDay } from "@/lib/technician-agenda";
 import { withWork } from "@/lib/workflow";
 import { calculateGas, evaluationFingerprint, gasRatesSchema } from "@/lib/gas-policy";
 import { gasData, GasReview, isGasWork, newGasProject, objectRecord, projectStages, projectTransitions } from "@/lib/gas-data";
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (body.accion === "ACTUALIZAR_PROYECTO") {
         if (!project.incluido) throw new ApiError(409, "El trabajo no incluye proyecto de gas.");
         if (body.estado !== project.estado && !projectTransitions[project.estado].includes(body.estado)) throw new ApiError(409, "El proyecto debe avanzar desde su etapa actual. Registra las observaciones antes de volver a elaborar.");
-        const updated = { ...project, ...body, actualizado: now }; const { accion, ...saved } = updated;
+        const updated = { ...project, ...body, actualizado: now, ultimoSeguimiento: agendaDay(), ...(body.estado === "ENTREGADO" ? { proximoSeguimiento: "" } : {}) }; const { accion, ...saved } = updated;
         gas.proyecto = saved;
       } else {
         if (!["BORRADOR", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado) || work.egreso || work.pagos.length || work.cotizaciones[0]?.estado === "APROBADA") throw new ApiError(409, "El alcance y la revisión se fijan antes de aceptar o cobrar la cotización.");
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const state = body.accion === "ACTUALIZAR_PROYECTO" ? work.estado : body.accion === "REVISAR_MEDICION" && body.decision === "CORREGIR" ? "EVALUACION_PENDIENTE" : ["COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado) ? "EVALUADO" : work.estado;
       gas.aplica = true;
       await tx.trabajo.update({ where: { id }, data: { fechasSla: JSON.parse(JSON.stringify({ ...metadata, gas })), estado: state } });
-      await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: body.accion === "REVISAR_MEDICION" ? "SUPERVISION_GAS" : "PROYECTO_GAS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: id, valoresAnteriores: JSON.parse(JSON.stringify({ gas: gasData(work) })), valoresNuevos: JSON.parse(JSON.stringify({ realizadoPor: actor.nombre, accion: body.accion, gas, estado: state })) } });
+      await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: body.accion === "REVISAR_MEDICION" ? "SUPERVISION_GAS" : "PROYECTO_GAS", accion: "UPDATE", entidadTipo: body.accion === "REVISAR_MEDICION" ? "Trabajo" : "ProyectoGas", entidadId: id, valoresAnteriores: JSON.parse(JSON.stringify(body.accion === "REVISAR_MEDICION" ? { gas: gasData(work) } : { proyecto: gasData(work).proyecto })), valoresNuevos: JSON.parse(JSON.stringify({ realizadoPor: actor.nombre, accion: body.accion, ...(body.accion === "REVISAR_MEDICION" ? { gas } : { proyecto: gas.proyecto }), estado: state })) } });
       return { success: true, gas };
     });
     return NextResponse.json(result);

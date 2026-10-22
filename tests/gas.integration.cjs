@@ -18,6 +18,9 @@ const visits = require("../src/app/api/trabajos/[id]/visita/route.ts");
 const decisions = require("../src/app/api/trabajos/[id]/decision/route.ts");
 const { newGasProject } = require("../src/lib/gas-data.ts");
 const works = require("../src/app/api/trabajos/route.ts");
+const projects = require("../src/app/api/proyectos/route.ts");
+const projectHistory = require("../src/app/api/trabajos/[id]/proyecto/route.ts");
+const { agendaDay, shiftAgendaDay } = require("../src/lib/technician-agenda.ts");
 let admin, manager, branch, technician, outsider, client;
 function req(user, body, method = "POST") { return new NextRequest("http://localhost/api/catalogo/servicios", { method, headers: { "Content-Type": "application/json", ...(user ? { Cookie: "servigaz_token=" + jwt.sign({ id: user.id }, process.env.JWT_SECRET) } : {}) }, ...(method === "GET" ? {} : { body: JSON.stringify(body) }) }); }
 async function body(response, status = 200) { const data = await response.json(); assert.equal(response.status, status, JSON.stringify(data)); return data; }
@@ -168,4 +171,78 @@ test("only managers and admins issue quotes, with their own frozen name and lega
     const legacy = await body(await detail.GET(req(manager, undefined, "GET"), context(work)));
     assert.equal(legacy.cotizaciones[0].emitidoPorNombre, name);
   }
+});
+
+function dailyInput(patch = {}) { return { tipo: "SEGUIMIENTO", fechaGestion: agendaDay(), detalle: "Se consultó el expediente; sigue pendiente en la entidad.", estado: "PRESENTADO", entidad: "Entidad de prueba", referencia: "EXP-001", proximoSeguimiento: shiftAgendaDay(agendaDay(), 1), documentosUrls: ["https://example.invalid/gestion.pdf"], ...patch }; }
+function dailyReq(actor, input, key = randomUUID()) { const request = req(actor, input); request.headers.set("Idempotency-Key", key); return request; }
+async function presented() {
+  const result = await fixture(); await approve(result.work, result.visit); const quote = (await issue(result.work)).cotizacion;
+  for (const stage of ["EN_ELABORACION", "EN_REVISION", "PRESENTADO"]) await body(await route.POST(req(manager, projectUpdate(stage)), context(result.work)));
+  return { ...result, quote };
+}
+
+test("daily project follow-ups append without stage changes, quote changes or repeated writes on retry", async () => {
+  const { work, quote } = await presented(), key = randomUUID(), input = dailyInput();
+  await body(await projectHistory.POST(dailyReq(manager, input, key), context(work)));
+  const first = await prisma.auditoriaLog.count({ where: { entidadId: work.id, modulo: "PROYECTO_GAS" } });
+  assert.equal((await body(await projectHistory.POST(dailyReq(manager, input, key), context(work)))).yaRegistrado, true);
+  assert.equal(await prisma.auditoriaLog.count({ where: { entidadId: work.id, modulo: "PROYECTO_GAS" } }), first);
+  await body(await projectHistory.POST(dailyReq(manager, { ...input, detalle: "Otra gestión con la misma clave" }, key), context(work)), 409);
+  await body(await projectHistory.POST(dailyReq(manager, dailyInput({ tipo: "CONTACTO_ENTIDAD", detalle: "Llamada de seguimiento sin respuesta. Volver a consultar." })), context(work)));
+  const saved = await prisma.trabajo.findUnique({ where: { id: work.id } });
+  assert.equal(saved.fechasSla.gas.proyecto.estado, "PRESENTADO"); assert.equal(saved.fechasSla.gas.proyecto.ultimoSeguimiento, agendaDay());
+  assert.equal((await prisma.cotizacion.findUnique({ where: { id: quote.id } })).estado, "VIGENTE");
+  const history = await body(await projectHistory.GET(req(manager, undefined, "GET"), context(work)));
+  assert.equal(history.historial.filter(event => ["SEGUIMIENTO", "CONTACTO_ENTIDAD"].includes(event.tipo)).length, 2);
+  assert.ok(history.historial.every(event => event.tipo !== "REVISAR_MEDICION"));
+  for (const forbidden of ["tarifas", "subtotalMateriales", "totalCotizado", "calculo", "supervision"]) assert.ok(!JSON.stringify(history).includes('"'+forbidden+'"'));
+});
+
+test("entity observations and correction cycles retain their own documents and original actor name", async () => {
+  const { work } = await presented();
+  await body(await projectHistory.POST(dailyReq(manager, dailyInput({ tipo: "OBSERVACION_ENTIDAD", estado: "OBSERVADO", detalle: "La entidad solicita corregir la referencia del plano.", documentosUrls: ["https://example.invalid/observacion.pdf"] })), context(work)));
+  await body(await projectHistory.POST(dailyReq(manager, dailyInput({ tipo: "CORRECCION_ENVIADA", estado: "EN_ELABORACION", detalle: "Se corrige la referencia del plano observada.", documentosUrls: ["https://example.invalid/plano-corregido.pdf"] })), context(work)));
+  await body(await projectHistory.POST(dailyReq(manager, dailyInput({ estado: "APROBADO" })), context(work)), 409);
+  const original = (await prisma.usuario.findUnique({ where: { id: manager.id } })).nombre;
+  await prisma.usuario.update({ where: { id: manager.id }, data: { nombre: "Nombre posterior" } });
+  const history = await body(await projectHistory.GET(req(manager, undefined, "GET"), context(work)));
+  const observation = history.historial.find(event => event.tipo === "OBSERVACION_ENTIDAD");
+  assert.equal(observation.autor, original); assert.deepEqual(observation.documentosUrls, ["https://example.invalid/observacion.pdf"]);
+  assert.deepEqual(history.historial.find(event => event.tipo === "CORRECCION_ENVIADA").documentosUrls, ["https://example.invalid/plano-corregido.pdf"]);
+  await prisma.usuario.update({ where: { id: manager.id }, data: { nombre: original } });
+});
+
+test("project board and history enforce branch and manager access and exclude installations without project", async () => {
+  const { work } = await fixture(), minor = await fixture(false);
+  for (const actor of [technician, outsider]) {
+    await body(await projectHistory.GET(req(actor, undefined, "GET"), context(work)), 403);
+    await body(await projectHistory.POST(dailyReq(actor, dailyInput({ estado: "PENDIENTE" })), context(work)), 403);
+  }
+  await body(await projects.GET(req(technician, undefined, "GET")), 403);
+  const board = await body(await projects.GET(req(manager, undefined, "GET")));
+  assert.ok(board.proyectos.some(item => item.id === work.id)); assert.ok(!board.proyectos.some(item => item.id === minor.work.id));
+  assert.ok(!(await body(await projects.GET(req(outsider, undefined, "GET")))).proyectos.some(item => item.id === work.id));
+  await body(await projectHistory.POST(dailyReq(manager, dailyInput({ estado: "PENDIENTE" })), context(minor.work)), 409);
+  await body(await projectHistory.POST(dailyReq(manager, dailyInput({ estado: "PENDIENTE", documentosUrls: ["javascript:alert(1)"] })), context(work)), 400);
+  await body(await projectHistory.POST(dailyReq(manager, dailyInput({ estado: "PENDIENTE", fechaGestion: "2099-01-01" })), context(work)), 400);
+});
+
+test("project history keeps legacy project entries, excludes technical review and paginates all records", async () => {
+  const { work } = await fixture();
+  await prisma.auditoriaLog.create({ data: { usuarioId: manager.id, modulo: "PROYECTO_GAS", accion: "UPDATE", entidadTipo: "Trabajo", entidadId: work.id, valoresNuevos: { accion: "ACTUALIZAR_PROYECTO", realizadoPor: "Encargada anterior", gas: { proyecto: { estado: "PENDIENTE", observaciones: "Antecedente del expediente" }, supervision: { tarifas: { materialVisto: 100 } } } } } });
+  const legacy = await body(await projectHistory.GET(req(manager, undefined, "GET"), context(work)));
+  assert.equal(legacy.historial[0].detalle, "Antecedente del expediente"); assert.equal(legacy.historial[0].autor, "Encargada anterior"); assert.ok(!JSON.stringify(legacy).includes("tarifas"));
+  await prisma.auditoriaLog.createMany({ data: Array.from({ length: 57 }, (_, i) => ({ usuarioId: manager.id, modulo: "PROYECTO_GAS", accion: "CREATE", entidadTipo: "ProyectoGas", entidadId: work.id, valoresNuevos: { accion: "REGISTRAR_SEGUIMIENTO", seguimiento: { tipo: "SEGUIMIENTO", detalle: "Gestión histórica número " + i } } })) });
+  const first = await body(await projectHistory.GET(req(manager, undefined, "GET"), context(work))); assert.equal(first.historial.length, 50); assert.ok(first.siguienteCursor);
+  const request = new NextRequest("http://localhost/api/test?cursor="+first.siguienteCursor, { headers: req(manager, undefined, "GET").headers });
+  const second = await body(await projectHistory.GET(request, context(work)));
+  assert.equal(second.historial.length, 8); assert.equal(second.siguienteCursor, null); assert.equal(new Set([...first.historial,...second.historial].map(event=>event.id)).size, 58);
+});
+
+test("minor installation without project can close after payment and quality without fictitious delivery", async () => {
+  const { work, visit } = await fixture(false); await approve(work, visit); const quote = (await issue(work)).cotizacion;
+  await prisma.cotizacion.update({ where: { id: quote.id }, data: { estado: "APROBADA" } });
+  await prisma.trabajo.update({ where: { id: work.id }, data: { estado: "VALIDADO" } });
+  await prisma.pago.create({ data: { trabajoId: work.id, tipoPago: "PAGO_TOTAL", monto: quote.totalCotizado, registradoPorId: manager.id } });
+  assert.ok((await body(await closing.POST(req(manager, { costoManoObraReal: 100, costoTransporteReal: 20 }), context(work)))).garantia);
 });

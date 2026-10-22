@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { LayoutDashboard, BriefcaseBusiness, Calculator, Users, Clock3, Package, Settings2, Award, LogOut, ChevronRight, MapPin, Wallet, X, Building2, CircleHelp } from "lucide-react";
+import { LayoutDashboard, BriefcaseBusiness, Calculator, Users, Clock3, Package, Settings2, Award, LogOut, ChevronRight, MapPin, Wallet, X, Building2, CircleHelp, FolderClock } from "lucide-react";
 
 export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
@@ -38,6 +38,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
   const navigation = [
     { name: manager ? "Resumen" : "Mi agenda", href: manager ? "/dashboard" : "/agenda", icon: LayoutDashboard, show: true, group: "principal" },
     { name: manager ? "Trabajos y órdenes" : "Mis trabajos", href: "/trabajos", icon: BriefcaseBusiness, show: true, group: "principal" },
+    { name: "Proyectos", href: "/proyectos", icon: FolderClock, show: manager, group: "principal" },
     { name: "Clientes", href: "/clientes", icon: Users, show: manager, group: "principal" },
     { name: "Cotizador", href: "/cotizador", icon: Calculator, show: manager, group: "principal" },
     { name: "Sucursales y ubicaciones", href: "/sucursales", icon: Building2, show: manager, group: "gestion" },

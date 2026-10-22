@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { gasData, newGasProject, objectRecord, projectLabels, ProjectStage, projectStages, projectTransitions } from "@/lib/gas-data";
+import Link from "next/link";
+import { gasData, newGasProject, objectRecord, projectLabels } from "@/lib/gas-data";
 import { ClipboardCheck, FileText } from "lucide-react";
 export function GasWorkflow({ work, canManage, onSaved }: { work: any; canManage: boolean; onSaved: () => Promise<void> }) {
   const gas = gasData(work), project = gas.proyecto || newGasProject(false), review = gas.supervision;
@@ -8,9 +9,9 @@ export function GasWorkflow({ work, canManage, onSaved }: { work: any; canManage
   const measure = objectRecord(visit?.medidasJson);
   const [criterion, setCriterion] = useState("");
   const [rates, setRates] = useState({ materialVisto: 0, materialEmpotrado: 0, manoObraVisto: 0, manoObraEmpotrado: 0, factorManoObra: 1, importeProyecto: 0 });
-  const [form, setForm] = useState({ ...project, documents: project.documentosUrls.join("\n") });
+
   const [error, setError] = useState(""); const [message, setMessage] = useState(""); const [saving, setSaving] = useState(false); const busy = useRef(false);
-  useEffect(() => { if (review) { setCriterion(review.criterio); setRates(review.tarifas); } setForm({ ...project, documents: project.documentosUrls.join("\n") }); }, [work.id, review?.fecha, project.actualizado]);
+  useEffect(() => { if (review) { setCriterion(review.criterio); setRates(review.tarifas); } }, [work.id, review?.fecha, project.actualizado]);
   async function save(data: unknown, success: string) {
     if (busy.current) return; busy.current = true; setSaving(true); setError(""); setMessage("");
     try {
@@ -33,12 +34,13 @@ export function GasWorkflow({ work, canManage, onSaved }: { work: any; canManage
     </div>
     <div className="module-card space-y-4"><h3 className="font-semibold text-ink flex items-center gap-2"><FileText size={19} className="text-[#F06529]" />Proyecto de gas</h3>
       <label className="flex items-start gap-3 text-sm text-secondary"><input type="checkbox" className="mt-1 accent-[#F06529]" checked={project.incluido} disabled={!editable || saving} onChange={e => save({ accion: "INCLUIR_PROYECTO", incluido: e.target.checked }, "Alcance actualizado. Revisa nuevamente el visto bueno antes de cotizar.")} /><span>La instalación incluye proyecto<small className="block text-muted mt-1">Si cambia el alcance, se revisa el presupuesto antes de aceptar o cobrar.</small></span></label>
+      {!project.incluido && <p className="module-note">Sin proyecto: instalación menor o alcance sin expediente, según lo definido por el encargado. No se exige entrega de proyecto para cerrar este trabajo.</p>}
       {project.incluido && <><p className={project.estado === "ENTREGADO" ? "module-success" : "module-note"}><strong>{projectLabels[project.estado]}</strong> · {project.responsable || "Responsable por asignar"}{project.fechaObjetivo ? " · Fecha objetivo: " + project.fechaObjetivo : ""}<span className="block text-xs">El proyecto debe estar entregado antes del cierre final de la instalación.</span></p>
         {!canManage && <p className="module-note whitespace-pre-wrap">{project.referencia && "Referencia: " + project.referencia + "\n"}{project.observaciones}</p>}
-        {canManage && <form onSubmit={e => { e.preventDefault(); const { documents, actualizado, incluido, ...fields } = form; save({ accion: "ACTUALIZAR_PROYECTO", ...fields, documentosUrls: documents.split("\n").map(s => s.trim()).filter(Boolean) }, "Seguimiento del proyecto actualizado."); }}><fieldset disabled={saving} className="space-y-4"><div className="grid sm:grid-cols-2 gap-3"><label className="form-label">Etapa<select className="module-input mt-2" value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value as ProjectStage })}>{projectStages.filter(stage => stage === project.estado || projectTransitions[project.estado].includes(stage)).map(stage => <option key={stage} value={stage}>{projectLabels[stage]}</option>)}</select></label><label className="form-label">Responsable<input className="module-input mt-2" maxLength={150} value={form.responsable} onChange={e => setForm({ ...form, responsable: e.target.value })} /></label><label className="form-label">Fecha objetivo<input type="date" className="module-input mt-2" value={form.fechaObjetivo} onChange={e => setForm({ ...form, fechaObjetivo: e.target.value })} /></label><label className="form-label">Referencia / número de proyecto<input className="module-input mt-2" maxLength={200} value={form.referencia} onChange={e => setForm({ ...form, referencia: e.target.value })} /></label></div><label className="form-label block">Avance u observaciones<textarea required minLength={5} rows={2} maxLength={3000} className="module-input mt-2" value={form.observaciones} onChange={e => setForm({ ...form, observaciones: e.target.value })} /></label><label className="form-label block">Documentos del proyecto (enlaces, uno por línea)<textarea rows={2} className="module-input mt-2" value={form.documents} onChange={e => setForm({ ...form, documents: e.target.value })} placeholder="https://…" /></label><button type="submit" className="primary-action">Guardar seguimiento</button></fieldset></form>}
+        {canManage && <Link className="primary-action inline-flex" href={"/proyectos/" + work.id}>Abrir seguimiento e historial del proyecto</Link>}
         {project.documentosUrls.map((url, index) => /^https?:\/\//i.test(url) && <a className="inline-block mr-3 text-sm text-[#F06529] underline" key={url} href={url} target="_blank" rel="noopener noreferrer">Documento {index + 1}</a>)}
       </>}
-      {!!work.historialProyectoGas?.length && <details><summary className="text-sm font-semibold text-ink cursor-pointer">Historial de seguimiento y revisiones</summary><ol className="space-y-3 mt-3">{work.historialProyectoGas.map((event: any) => <li key={event.id} className="border-l-2 border-line pl-3 text-xs text-muted"><p>{new Date(event.timestamp).toLocaleString("es")} · {event.valoresNuevos?.realizadoPor || event.usuario?.nombre || "Sistema"}</p><p className="text-secondary mt-1">{event.modulo === "SUPERVISION_GAS" ? event.valoresNuevos?.gas?.supervision?.criterio : event.valoresNuevos?.gas?.proyecto?.observaciones || "Alcance del proyecto actualizado"}</p></li>)}</ol></details>}
+
     </div>
   </section>;
 }
