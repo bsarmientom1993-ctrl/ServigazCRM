@@ -6,6 +6,8 @@ Se puede consultar un día o los próximos siete días, navegar al período ante
 
 Cada visita muestra cliente, dirección, teléfonos, indicaciones para llegar, horario preferido, observaciones de coordinación y encargado. Cómo llegar utiliza el enlace de ubicación guardado o una búsqueda de ruta por dirección. Llamar usa el teléfono configurado en el cliente. Estas acciones se ejecutan únicamente al pulsarlas.
 
+En móvil, el bloque Contacto del cliente aparece en cada visita y al inicio de la orden del técnico. Incluye el número visible y botones de al menos 48 px para Llamar, WhatsApp, Maps y Guardar contacto. Cada teléfono tiene sus propias acciones. Los números locales de ocho dígitos usan el prefijo de Bolivia (+591); los internacionales conservan su código de país. WhatsApp abre la conversación sin enviar mensajes. Si un número no permite determinar el código internacional, se solicita completarlo. Maps abre la ubicación guardada o la ruta por dirección. Guardar contacto descarga un archivo .vcf con nombre, teléfonos y dirección; el usuario lo abre en su aplicación Contactos y confirma guardarlo. Los datos faltantes se indican sin crear números ficticios.
+
 La agenda muestra visitas pendientes, horarios pasados, completadas y canceladas. Un horario pasado no cambia el estado real de la visita. Las órdenes activas sin una próxima visita aparecen aparte para consultar al encargado.
 
 El técnico solo consulta su propia agenda. Debe coincidir tanto la asignación de la visita como el técnico actual de la orden; una orden reasignada desaparece de la agenda del técnico anterior. No se devuelven precios, pagos ni datos de otros técnicos en esta API.

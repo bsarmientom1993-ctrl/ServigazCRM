@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { activeAssignedVisit } from "@/lib/technician-agenda";
+import { ClientQuickActions } from "@/components/trabajos/ClientQuickActions";
 import { GasWorkflow } from "@/components/trabajos/GasWorkflow";
 import { gasData, isGasWork } from "@/lib/gas-data";
 import { useRouter } from "next/navigation";
@@ -487,6 +488,7 @@ export default function TrabajoDetallePage({
         <p className="font-bold text-ink">{proximaAccion}</p>
         <p className="text-xs text-secondary mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"} · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</p>
       </div>
+      {user?.rol === "TECNICO_FIJO" && trabajo.cliente && <ClientQuickActions client={trabajo.cliente} />}
       {(trabajo.observaciones || trabajo.fechasSla?.preferenciaCliente) && <div className="module-card space-y-3"><h3 className="font-semibold text-ink">Requerimiento e indicaciones del cliente</h3>{trabajo.observaciones && <p className="text-sm text-secondary whitespace-pre-wrap">{trabajo.observaciones}</p>}{trabajo.fechasSla?.preferenciaCliente && <p className="text-sm text-muted">Horario preferido: {trabajo.fechasSla.preferenciaCliente.fecha || "Día por coordinar"} · {trabajo.fechasSla.preferenciaCliente.desde} – {trabajo.fechasSla.preferenciaCliente.hasta}</p>}</div>}
       {requestedVisitId && !visitaProgramada && estado === "EVALUACION_PENDIENTE" && <p role="alert" className="module-error">La visita seleccionada ya no está disponible para evaluar. Actualiza tu agenda o consulta al encargado.</p>}
       {visitaProgramada && <div className="module-note"><strong>Visita coordinada:</strong> {visitaProgramada.tecnico?.nombre || trabajo.tecnico?.nombre} · {new Date(visitaProgramada.fechaProgramada).toLocaleString("es")}<span className="block text-xs mt-1">Duración estimada: {visitaProgramada.condicionesJson?.agenda?.duracionMinutos || 60} min · Traslado: {visitaProgramada.condicionesJson?.agenda?.margenMinutos ?? 30} min</span></div>}
