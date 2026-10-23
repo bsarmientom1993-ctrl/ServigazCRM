@@ -360,6 +360,13 @@ model CatalogoSubtipo {
   @@index([categoriaId, activo])
 }
 
+model FormatoCotizacion {
+  id String @id
+  formato Json
+  modificadoPor String
+  updatedAt DateTime @updatedAt
+}
+
 model ConfiguracionGeneral {
   id                       String   @id @default(uuid())
   monedaBase               String   @default("CLP")

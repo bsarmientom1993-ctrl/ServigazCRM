@@ -28,6 +28,7 @@ before(async () => {
   await root.$executeRawUnsafe('CREATE SCHEMA "' + schema + '"');
   const sql = fs.readFileSync(path.join(__dirname, "fixtures/inventory-baseline.sql"), "utf8");
   await prisma.$transaction(async tx => { for (const statement of sql.split(";").map(s => s.trim()).filter(Boolean)) await tx.$executeRawUnsafe(statement); }, { timeout: 60000 });
+  await require("../scripts/migrate-quote-template.cjs").migrateQuoteTemplate(prisma);
   branch = await prisma.sucursal.create({ data: { nombre: "Sucursal catálogo de prueba" } });
   async function user(role) { return prisma.usuario.create({ data: { nombre: role, email: randomUUID() + "@example.invalid", rol: role, passwordHash: "not-a-password", sucursalId: branch.id } }); }
   admin = await user("ADMIN"); manager = await user("ENCARGADO"); technician = await user("TECNICO_FIJO");
@@ -248,4 +249,31 @@ test("minor installation without project can close after payment and quality wit
   await prisma.trabajo.update({ where: { id: work.id }, data: { estado: "VALIDADO" } });
   await prisma.pago.create({ data: { trabajoId: work.id, tipoPago: "PAGO_TOTAL", monto: quote.totalCotizado, registradoPorId: manager.id } });
   assert.ok((await body(await closing.POST(req(manager, { costoManoObraReal: 100, costoTransporteReal: 20 }), context(work)))).garantia);
+});
+
+const templates = require('../src/app/api/configuracion/cotizaciones/route.ts');
+const { defaultQuoteTemplate } = require('../src/lib/quote-template.ts');
+test('only administrator configures stationery; quote snapshots survive later changes and reject forged formats', async () => {
+ await body(await templates.GET(req(null, null, 'GET')),401);
+ for(const actor of [manager,technician]) {
+  await body(await templates.GET(req(actor, null, 'GET')),403);
+  await body(await templates.PUT(req(actor, defaultQuoteTemplate, 'PUT')),403);
+ }
+ const formato={...defaultQuoteTemplate,titulo:'PROPUESTA DE PRUEBA',pieImagen:'',pieTexto:'Pie propio'};
+ await body(await templates.PUT(req(admin,formato,'PUT')));
+ assert.equal((await body(await templates.GET(req(admin,null,'GET')))).formato.titulo,formato.titulo);
+ const {work,visit}=await fixture();await approve(work,visit);
+ const {cotizacion}=await issue(work,{datosFormulario:{carta:{formato:{titulo:'FALSIFICADO'}}}});
+ assert.equal(cotizacion.datosFormularioJson.carta.formato.titulo,formato.titulo);
+ await body(await templates.PUT(req(admin,defaultQuoteTemplate,'PUT')));
+ assert.equal((await prisma.cotizacion.findUnique({where:{id:cotizacion.id}})).datosFormularioJson.carta.formato.titulo,formato.titulo);
+ assert.equal((await issue(work)).cotizacion.datosFormularioJson.carta.formato.titulo,defaultQuoteTemplate.titulo);
+ assert.equal(await prisma.auditoriaLog.count({where:{modulo:'FORMATO_COTIZACION',usuarioId:admin.id}}),2);
+});
+test('stationery rejects invalid raster payloads and accepts a valid image',async()=>{
+ await body(await templates.PUT(req(admin,{...defaultQuoteTemplate,encabezadoImagen:'data:image/png;base64,YmFk'},'PUT')),400);
+ const png=await require('sharp')({create:{width:80,height:20,channels:3,background:'#ffffff'}}).png().toBuffer();
+ const formato={...defaultQuoteTemplate,encabezadoImagen:'data:image/png;base64,'+png.toString('base64')};
+ assert.equal((await body(await templates.PUT(req(admin,formato,'PUT')))).formato.encabezadoImagen,formato.encabezadoImagen);
+ await body(await templates.PUT(req(admin,defaultQuoteTemplate,'PUT')));
 });

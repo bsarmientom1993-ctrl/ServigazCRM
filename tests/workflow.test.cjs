@@ -48,6 +48,7 @@ beforeEach(() => {
     cotizacion: { update: writer("quote"), updateMany: async () => ({ count: 1 }), create: writer("quote") },
     configuracionGarantia: { findUnique: async () => ({ activo: true, mesesDefecto: 2, condiciones: "Cobertura del diagnóstico" }) },
     configuracionDescuento: { findFirst: async () => ({ pctMaxEncargado: decimal(10), topeMaximoPct: decimal(20) }) },
+    formatoCotizacion: { findUnique: async () => null },
     configuracionAnticipo: { findUnique: async () => null },
     egresoTrabajo: { create: writer("expense") }, certificadoGarantia: { create: writer("warranty") },
     catalogoSubtipo: { findUnique: async () => ({ categoria: { codigo: "GAS" } }) },

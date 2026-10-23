@@ -7,6 +7,7 @@ import { requireSession, managers } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { withWork } from "@/lib/workflow";
 import { cents, money } from "@/lib/workflow-policy";
+import { resolveQuoteTemplate } from "@/lib/quote-template";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -42,13 +43,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const expiry = body.carta ? new Date(body.carta.fechaValidez) : new Date(Date.now() + 15 * 86400000);
       if (expiry.getTime() <= Date.now() || expiry.getTime() > Date.now() + 90 * 86400000) throw new ApiError(400, "La validez debe ser futura y de hasta 90 días.");
       const issuer = actor;
+      const template = await tx.formatoCotizacion.findUnique({ where: { id: 'general' } });
+      const formato = resolveQuoteTemplate(template?.formato);
       if (!issuer?.nombre.trim()) throw new ApiError(409, "Completa tu nombre de usuario antes de emitir la cotización.");
       const letter = { asunto: body.carta?.asunto || "Propuesta de servicios y equipos", proyecto: body.carta?.proyecto || work.subtipoNombre, nota: body.carta?.nota || "", cotizadoPorId: user.id, cotizadoPorNombre: issuer.nombre.trim(), alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
       const version = (work.cotizaciones[0]?.numeroVersion || 0) + 1;
       await tx.cotizacion.updateMany({ where: { trabajoId: id, estado: "VIGENTE" }, data: { estado: "SUPERADA" } });
       const cotizacion = await tx.cotizacion.create({ data: {
         trabajoId: id, numeroVersion: version, tipoVersion: version === 1 ? "ORIGINAL" : "CORRECCION",
-        datosFormularioJson: { ...body.datosFormulario, carta: letter },
+        datosFormularioJson: { ...body.datosFormulario, carta: { ...letter, formato } },
         snapshotCalculoJson: { origen: gasCalculation ? "MEDICION_GAS_SUPERVISADA" : "PRESUPUESTO_MANUAL", ...(gasCalculation ? { gas: JSON.parse(JSON.stringify(gasCalculation)) } : {}), subtotalMateriales: money(material), subtotalManoObra: money(labor), montoTransporte: money(transport), porcentajeDescuento: body.porcentajeDescuento, porcentajeAnticipo: percentage },
         subtotalMateriales: money(material), subtotalManoObra: money(labor), montoTransporte: money(transport),
         porcentajeDescuento: body.porcentajeDescuento, montoDescuento: money(discount),

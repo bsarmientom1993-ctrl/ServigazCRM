@@ -9,3 +9,14 @@ La tabla presenta los conceptos globales del presupuesto almacenado como una uni
 La carta puede imprimirse o guardarse como PDF en tamaño carta. Las tablas permiten repetir encabezados y evitan dividir una fila; los alcances extensos pueden continuar en más páginas. El pie aparece al final del documento, sin superponerse al contenido. En dispositivos pequeños la hoja se desplaza horizontalmente para conservar la estructura de impresión.
 
 Los permisos de emisión siguen limitados a encargado y administrador; la actualización de formato no concede acceso comercial a técnicos. No hay cambios de esquema de base de datos ni en el cálculo de precios, aceptación o pagos.
+
+
+## Configuración por administrador
+
+En **Precios y tarifas → Formato de cotizaciones**, ADMIN puede configurar empresa, título, encabezados de alcance y presupuesto, introducción, despedida, contactos, colores, letra y papel Carta/A4. La vista previa utiliza datos ficticios. Encargados y técnicos no pueden leer ni modificar este editor por API.
+
+El encabezado y pie admiten PNG/JPG/WebP de hasta 500 KB cada uno, no animados; se valida el contenido real del archivo. Se puede usar texto o recuperar las imágenes del modelo original. Para cambiar los contactos impresos en la imagen original, usar texto o subir una imagen actualizada. No se admiten enlaces remotos, HTML ni SVG.
+
+Guardar aplica la configuración global a las **nuevas versiones**. El servidor captura `carta.formato` al emitir: el navegador no puede imponer otro formato. Las versiones emitidas conservan sus textos e imágenes; las antiguas sin formato guardado usan el diseño original. Los cambios se auditan sin duplicar los archivos en el registro de auditoría. Siempre se mantienen importes, cliente, validez y nombre real del emisor; la firma no contiene el cargo.
+
+La nueva tabla `FormatoCotizacion` se crea de forma aditiva e idempotente en el build de Vercel (`scripts/migrate-quote-template.cjs`). No se reemplazan configuraciones existentes.

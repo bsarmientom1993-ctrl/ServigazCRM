@@ -232,7 +232,7 @@ input, textarea, select { scroll-margin-top: 100px; }
 @media print { .welcome-backdrop { display: none !important; } }
 
 .quote-letter-frame { overflow-x: auto; }
-.quote-letter { box-sizing: border-box; display: flex; flex-direction: column; width: 100%; max-width: 816px; min-height: 1056px; margin: 0 auto; padding: 36px 40px 0; background: #fff; color: #1d3e67; border: 1px solid #d9dfe6; box-shadow: 0 8px 32px #1024400a; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.4; }
+.quote-letter { box-sizing: border-box; display: flex; flex-direction: column; width: 100%; max-width: 816px; min-height: 1056px; margin: 0 auto; padding: 36px 40px 0; background: #fff; color: var(--quote-ink, #1d3e67); border: 1px solid #d9dfe6; box-shadow: 0 8px 32px #1024400a; font-family: Arial, Helvetica, sans-serif; font-size: var(--quote-font, 13px); line-height: 1.4; }
 .quote-stationery-header img { display: block; width: 100%; height: auto; }
 .quote-stationery-header h1 { margin: 24px 0 3px; text-align: center; text-decoration: underline; text-underline-offset: 5px; font-size: 34px; line-height: 1.2; font-weight: 800; }
 .quote-reference { text-align: center; font-size: 10px; }
@@ -240,8 +240,8 @@ input, textarea, select { scroll-margin-top: 100px; }
 .quote-facts dt { font-weight: 800; }.quote-facts dd { overflow-wrap: anywhere; }
 .quote-customer-address { padding-left: 108px; margin-top: 4px; font-size: 11px; }
 .quote-letter section { margin-top: 22px; }
-.quote-letter h2 { font-size: 16px; font-weight: 700; background: #fce7de; padding: 9px 14px; line-height: 1.3; }
-.quote-scope h2 { padding-bottom: 2px; }.quote-intro { background: #fce7de; padding: 0 14px 8px; }
+.quote-letter h2 { font-size: 16px; font-weight: 700; background: var(--quote-band, #fce7de); padding: 9px 14px; line-height: 1.3; }
+.quote-scope h2 { padding-bottom: 2px; }.quote-intro { background: var(--quote-band, #fce7de); padding: 0 14px 8px; }
 .quote-preserve { white-space: pre-wrap; overflow-wrap: anywhere; }.quote-scope > .quote-preserve { padding: 12px 14px 0; }
 .quote-budget h2 { text-align: center; padding: 12px 10px; }
 .quote-letter table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; }
@@ -260,8 +260,9 @@ input, textarea, select { scroll-margin-top: 100px; }
 @media print {
   @page { size: letter; margin: 10mm; }
   .letter-toolbar { display: none !important; }
-  .quote-letter-frame { overflow: visible; }
-  .quote-letter { display: block; width: 100%; max-width: none; min-width: 0; min-height: 0; padding: 0; border: 0; box-shadow: none; font-size: 9pt; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .quote-letter-frame { overflow: visible; margin: 0 !important; }
+  .app-shell, .app-shell > div { display: block; min-height: 0; }
+  .quote-letter { display: block; width: 100%; max-width: none; min-width: 0; min-height: 0; padding: 0; border: 0; box-shadow: none; font-size: var(--quote-print-font, 9pt); line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .quote-stationery-header h1 { font-size: 26pt; margin-top: 16px; }
   .quote-facts { margin-top: 14px; }.quote-letter section { margin-top: 14px; }
   .quote-letter h2 { font-size: 11pt; padding-top: 7px; padding-bottom: 7px; }
@@ -275,3 +276,8 @@ input, textarea, select { scroll-margin-top: 100px; }
   .quote-letter h2 { break-after: avoid; }
   .app-main, .app-content { width: 100%; min-height: 0; overflow: visible; }
 }
+
+.quote-company { font-size: 24px; font-weight: 800; }
+.quote-footer-text { padding: 16px 40px; font-size: 11px; border-top: 2px solid var(--quote-ink); }
+.quote-letter[data-paper="a4"] { max-width: 794px; min-height: 1123px; }
+@media print { .quote-letter[data-paper="a4"] { max-width: none; min-height: 0; } }

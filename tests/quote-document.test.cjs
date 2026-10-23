@@ -22,3 +22,14 @@ test('document dates use Bolivia even around a UTC date boundary',()=>{
  assert.equal(quoteDate('2026-10-23T02:00:00Z'),'22/10/2026');
  assert.equal(quoteDate('invalid'),'');
 });
+
+const { defaultQuoteTemplate, quoteTemplateSchema } = require('../src/lib/quote-template.ts');
+test('custom stationery renders saved colors, text and paper while preserving signature and totals',()=>{
+ const formato={...defaultQuoteTemplate,empresa:'Empresa de ejemplo',titulo:'PROPUESTA',encabezadoImagen:'',pieImagen:'',pieTexto:'Contacto de ejemplo',colorTexto:'#123456',colorSecciones:'#eeeeee',papel:'a4',fuente:15};
+ const html=renderToStaticMarkup(React.createElement(QuoteLetter,{work:{codigoCorrelativo:'TEST'},quote:{...quote,datosFormularioJson:{carta:{...quote.datosFormularioJson.carta,formato}}}}));
+ for(const value of ['PROPUESTA','Empresa de ejemplo','Contacto de ejemplo','Marta Soto','#123456','data-paper="a4"','size: a4']) assert.ok(html.includes(value),value);
+ assert.ok(!html.includes('src="/quote-header.png"'));assert.ok(html.includes('2.430,00'));
+});
+test('template rejects executable content sources and CSS injection',()=>{
+ for(const patch of [{encabezadoImagen:'https://tracker.example/image.png'},{pieImagen:'data:image/svg+xml;base64,PHN2Zz4='},{colorTexto:'red;display:none'},{papel:'a4; margin:0'},{fuente:40}]) assert.equal(quoteTemplateSchema.safeParse({...defaultQuoteTemplate,...patch}).success,false);
+});

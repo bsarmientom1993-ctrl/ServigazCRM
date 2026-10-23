@@ -1,5 +1,6 @@
 "use client";
 
+import { QuoteTemplateSettings } from "@/components/QuoteTemplateSettings";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -28,7 +29,7 @@ export default function ConfiguracionPage() {
   const { user } = useAuth();
   const isAdmin = user?.rol === "ADMIN";
 
-  const [tabActiva, setTabActiva] = useState<"catalogo" | "precios" | "mano_obra" | "dificultad" | "comercial" | "garantias">("catalogo");
+  const [tabActiva, setTabActiva] = useState<"catalogo" | "precios" | "mano_obra" | "dificultad" | "comercial" | "garantias" | "cotizaciones">("catalogo");
   const [dataConfig, setDataConfig] = useState<any>({
     precios: [],
     manoObra: [],
@@ -356,7 +357,10 @@ export default function ConfiguracionPage() {
         >
           Garantías por Defecto
         </button>
+      {isAdmin && <button type="button" className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 border ${tabActiva === "cotizaciones" ? "bg-[#0F2C59] text-white border-transparent" : "bg-surface text-secondary border-line"}`} onClick={() => setTabActiva("cotizaciones")} aria-pressed={tabActiva === "cotizaciones"}>Formato de cotizaciones</button>}
       </div>
+
+      {tabActiva === "cotizaciones" && isAdmin && <QuoteTemplateSettings/>}
 
       {/* ============================================================ */}
       {/* 0. TAB CATÁLOGO DE SERVICIOS Y SUBTIPOS (MODIFICABLE POR GERENTE) */}
