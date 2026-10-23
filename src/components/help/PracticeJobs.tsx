@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { advancePractice, createExample, ExampleId, examples, nextPracticeAction, PracticeHistory, restorePractice, practiceProjectLabels } from "@/lib/practice";
+import { exampleProcesses } from "@/lib/practice-scenarios";
+import { PracticeScenarios } from "./PracticeScenarios";
 const labels = { BORRADOR: "Solicitud nueva", EVALUACION_PENDIENTE: "Visita coordinada", EVALUADO: "Por cotizar", COTIZADO: "Esperando al cliente", APROBADO: "Aceptado por el cliente", ANTICIPO_RECIBIDO: "Anticipo completo", EN_PROCESO: "En ejecución", TERMINADO_TECNICO: "Pendiente de calidad", VALIDADO: "Calidad aprobada", FINALIZADO_FINANCIERO: "Cerrado" };
 const amount = (cents: number) => "Bs. " + (cents / 100).toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export function PracticeJobs() {
@@ -36,7 +38,7 @@ export function PracticeJobs() {
     ...(job.projectStage ? [{ label: "Proyecto entregado", done: job.projectStage === "ENTREGADO" }] : []), { label: "Cierre", done: job.closed },
   ] : [];
   return <section id="ejemplos" className="space-y-5 scroll-mt-24" aria-label="Trabajos de ejemplo">
-    <div><p className="module-eyebrow">APRENDE HACIENDO</p><h3 className="text-xl font-semibold text-ink">{examples.length} casos con procesos diferentes</h3><p className="text-sm text-muted mt-2">Desde la llegada del cliente hasta la entrega, el seguimiento del proyecto y el cierre. Clientes, técnicos e importes ficticios; cada caso comienza en una situación diferente y conserva su progreso.</p></div>
+    <div><p className="module-eyebrow">APRENDE HACIENDO</p><h3 className="text-xl font-semibold text-ink">{examples.length} procesos completos y sus posibilidades</h3><p className="text-sm text-muted mt-2">Recorre cada proceso desde el cliente hasta su resultado y explora {Object.values(exampleProcesses).reduce((sum,item)=>sum+item.possibilities.length,0)} situaciones: cambios de cotización, rechazo, cobros parciales, disponibilidad, calidad, proyectos y postventa. Datos ficticios y progreso independiente para cada caso.</p></div>
     {storageBlocked && <p className="module-note">Tu navegador no permite guardar el progreso. Puedes practicar durante esta sesión.</p>}
     {message && <p role="status" className="module-success">{message}</p>}{error && <p role="alert" className="module-error">{error}</p>}
     {!ready ? <p role="status" className="module-note">Preparando trabajos de ejemplo…</p> : !job ? <div className="grid sm:grid-cols-2 gap-4">{jobs.map(item => <article key={item.id} className="module-card space-y-4"><div className="flex justify-between gap-2 text-[10px] font-semibold text-muted"><span>{item.code}</span><span className="text-[#F06529]">PRÁCTICA</span></div><h4 className="text-lg font-semibold text-ink">{item.service}</h4><p className="text-sm text-secondary">{item.description}</p><p className="text-xs text-muted">Estado: {labels[item.state]} · {item.customer}</p><button type="button" className="primary-action" onClick={() => { setSelected(item.id); setMessage(""); setError(""); setConfirmed(false); }}>Abrir ejemplo<ArrowRight size={16} /></button></article>)}</div> : <div className="space-y-4">
@@ -57,6 +59,7 @@ export function PracticeJobs() {
             }); setConfirmed(false); setError(""); setMessage("Paso de práctica completado. Estado: " + labels[updated.state] + ". Saldo simulado: " + amount(updated.total - updated.paid) + "."); } catch (err: any) { setError(err.message); }
           }}>{action.label}<ArrowRight size={16} /></button>
         </div> : <div className="module-success space-y-2"><h5 className="font-semibold">¡Completaste el recorrido!</h5><p>El ejemplo terminó con calidad aprobada y saldo cero.</p><p>Costos ficticios: {amount(job.materialCost + job.laborCost + job.transportCost)} · Utilidad simulada: {amount(job.total - job.materialCost - job.laborCost - job.transportCost)}.</p><p className="text-xs">No se registraron movimientos reales ni se emitió una garantía. Puedes reiniciar el ejemplo para repetirlo.</p></div>}
+        <PracticeScenarios key={job.id} id={job.id}/>
         <p className="text-xs text-muted">El progreso se guarda en este navegador para tu usuario. No afecta las operaciones reales.</p>
       </article>
     </div>}

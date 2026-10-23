@@ -21,6 +21,12 @@ En `/ayuda`, las instrucciones se pueden buscar y abrir por tema. Los enlaces de
 
 El caso con proyecto mantiene un historial exclusivo. Registrar un seguimiento no aprueba el proyecto ni cambia el estado de la instalación. La respuesta favorable se etiqueta como simulada y el cierre queda bloqueado hasta la entrega. Los ejemplos de venta sin instalación usan instrucciones de entrega y conformidad, sin presentar esa entrega como una instalación.
 
+## Recorridos completos y alternativas
+
+Cada uno de los diez casos incluye el recorrido completo y un explorador de situaciones con pasos Anterior/Siguiente y resultado. Se cubren 48 situaciones distribuidas por servicio: corrección de mediciones, inclusión de proyecto, cambios y vencimiento de cotización, rechazo, solicitud de cancelación, anticipo parcial, reprogramación, falta de existencias, traspasos, alcance adicional, interrupciones, pendientes de calidad, falta de fotos, venta con/sin instalación, observaciones reiteradas de la entidad, seguimiento sin respuesta, aprobación pendiente de entrega, saldo pendiente, nuevas compras y reclamos de garantía.
+
+Las alternativas son recorridos explicativos y no mutaciones de la orden de práctica. Se puede explorar una situación y volver al recorrido principal sin perder su progreso. Las situaciones de coordinación, cancelación o corrección no crean controles ni transiciones nuevas en las APIs operativas: explican qué debe documentar y resolver el encargado. No se afirma cubrir cada combinación posible de estados, importes, servicios o decisiones; se cubren los desenlaces principales de los diez procesos.
+
 Los ejemplos son simulaciones interactivas, con clientes, técnicos, importes y costos ficticios. Se pueden completar hasta el cierre o reiniciar individualmente. Permiten recorrer tareas de distintos roles para comprender el proceso; esto no cambia permisos reales.
 
 La práctica **no crea registros en la base**, no usa las APIs de operaciones ni altera métricas, finanzas, inventario, garantías o agendas. Los datos de práctica se mantienen separados mediante historial local por usuario. Al restaurarlo se verifican las transiciones y se reinicia solo un ejemplo corrupto. Esto permite ofrecer ejemplos en producción sin mezclar operaciones ficticias con las reales.
