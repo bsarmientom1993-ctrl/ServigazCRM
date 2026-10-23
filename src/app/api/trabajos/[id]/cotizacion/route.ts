@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       subtotalMateriales: z.number().finite().nonnegative(), subtotalManoObra: z.number().finite().nonnegative(),
       montoTransporte: z.number().finite().nonnegative(), porcentajeDescuento: z.number().finite().min(0).max(100).default(0),
       datosFormulario: z.record(z.any()).default({}),
-      carta: z.object({ alcance: z.string().trim().min(10).max(5000), condiciones: z.string().trim().max(3000).default(""), fechaValidez: z.string().datetime({ offset: true }) }).optional(),
+      carta: z.object({ asunto: z.string().trim().max(300).default(""), proyecto: z.string().trim().max(500).default(""), nota: z.string().trim().max(2000).default(""), alcance: z.string().trim().min(10).max(5000), condiciones: z.string().trim().max(3000).default(""), fechaValidez: z.string().datetime({ offset: true }) }).optional(),
     }).parse(await req.json());
     const transport = cents(body.montoTransporte);
     const result = await withWork(id, user, async (tx, actor) => {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (expiry.getTime() <= Date.now() || expiry.getTime() > Date.now() + 90 * 86400000) throw new ApiError(400, "La validez debe ser futura y de hasta 90 días.");
       const issuer = actor;
       if (!issuer?.nombre.trim()) throw new ApiError(409, "Completa tu nombre de usuario antes de emitir la cotización.");
-      const letter = { cotizadoPorId: user.id, cotizadoPorNombre: issuer.nombre.trim(), alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
+      const letter = { asunto: body.carta?.asunto || "Propuesta de servicios y equipos", proyecto: body.carta?.proyecto || work.subtipoNombre, nota: body.carta?.nota || "", cotizadoPorId: user.id, cotizadoPorNombre: issuer.nombre.trim(), alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
       const version = (work.cotizaciones[0]?.numeroVersion || 0) + 1;
       await tx.cotizacion.updateMany({ where: { trabajoId: id, estado: "VIGENTE" }, data: { estado: "SUPERADA" } });
       const cotizacion = await tx.cotizacion.create({ data: {

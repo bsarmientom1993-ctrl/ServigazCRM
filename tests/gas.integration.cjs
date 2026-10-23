@@ -40,7 +40,7 @@ after(async () => { await prisma.$disconnect(); if (/^gas_test_[a-f0-9]{32}$/.te
 
 
 const rates = { materialVisto: 10.25, materialEmpotrado: 20.5, manoObraVisto: 5, manoObraEmpotrado: 10, factorManoObra: 1.5, importeProyecto: 100 };
-const quoteInput = { subtotalMateriales: 1, subtotalManoObra: 1, montoTransporte: 20, totalCotizado: 2, carta: { alcance: "Instalación con tubería vista y empotrada según visita técnica.", condiciones: "No incluye obras adicionales.", fechaValidez: new Date(Date.now() + 20 * 86400000).toISOString() } };
+const quoteInput = { subtotalMateriales: 1, subtotalManoObra: 1, montoTransporte: 20, totalCotizado: 2, carta: { asunto: "Propuesta de instalación", proyecto: "Vivienda de ejemplo", nota: "Plazo sujeto a revisión de la entidad.", alcance: "Instalación con tubería vista y empotrada según visita técnica.", condiciones: "No incluye obras adicionales.", fechaValidez: new Date(Date.now() + 20 * 86400000).toISOString() } };
 const context = work => ({ params: Promise.resolve({ id: work.id }) });
 async function fixture(included = true) {
   const work = await prisma.trabajo.create({ data: { codigoCorrelativo: "GAS-" + randomUUID(), clienteId: client.id, encargadoId: manager.id, tecnicoId: technician.id, sucursalId: branch.id, tipoFlujo: "COMPLETO", subtipoCodigo: "1.1.1", subtipoNombre: "Instalación de gas", estado: "EVALUADO", fechasSla: { preferenciaCliente: { desde: "10:00" }, gas: { aplica: true, proyecto: newGasProject(included) } } } });
@@ -161,6 +161,9 @@ test("only managers and admins issue quotes, with their own frozen name and lega
     assert.equal(await prisma.cotizacion.count({ where: { trabajoId: work.id } }), 0);
     const { cotizacion } = await body(await quotes.POST(req(actor, { ...quoteInput, datosFormulario: { carta: { cotizadoPorNombre: "Firma falsa" } }, carta: { ...quoteInput.carta, cotizadoPorNombre: "Otra persona" } }), context(work)));
     assert.equal(cotizacion.datosFormularioJson.carta.cotizadoPorNombre, name);
+    assert.equal(cotizacion.datosFormularioJson.carta.asunto, quoteInput.carta.asunto);
+    assert.equal(cotizacion.datosFormularioJson.carta.proyecto, quoteInput.carta.proyecto);
+    assert.equal(cotizacion.datosFormularioJson.carta.nota, quoteInput.carta.nota);
     assert.equal(cotizacion.datosFormularioJson.carta.cotizadoPorId, actor.id);
     await prisma.usuario.update({ where: { id: actor.id }, data: { nombre: "Nombre cambiado" } });
     const frozen = await body(await detail.GET(req(manager, undefined, "GET"), context(work)));

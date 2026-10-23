@@ -86,7 +86,7 @@ export default function TrabajoDetallePage({
   const [successMsg, setSuccessMsg] = useState("");
 
   // Modales
-  const [carta, setCarta] = useState({ alcance: "", condiciones: "", fecha: new Date(Date.now() + 15 * 86400000).toLocaleDateString("en-CA") });
+  const [carta, setCarta] = useState({ asunto: "", proyecto: "", nota: "", alcance: "", condiciones: "", fecha: new Date(Date.now() + 15 * 86400000).toLocaleDateString("en-CA", { timeZone: "America/La_Paz" }) });
   const [modalPago, setModalPago] = useState(false);
   const [modalMaterial, setModalMaterial] = useState(false);
   const [modalCierreFinanciero, setModalCierreFinanciero] = useState(false);
@@ -272,7 +272,7 @@ export default function TrabajoDetallePage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           datosFormulario: { trabajo: trabajo.subtipoNombre },
-          carta: { alcance: carta.alcance || trabajo.subtipoNombre, condiciones: carta.condiciones, fechaValidez: new Date(carta.fecha + "T23:59:59").toISOString() },
+          carta: { asunto: carta.asunto, proyecto: carta.proyecto, nota: carta.nota, alcance: carta.alcance || trabajo.subtipoNombre, condiciones: carta.condiciones, fechaValidez: new Date(carta.fecha + "T23:59:59-04:00").toISOString() },
           subtotalMateriales: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalMateriales : fase6Calculo.subtotalMateriales),
           subtotalManoObra: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalManoObra : fase6Calculo.subtotalManoObra),
           montoTransporte: Number(fase6Calculo.montoTransporte),
@@ -802,8 +802,10 @@ export default function TrabajoDetallePage({
               </div>
 
               <form id="cotizacion" onSubmit={handleEmitirCotizacion} className="space-y-4 text-xs">
+                <div className="grid sm:grid-cols-2 gap-4"><label className="form-label block">Asunto<input maxLength={300} className="module-input mt-2" value={carta.asunto} placeholder="Propuesta de servicios y equipos" onChange={e=>setCarta({...carta,asunto:e.target.value})}/></label><label className="form-label block">Proyecto o trabajo<input maxLength={500} className="module-input mt-2" value={carta.proyecto} placeholder={trabajo.subtipoNombre} onChange={e=>setCarta({...carta,proyecto:e.target.value})}/></label></div>
                 <label className="form-label block">Detalle y alcance del trabajo<textarea required minLength={10} maxLength={5000} rows={4} className="module-input mt-2" value={carta.alcance} placeholder={trabajo.subtipoNombre} onChange={e => setCarta({ ...carta, alcance: e.target.value })} /></label>
                 <label className="form-label block">Condiciones y exclusiones<textarea maxLength={3000} rows={2} className="module-input mt-2" value={carta.condiciones} onChange={e => setCarta({ ...carta, condiciones: e.target.value })} /></label>
+                <label className="form-label block">Nota para la cotización (opcional)<textarea maxLength={2000} rows={2} className="module-input mt-2" value={carta.nota} placeholder="Plazos estimados, observaciones o aclaraciones del proyecto." onChange={e=>setCarta({...carta,nota:e.target.value})}/></label>
                 <label className="form-label block">Cotización válida hasta<input required type="date" className="module-input mt-2" value={carta.fecha} onChange={e => setCarta({ ...carta, fecha: e.target.value })} /></label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

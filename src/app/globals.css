@@ -231,26 +231,47 @@ input, textarea, select { scroll-margin-top: 100px; }
 @media (max-width: 639px), (max-height: 760px) { .welcome-dialog { padding: 22px; gap: 16px; } .welcome-art { min-height: 110px; padding: 16px; } .welcome-icon { width: 60px; height: 60px; border-radius: 18px; } }
 @media print { .welcome-backdrop { display: none !important; } }
 
-.quote-letter { max-width: 816px; margin: 0 auto; padding: 48px; background: white; color: #15243a; border: 1px solid #d9dfe6; box-shadow: 0 8px 32px #1024400a; font-size: 12px; line-height: 1.65; }
-.quote-letter section, .quote-letter footer { margin-top: 24px; }
-.quote-letter h1 { font-size: 22px; font-weight: 700; letter-spacing: .1em; }
-.quote-letter h2 { font-size: 13px; font-weight: 700; padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px solid #d9dfe6; }
-.letter-heading { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 22px; border-bottom: 3px solid #ed692f; }
-.letter-heading > div:last-child { text-align: right; }
-.letter-brand { font-size: 28px; font-weight: 800; color: #183e65; letter-spacing: .08em; }
-.quote-letter table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-.quote-letter th, .quote-letter td { padding: 9px 10px; text-align: right; border-bottom: 1px solid #e3e7eb; }
-.quote-letter th:first-child, .quote-letter td:first-child { text-align: left; }
-.quote-letter th { background: #f1f4f7; font-weight: 600; }
-.letter-total { font-weight: 800; font-size: 15px; }
-.quote-letter footer { font-size: 11px; color: #4c5c6e; }
-@media(max-width: 640px) { .quote-letter { padding: 22px 16px; } .letter-heading { flex-direction: column; } .letter-heading > div:last-child { text-align: left; } }
+.quote-letter-frame { overflow-x: auto; }
+.quote-letter { box-sizing: border-box; display: flex; flex-direction: column; width: 100%; max-width: 816px; min-height: 1056px; margin: 0 auto; padding: 36px 40px 0; background: #fff; color: #1d3e67; border: 1px solid #d9dfe6; box-shadow: 0 8px 32px #1024400a; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.4; }
+.quote-stationery-header img { display: block; width: 100%; height: auto; }
+.quote-stationery-header h1 { margin: 24px 0 3px; text-align: center; text-decoration: underline; text-underline-offset: 5px; font-size: 34px; line-height: 1.2; font-weight: 800; }
+.quote-reference { text-align: center; font-size: 10px; }
+.quote-facts { display: grid; grid-template-columns: 100px minmax(0,1fr); gap: 3px 8px; margin-top: 22px; }
+.quote-facts dt { font-weight: 800; }.quote-facts dd { overflow-wrap: anywhere; }
+.quote-customer-address { padding-left: 108px; margin-top: 4px; font-size: 11px; }
+.quote-letter section { margin-top: 22px; }
+.quote-letter h2 { font-size: 16px; font-weight: 700; background: #fce7de; padding: 9px 14px; line-height: 1.3; }
+.quote-scope h2 { padding-bottom: 2px; }.quote-intro { background: #fce7de; padding: 0 14px 8px; }
+.quote-preserve { white-space: pre-wrap; overflow-wrap: anywhere; }.quote-scope > .quote-preserve { padding: 12px 14px 0; }
+.quote-budget h2 { text-align: center; padding: 12px 10px; }
+.quote-letter table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; }
+.quote-letter th, .quote-letter td { padding: 7px 5px; text-align: right; vertical-align: top; overflow-wrap: anywhere; }
+.quote-letter th { font-weight: 700; line-height: 1.25; }
+.quote-letter th:nth-child(1), .quote-letter td:nth-child(1), .quote-letter th:nth-child(2), .quote-letter td:nth-child(2) { text-align: left; }
+.quote-letter th:nth-child(3), .quote-letter td:nth-child(3) { text-align: center; }
+.quote-letter tfoot td { border-top: 1px solid #d6dfea; text-align: right !important; }
+.quote-letter .quote-total { font-weight: 800; font-size: 15px; }
+.quote-payment { margin-top: 8px; font-size: 12px; }
+.quote-letter .quote-measurements { font-size: 11px; margin-top: 18px; }.quote-measurements h3 { font-weight: 700; }.quote-measurements p + p { margin-top: 4px; }
+.quote-letter .quote-conditions { font-size: 11px; margin-top: 16px; }.quote-conditions p + p { margin-top: 6px; }
+.quote-signature { margin: 18px 0 20px; font-size: 12px; break-inside: avoid; }
+.quote-stationery-footer { margin: auto -40px 0; padding-top: 12px; }.quote-stationery-footer img { display: block; width: 100%; height: auto; }
+@media(max-width: 640px) { .quote-letter { min-width: 650px; } }
 @media print {
-  @page { size: letter; margin: 18mm; }
+  @page { size: letter; margin: 10mm; }
   .letter-toolbar { display: none !important; }
-  .quote-letter { max-width: none; padding: 0; border: 0; box-shadow: none; font-size: 10pt; }
-  .letter-heading { flex-direction: row; } .letter-heading > div:last-child { text-align: right; }
-  .quote-letter h2, .quote-letter tr, .quote-letter footer { break-inside: avoid; }
+  .quote-letter-frame { overflow: visible; }
+  .quote-letter { display: block; width: 100%; max-width: none; min-width: 0; min-height: 0; padding: 0; border: 0; box-shadow: none; font-size: 9pt; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .quote-stationery-header h1 { font-size: 26pt; margin-top: 16px; }
+  .quote-facts { margin-top: 14px; }.quote-letter section { margin-top: 14px; }
+  .quote-letter h2 { font-size: 11pt; padding-top: 7px; padding-bottom: 7px; }
+  .quote-scope h2 { padding-bottom: 2px; }.quote-scope > .quote-preserve { padding-top: 8px; }
+  .quote-letter th, .quote-letter td { padding: 5px; }.quote-letter .quote-total { font-size: 11pt; }
+  .quote-signature { margin-top: 12px; margin-bottom: 12px; }
+  .quote-letter thead { display: table-header-group; }.quote-letter tfoot { display: table-row-group; }
+  .quote-letter tr, .quote-letter footer, .quote-facts { break-inside: avoid; }
+  .quote-stationery-footer { margin: 16px 0 0; padding: 0; }
+  .quote-stationery-footer img { height: auto; }
   .quote-letter h2 { break-after: avoid; }
   .app-main, .app-content { width: 100%; min-height: 0; overflow: visible; }
 }
