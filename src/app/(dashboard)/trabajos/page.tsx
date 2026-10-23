@@ -124,7 +124,7 @@ export default function TrabajosPage() {
         </Link>}
       </div>
 
-      {canManage && <div className="module-note flex flex-wrap items-center justify-between gap-3"><div><strong>¿Quieres practicar primero?</strong><p className="text-xs">Explora cuatro trabajos ficticios y aprende el recorrido sin afectar tus órdenes reales.</p></div><Link className="theme-toggle" href="/ayuda#ejemplos">Abrir trabajos de ejemplo</Link></div>}
+      {canManage && <div className="module-note flex flex-wrap items-center justify-between gap-3"><div><strong>10 casos de ejemplo</strong><p className="text-xs">Explora procesos distintos: visitas, equipos, instalación, proyectos y cierre.</p></div><Link className="theme-toggle" href="/ayuda#ejemplos">Abrir trabajos de ejemplo</Link></div>}
 
       {/* Pestañas Principales de Estado (Pendientes / Finalizados / Rechazados / Cancelados) */}
       <div className="flex items-center gap-2 border-b border-line pb-1 overflow-x-auto">
