@@ -144,11 +144,11 @@ export default function FinanzasPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-black text-ink tracking-tight">Finanzas & Estado de Resultados</h1>
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
-              Fase 19 (Bolivianos)
+              Bolivianos (Bs.)
             </span>
           </div>
           <p className="text-xs text-muted mt-0.5">
-            Balance consolidado: Ingresos por Servicios vs Costos de Trabajos (#84) vs Gastos Operativos de Oficina.
+            Balance consolidado: Ingresos por Servicios vs Costos de Trabajos vs Gastos Operativos de Oficina.
           </p>
         </div>
 
@@ -194,7 +194,7 @@ export default function FinanzasPage() {
         {/* 2. Egresos Trabajos */}
         <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted">Costos de Trabajos (#84)</span>
+            <span className="text-xs font-bold text-muted">Costos de Trabajos</span>
             <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300">
               <Wrench className="h-4 w-4" />
             </div>
@@ -270,7 +270,7 @@ export default function FinanzasPage() {
               : "bg-surface text-secondary border hover:bg-canvas"
           }`}
         >
-          🏗️ Costos Directos de Trabajos (#84)
+          🏗️ Costos Directos de Trabajos
         </button>
       </div>
 
@@ -311,7 +311,7 @@ export default function FinanzasPage() {
             </div>
           </div>
 
-          {/* Composición de Costos de Trabajos (#84) */}
+          {/* Composición de Costos de Trabajos */}
           <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4">
             <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
               <Wrench className="h-4 w-4 text-[#F06529]" /> Composición de Costos en Trabajos Realizados
@@ -486,12 +486,12 @@ export default function FinanzasPage() {
         </div>
       )}
 
-      {/* TAB 3: COSTOS REALES DE TRABAJOS (#84) */}
+      {/* TAB 3: COSTOS REALES DE TRABAJOS */}
       {tabActiva === "costos_trabajos" && (
         <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4 animate-fade-in">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
-              <Lock className="h-4 w-4 text-[#F06529]" /> Costos de Trabajos Finalizados (#84)
+              <Lock className="h-4 w-4 text-[#F06529]" /> Costos de Trabajos Finalizados
             </h3>
             <span className="text-xs text-faint">Total: {balance?.ultimasFaenasCerradas?.length || 0} trabajos</span>
           </div>

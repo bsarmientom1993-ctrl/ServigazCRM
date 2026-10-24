@@ -143,7 +143,7 @@ export default function ConfiguracionPage() {
         body: JSON.stringify({ accion, data: subtipoEditando }),
       });
       if (res.ok) {
-        setMsgExito(`✅ Subtipo ${subtipoEditando.id ? "actualizado" : "agregado"} correctamente en PostgreSQL.`);
+        setMsgExito(`✅ Subtipo ${subtipoEditando.id ? "actualizado" : "agregado"} correctamente.`);
         setModalSubtipo(false);
         cargarDatos();
       }
@@ -181,7 +181,7 @@ export default function ConfiguracionPage() {
         body: JSON.stringify({ tipo: "PRECIO", data: precioEditando }),
       });
       if (res.ok) {
-        setMsgExito("✅ Tarifa actualizada y guardada en PostgreSQL.");
+        setMsgExito("✅ Tarifa actualizada y guardada.");
         setModalPrecio(false);
         cargarDatos();
       }
@@ -201,7 +201,7 @@ export default function ConfiguracionPage() {
         body: JSON.stringify({ tipo: "MANO_OBRA", data: manoObraEditando }),
       });
       if (res.ok) {
-        setMsgExito("✅ Criterio de cálculo de mano de obra actualizado en PostgreSQL.");
+        setMsgExito("✅ Criterio de cálculo de mano de obra actualizado.");
         setModalManoObra(false);
         cargarDatos();
       }
@@ -221,7 +221,7 @@ export default function ConfiguracionPage() {
         body: JSON.stringify({ tipo: "DIFICULTAD", data: dificultadEditando }),
       });
       if (res.ok) {
-        setMsgExito("✅ Factor multiplicador de dificultad actualizado en PostgreSQL.");
+        setMsgExito("✅ Factor multiplicador de dificultad actualizado.");
         setModalDificultad(false);
         cargarDatos();
       }
@@ -241,7 +241,7 @@ export default function ConfiguracionPage() {
         body: JSON.stringify({ tipo: "GENERAL", data: reglasComerciales }),
       });
       if (res.ok) {
-        setMsgExito("✅ Políticas de margen y descuentos guardadas en PostgreSQL.");
+        setMsgExito("✅ Políticas de margen y descuentos guardadas.");
         cargarDatos();
       }
     } finally {
@@ -686,7 +686,7 @@ export default function ConfiguracionPage() {
                   <p className="text-xs text-secondary font-medium">{d.descripcion}</p>
                   {d.sugerenciaInstaladorExtra && (
                     <p className="text-[10px] font-bold text-amber-700 dark:text-amber-300 mt-2 flex items-center gap-1">
-                      <UserPlus className="h-3.5 w-3.5" /> Sugiere instalador adicional (#95)
+                      <UserPlus className="h-3.5 w-3.5" /> Sugiere instalador adicional
                     </p>
                   )}
                 </div>
@@ -748,7 +748,7 @@ export default function ConfiguracionPage() {
 
             <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
               <label className="block font-bold text-ink">
-                Umbral Alerta Bajo Margen (#94) (%)
+                Umbral Alerta Bajo Margen (%)
               </label>
               <input
                 type="number"
@@ -794,7 +794,7 @@ export default function ConfiguracionPage() {
                 className="px-6 py-2.5 bg-[#F06529] hover:bg-[#D94E15] text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-2 cursor-pointer"
               >
                 <Save className="h-4 w-4" />
-                <span>Guardar Políticas en PostgreSQL</span>
+                <span>Guardar Políticas</span>
               </button>
             </div>
           )}
@@ -875,7 +875,7 @@ export default function ConfiguracionPage() {
                   className="w-4 h-4 accent-[#F06529] rounded cursor-pointer"
                 />
                 <label htmlFor="visitaReq" className="text-xs font-bold text-ink cursor-pointer">
-                  Requiere Agendar Visita Técnica Previa (Fase 4)
+                  Requiere Agendar Visita Técnica Previa
                 </label>
               </div>
 
@@ -1129,7 +1129,7 @@ export default function ConfiguracionPage() {
                   className="w-4 h-4 accent-[#F06529] rounded cursor-pointer"
                 />
                 <label htmlFor="extraInst" className="text-xs font-bold text-amber-900 dark:text-amber-300 cursor-pointer">
-                  Activar sugerencia de instalador adicional en cotizador (#95)
+                  Activar sugerencia de instalador adicional en cotizador
                 </label>
               </div>
 

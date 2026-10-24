@@ -260,10 +260,10 @@ export default function ComprasProveedoresPage() {
               </div>
             </div>
 
-            {/* 3. Datos del Proveedor Oficial (#96) */}
+            {/* 3. Datos del Proveedor Oficial */}
             <div className="p-4 rounded-xl bg-canvas border border-line space-y-3">
               <span className="font-black text-ink block text-xs flex items-center gap-1.5">
-                <Building className="h-4 w-4 text-[#F06529]" /> Datos del Proveedor Oficial (Regla #96)
+                <Building className="h-4 w-4 text-[#F06529]" /> Datos del Proveedor Oficial
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -419,7 +419,7 @@ export default function ComprasProveedoresPage() {
         </div>
       </div>
 
-      {/* Historial de Compras Recientes (#96) */}
+      {/* Historial de Compras Recientes */}
       <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-line-soft pb-3">
           <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
@@ -433,7 +433,7 @@ export default function ComprasProveedoresPage() {
             <thead className="bg-canvas border-b border-line text-faint font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 <th className="py-3 px-4">Fecha</th>
-                <th className="py-3 px-4">Proveedor Oficial (#96)</th>
+                <th className="py-3 px-4">Proveedor Oficial</th>
                 <th className="py-3 px-4">Material / Insumo</th>
                 <th className="py-3 px-4 text-center">Cantidad</th>
                 <th className="py-3 px-4">Documento / Observaciones</th>

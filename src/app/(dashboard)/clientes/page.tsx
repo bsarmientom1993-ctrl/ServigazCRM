@@ -68,7 +68,7 @@ export default function ClientesPage() {
         <div>
           <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
             <Users className="h-5 w-5 text-[#F06529]" />
-            Directorio de Clientes & Fidelización (Fase 2 & 17)
+            Directorio de Clientes & Fidelización
           </h2>
           <p className="text-xs text-muted mt-0.5">
             Registro con geolocalización, prevención de duplicados y niveles de descuento sugerido (VIP/Frecuente).

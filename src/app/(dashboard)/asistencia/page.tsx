@@ -41,7 +41,7 @@ export default function AsistenciaPage() {
 
   const marcarSalida = () => {
     if (!entradaMarcada) {
-      setMensaje("❌ Bloqueo Fase 18: No puede registrar salida sin haber marcado entrada.");
+      setMensaje("No puedes registrar una salida sin haber marcado la entrada.");
       return;
     }
     const hora = new Date().toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
@@ -56,7 +56,7 @@ export default function AsistenciaPage() {
         <div>
           <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
             <Clock className="h-5 w-5 text-[#F06529]" />
-            Control de Personal & Asistencia (Fase 18)
+            Control de Personal & Asistencia
           </h2>
           <p className="text-xs text-muted mt-0.5">
             Registro diario de entrada/salida, tolerancia 15m, cálculo automático de tardanzas y gestión de permisos.
@@ -118,7 +118,7 @@ export default function AsistenciaPage() {
             </div>
 
             <div className="text-[11px] text-muted pt-3 border-t border-line-soft">
-              🔒 <strong>Regla #90:</strong> Bloqueos automáticos ante doble entrada o salida sin entrada previa.
+              🔒 <strong>Control de asistencia:</strong> Bloqueos automáticos ante doble entrada o salida sin entrada previa.
             </div>
           </div>
 
@@ -211,7 +211,7 @@ export default function AsistenciaPage() {
           <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs">
             <h3 className="text-xs font-bold uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
               <TrendingDown className="h-4 w-4 text-red-500" />
-              Tabla de Descuentos Automáticos (#90)
+              Tabla de Descuentos Automáticos
             </h3>
 
             <table className="w-full text-xs text-left">

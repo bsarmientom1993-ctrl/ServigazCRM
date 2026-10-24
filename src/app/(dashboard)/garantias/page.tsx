@@ -126,7 +126,7 @@ export default function GarantiasPage() {
         <div>
           <h2 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-            Portal de Garantías & Post-Venta (Fase 14 & 22)
+            Portal de Garantías & Post-Venta
           </h2>
           <p className="text-xs text-muted mt-0.5">
             Certificados QR oficiales emitidos, control de vigencias de 12 meses y atención de reclamos técnicos.
@@ -195,7 +195,7 @@ export default function GarantiasPage() {
               />
             </div>
             <span className="text-xs text-faint font-semibold hidden sm:inline">
-              Vigencia oficial según Regla #89 (12 Meses)
+              Vigencia de los certificados de garantía
             </span>
           </div>
 
@@ -205,7 +205,7 @@ export default function GarantiasPage() {
                 <ShieldCheck className="h-10 w-10 text-slate-300 mx-auto mb-2" />
                 <h4 className="text-sm font-bold text-secondary">No hay certificados generados aún</h4>
                 <p className="text-xs text-faint mt-1">
-                  Los certificados se generan automáticamente al realizar el Cierre Financiero (#84) de cada trabajo.
+                  Los certificados se generan automáticamente al realizar el Cierre Financiero de cada trabajo.
                 </p>
               </div>
             ) : (

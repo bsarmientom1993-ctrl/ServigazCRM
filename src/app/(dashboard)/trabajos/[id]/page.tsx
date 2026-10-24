@@ -91,15 +91,15 @@ export default function TrabajoDetallePage({
   const [modalMaterial, setModalMaterial] = useState(false);
   const [modalCierreFinanciero, setModalCierreFinanciero] = useState(false);
 
-  // Fase 4: Agenda state
-  const [fase4Data, setFase4Data] = useState({
+  // Agenda state
+  const [agendaVisita, setAgendaVisita] = useState({
     tecnicoId: "",
     fechaProgramada: "",
     observaciones: "",
   });
 
-  // Fase 5: Visita state
-  const [fase5Data, setFase5Data] = useState({
+  // Visita state
+  const [evaluacionVisita, setEvaluacionVisita] = useState({
     metrosVisto: "",
     metrosEmpotrado: "",
     condiciones: "",
@@ -110,12 +110,12 @@ export default function TrabajoDetallePage({
   });
 
   const handlePhotoReferences = React.useCallback((photos: PhotoReferences) => {
-    setFase5Data(previous => ({ ...previous, fotosUrls: photos.initial }));
+    setEvaluacionVisita(previous => ({ ...previous, fotosUrls: photos.initial }));
     setTerminoData(previous => ({ ...previous, fotos: photos.final.join("\n") }));
   }, []);
 
-  // Fase 6: Cotizador embebido
-  const [fase6Calculo, setFase6Calculo] = useState({
+  // Cotizador embebido
+  const [presupuestoCalculo, setPresupuestoCalculo] = useState({
     subtotalMateriales: "",
     subtotalManoObra: "",
     montoTransporte: "",
@@ -123,14 +123,14 @@ export default function TrabajoDetallePage({
     justificacionMargenBajo: "",
   });
 
-  // Fase 8: Pago state
+  // Pago state
   const [pagoData, setPagoData] = useState({
     monto: 0,
     metodoPago: "TRANSFERENCIA",
     numeroReferencia: "",
   });
 
-  // Fase 9: Material Consumido state
+  // Material Consumido state
   const [materialData, setMaterialData] = useState({
     descripcion: "",
     cantidad: 1,
@@ -143,7 +143,7 @@ export default function TrabajoDetallePage({
     numeroDocumento: "",
   });
 
-  // Fase 13: Cierre Financiero state
+  // Cierre Financiero state
   const [cierreData, setCierreData] = useState({
     costoManoObraReal: "",
     costoTransporteReal: "",
@@ -172,7 +172,7 @@ export default function TrabajoDetallePage({
         const tecs = Array.isArray(dataTec) ? dataTec : [];
         setTecnicos(tecs);
         if (tecs.length > 0) {
-          setFase4Data((prev) => ({ ...prev, tecnicoId: dataTrb.tecnicoId || "" }));
+          setAgendaVisita((prev) => ({ ...prev, tecnicoId: dataTrb.tecnicoId || "" }));
         }
       } catch (e) {
         console.warn("No se pudieron cargar técnicos:", e);
@@ -216,17 +216,16 @@ export default function TrabajoDetallePage({
     return () => controller.abort();
   }, [materialData.ubicacionId]);
 
-  // Fase 4
   const handleAgendarVisita = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await mutate(`/api/trabajos/${id}/visita`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accion: "AGENDAR_VISITA", ...fase4Data, agenda: { zonaHoraria: Intl.DateTimeFormat().resolvedOptions().timeZone }, fechaProgramada: new Date(fase4Data.fechaProgramada).toISOString() }),
+        body: JSON.stringify({ accion: "AGENDAR_VISITA", ...agendaVisita, agenda: { zonaHoraria: Intl.DateTimeFormat().resolvedOptions().timeZone }, fechaProgramada: new Date(agendaVisita.fechaProgramada).toISOString() }),
       });
       if (res.ok) {
-        setSuccessMsg("✅ Fase 4 completada: Visita agendada.");
+        setSuccessMsg("Visita agendada.");
         cargarDatos();
       }
     } catch (e: any) {
@@ -234,7 +233,6 @@ export default function TrabajoDetallePage({
     }
   };
 
-  // Fase 5
   const handleCompletarVisita = async (e: React.FormEvent) => {
     e.preventDefault();
     const visitaActiva = activeAssignedVisit(trabajo?.visitas || [], user?.rol === "TECNICO_FIJO" ? user.id : undefined, requestedVisitId);
@@ -246,16 +244,16 @@ export default function TrabajoDetallePage({
         body: JSON.stringify({
           accion: "COMPLETAR_VISITA",
           visitaId: visitaActiva?.id,
-          medidasJson: { metrosVisto: Number(fase5Data.metrosVisto), metrosEmpotrado: Number(fase5Data.metrosEmpotrado) },
-          condicionesJson: { condiciones: fase5Data.condiciones },
-          ventilacionVasaOk: fase5Data.ventilacionVasaOk,
-          fotosUrls: fase5Data.fotosUrls.map(url => url.trim()).filter(Boolean),
-          dificultadSugerida: fase5Data.dificultadSugerida,
-          observaciones: fase5Data.observaciones,
+          medidasJson: { metrosVisto: Number(evaluacionVisita.metrosVisto), metrosEmpotrado: Number(evaluacionVisita.metrosEmpotrado) },
+          condicionesJson: { condiciones: evaluacionVisita.condiciones },
+          ventilacionVasaOk: evaluacionVisita.ventilacionVasaOk,
+          fotosUrls: evaluacionVisita.fotosUrls.map(url => url.trim()).filter(Boolean),
+          dificultadSugerida: evaluacionVisita.dificultadSugerida,
+          observaciones: evaluacionVisita.observaciones,
         }),
       });
       if (res.ok) {
-        setSuccessMsg("✅ Fase 5 completada: Evaluación registrada (EVALUADO).");
+        setSuccessMsg("Evaluación técnica registrada.");
         cargarDatos();
       }
     } catch (e: any) {
@@ -263,7 +261,6 @@ export default function TrabajoDetallePage({
     }
   };
 
-  // Fase 6
   const handleEmitirCotizacion = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -273,10 +270,10 @@ export default function TrabajoDetallePage({
         body: JSON.stringify({
           datosFormulario: { trabajo: trabajo.subtipoNombre },
           carta: { asunto: carta.asunto, proyecto: carta.proyecto, nota: carta.nota, alcance: carta.alcance || trabajo.subtipoNombre, condiciones: carta.condiciones, fechaValidez: new Date(carta.fecha + "T23:59:59-04:00").toISOString() },
-          subtotalMateriales: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalMateriales : fase6Calculo.subtotalMateriales),
-          subtotalManoObra: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalManoObra : fase6Calculo.subtotalManoObra),
-          montoTransporte: Number(fase6Calculo.montoTransporte),
-          porcentajeDescuento: fase6Calculo.porcentajeDescuento,
+          subtotalMateriales: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalMateriales : presupuestoCalculo.subtotalMateriales),
+          subtotalManoObra: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalManoObra : presupuestoCalculo.subtotalManoObra),
+          montoTransporte: Number(presupuestoCalculo.montoTransporte),
+          porcentajeDescuento: presupuestoCalculo.porcentajeDescuento,
         }),
       });
       if (res.ok) {
@@ -288,7 +285,6 @@ export default function TrabajoDetallePage({
     }
   };
 
-  // Fase 7
   const handleDecisionCliente = async (decision: "APROBAR" | "RECHAZAR") => {
     try {
       const res = await mutate(`/api/trabajos/${id}/decision`, {
@@ -297,7 +293,7 @@ export default function TrabajoDetallePage({
         body: JSON.stringify({ decision, cotizacionId: trabajo.cotizaciones?.[0]?.id }),
       });
       if (res.ok) {
-        setSuccessMsg(decision === "APROBAR" ? "✅ Fase 7: Cliente Aceptó la cotización." : "❌ Trabajo Rechazado.");
+        setSuccessMsg(decision === "APROBAR" ? "El cliente aceptó la cotización." : "❌ Trabajo Rechazado.");
         cargarDatos();
       }
     } catch (e: any) {
@@ -305,7 +301,6 @@ export default function TrabajoDetallePage({
     }
   };
 
-  // Fase 8
   const handleRegistrarPago = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentKey.current) paymentKey.current = crypto.randomUUID();
@@ -316,7 +311,7 @@ export default function TrabajoDetallePage({
         body: JSON.stringify(pagoData),
       });
       if (res.ok) {
-        setSuccessMsg("✅ Fase 8: Pago registrado exitosamente.");
+        setSuccessMsg("Pago registrado.");
         setModalPago(false);
         paymentKey.current = "";
         cargarDatos();
@@ -326,7 +321,7 @@ export default function TrabajoDetallePage({
     }
   };
 
-  // Fase 9: Iniciar Ejecución
+  // Iniciar Ejecución
   const handleIniciarEjecucion = async () => {
     try {
       const res = await mutate(`/api/trabajos/${id}/ejecucion`, {
@@ -343,7 +338,7 @@ export default function TrabajoDetallePage({
     }
   };
 
-  // Fase 9: Registrar Material Consumido
+  // Registrar Material Consumido
   const handleRegistrarMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -373,7 +368,7 @@ export default function TrabajoDetallePage({
     }
   };
 
-  // Fase 11: Término Técnico
+  // Término Técnico
   const handleFinalizarTecnico = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -391,7 +386,7 @@ export default function TrabajoDetallePage({
     } catch (error: any) { setErrorMsg(error.message); }
   };
 
-  // Fase 12: Validación Encargado
+  // Validación Encargado
   const handleValidarEncargado = async () => {
     try {
       const res = await mutate(`/api/trabajos/${id}/ejecucion`, {
@@ -400,7 +395,7 @@ export default function TrabajoDetallePage({
         body: JSON.stringify({ accion: "VALIDAR_ENCARGADO" }),
       });
       if (res.ok) {
-        setSuccessMsg("✅ Fase 12 completada: Conformidad y calidad aprobada por el Encargado.");
+        setSuccessMsg("Conformidad y calidad aprobadas por el encargado.");
         cargarDatos();
       }
     } catch (e: any) {
@@ -619,12 +614,12 @@ export default function TrabajoDetallePage({
             </div>
           </div>
 
-          {/* Certificado de Garantía (Fase 14) */}
+          {/* Certificado de Garantía */}
           {garantia && (
             <div className="bg-gradient-to-br from-emerald-900 to-[#0F2C59] text-white p-5 rounded-2xl shadow-md space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                  <ShieldCheck className="h-4 w-4" /> Certificado Garantía Oficial (#89)
+                  <ShieldCheck className="h-4 w-4" /> Certificado Garantía Oficial
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded">
                   {garantia.estado}
@@ -643,7 +638,7 @@ export default function TrabajoDetallePage({
 
         {/* Right Column (8 cols) */}
         <div className="lg:col-span-8 space-y-5">
-          {/* FASE 4 */}
+          {/* Coordinación de visita */}
           {canManage && (estado === "BORRADOR" || (!trabajo.tecnicoId && ["EVALUADO", "COTIZADO", "APROBADO", "PAGO_A_CUENTA_RECIBIDO", "ANTICIPO_RECIBIDO"].includes(estado))) && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
               <h3 className="text-sm font-black text-ink uppercase tracking-wider flex items-center gap-2">
@@ -655,8 +650,8 @@ export default function TrabajoDetallePage({
                     <label className="block text-xs font-bold text-secondary mb-1">Técnico Instalador</label>
                     <select
                       required
-                      value={fase4Data.tecnicoId}
-                      onChange={(e) => setFase4Data({ ...fase4Data, tecnicoId: e.target.value })}
+                      value={agendaVisita.tecnicoId}
+                      onChange={(e) => setAgendaVisita({ ...agendaVisita, tecnicoId: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl text-xs font-semibold outline-none"
                     >
                       <option value="">Seleccionar técnico...</option>
@@ -670,8 +665,8 @@ export default function TrabajoDetallePage({
                     <input
                       type="datetime-local"
                       required
-                      value={fase4Data.fechaProgramada}
-                      onChange={(e) => setFase4Data({ ...fase4Data, fechaProgramada: e.target.value })}
+                      value={agendaVisita.fechaProgramada}
+                      onChange={(e) => setAgendaVisita({ ...agendaVisita, fechaProgramada: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl text-xs font-semibold outline-none"
                     />
                   </div>
@@ -684,7 +679,7 @@ export default function TrabajoDetallePage({
             </div>
           )}
 
-          {/* FASE 5: MEDICIÓN EN TERRENO */}
+          {/* MEDICIÓN EN TERRENO */}
           {estado === "EVALUACION_PENDIENTE" && visitaProgramada && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-line-soft pb-3">
@@ -703,9 +698,9 @@ export default function TrabajoDetallePage({
 
               <form onSubmit={handleCompletarVisita} className="space-y-4 text-xs">
                 <label className="block font-bold">Condiciones observadas
-                  <textarea required minLength={5} value={fase5Data.condiciones} onChange={e => setFase5Data({ ...fase5Data, condiciones: e.target.value })} className="w-full border rounded-xl p-3 mt-1" />
+                  <textarea required minLength={5} value={evaluacionVisita.condiciones} onChange={e => setEvaluacionVisita({ ...evaluacionVisita, condiciones: e.target.value })} className="w-full border rounded-xl p-3 mt-1" />
                 </label>
-                <p className="module-note">Fotos del requerimiento inicial: {fase5Data.fotosUrls.length} guardadas · mínimo 3. <a href="#registro-fotografico" className="underline">Abrir carpeta y adjuntar fotos</a></p>
+                <p className="module-note">Fotos del requerimiento inicial: {evaluacionVisita.fotosUrls.length} guardadas · mínimo 3. <a href="#registro-fotografico" className="underline">Abrir carpeta y adjuntar fotos</a></p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-bold text-secondary mb-1">
@@ -716,8 +711,8 @@ export default function TrabajoDetallePage({
                       min="0"
                       step="any"
                       required
-                      value={fase5Data.metrosVisto}
-                      onChange={(e) => setFase5Data({ ...fase5Data, metrosVisto: e.target.value })}
+                      value={evaluacionVisita.metrosVisto}
+                      onChange={(e) => setEvaluacionVisita({ ...evaluacionVisita, metrosVisto: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
                     />
                     <span className="text-[10px] text-faint mt-0.5 block">Tubería que va con abrazaderas o grampas</span>
@@ -732,8 +727,8 @@ export default function TrabajoDetallePage({
                       min="0"
                       step="any"
                       required
-                      value={fase5Data.metrosEmpotrado}
-                      onChange={(e) => setFase5Data({ ...fase5Data, metrosEmpotrado: e.target.value })}
+                      value={evaluacionVisita.metrosEmpotrado}
+                      onChange={(e) => setEvaluacionVisita({ ...evaluacionVisita, metrosEmpotrado: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none focus:ring-2 focus:ring-[#F06529]"
                     />
                     <span className="text-[10px] text-faint mt-0.5 block">Tubería oculta bajo revoque o piso</span>
@@ -742,8 +737,8 @@ export default function TrabajoDetallePage({
                   <div>
                     <label className="block font-bold text-secondary mb-1">Dificultad del Trabajo</label>
                     <select
-                      value={fase5Data.dificultadSugerida}
-                      onChange={(e) => setFase5Data({ ...fase5Data, dificultadSugerida: Number(e.target.value) })}
+                      value={evaluacionVisita.dificultadSugerida}
+                      onChange={(e) => setEvaluacionVisita({ ...evaluacionVisita, dificultadSugerida: Number(e.target.value) })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold text-ink outline-none"
                     >
                       <option value={1}>Nivel 1 (Normal / Fácil)</option>
@@ -759,8 +754,8 @@ export default function TrabajoDetallePage({
                       <input
                         type="checkbox"
                         id="vasaCheck"
-                        checked={fase5Data.ventilacionVasaOk}
-                        onChange={(e) => setFase5Data({ ...fase5Data, ventilacionVasaOk: e.target.checked })}
+                        checked={evaluacionVisita.ventilacionVasaOk}
+                        onChange={(e) => setEvaluacionVisita({ ...evaluacionVisita, ventilacionVasaOk: e.target.checked })}
                         className="w-4 h-4 accent-[#F06529] rounded cursor-pointer"
                       />
                       <label htmlFor="vasaCheck" className="font-bold text-ink cursor-pointer">
@@ -784,7 +779,7 @@ export default function TrabajoDetallePage({
           )}
 
           {isGas && <GasWorkflow work={trabajo} canManage={canManage} onSaved={cargarDatos} />}
-          {/* FASE 6: EMISIÓN DE COTIZACIÓN POR EL ENCARGADO */}
+          {/* EMISIÓN DE COTIZACIÓN POR EL ENCARGADO */}
           {canManage && estado === "EVALUADO" && (!isGas || gas.supervision?.estado === "APROBADO") && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-line-soft pb-3">
@@ -817,8 +812,8 @@ export default function TrabajoDetallePage({
                       step="0.01"
                       required
                       readOnly={isGas}
-                      value={isGas ? gas.calculo?.subtotalMateriales || "" : fase6Calculo.subtotalMateriales}
-                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalMateriales: e.target.value })}
+                      value={isGas ? gas.calculo?.subtotalMateriales || "" : presupuestoCalculo.subtotalMateriales}
+                      onChange={(e) => setPresupuestoCalculo({ ...presupuestoCalculo, subtotalMateriales: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
                   </div>
@@ -830,8 +825,8 @@ export default function TrabajoDetallePage({
                       step="0.01"
                       required
                       readOnly={isGas}
-                      value={isGas ? gas.calculo?.subtotalManoObra || "" : fase6Calculo.subtotalManoObra}
-                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, subtotalManoObra: e.target.value })}
+                      value={isGas ? gas.calculo?.subtotalManoObra || "" : presupuestoCalculo.subtotalManoObra}
+                      onChange={(e) => setPresupuestoCalculo({ ...presupuestoCalculo, subtotalManoObra: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
                   </div>
@@ -842,8 +837,8 @@ export default function TrabajoDetallePage({
                       min="0"
                       step="0.01"
                       required
-                      value={fase6Calculo.montoTransporte}
-                      onChange={(e) => setFase6Calculo({ ...fase6Calculo, montoTransporte: e.target.value })}
+                      value={presupuestoCalculo.montoTransporte}
+                      onChange={(e) => setPresupuestoCalculo({ ...presupuestoCalculo, montoTransporte: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
                     />
                   </div>
@@ -862,7 +857,7 @@ export default function TrabajoDetallePage({
             </div>
           )}
 
-          {/* FASE 7: ENVÍO AL CLIENTE (WHATSAPP / PDF) & DECISIÓN */}
+          {/* ENVÍO AL CLIENTE (WHATSAPP / PDF) & DECISIÓN */}
           {canManage && estado === "COTIZADO" && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-line-soft pb-3">
@@ -974,7 +969,7 @@ export default function TrabajoDetallePage({
             </div>
           )}
 
-          {/* FASE 8: ANTICIPO APROBADO -> INICIAR TRABAJO */}
+          {/* ANTICIPO APROBADO -> INICIAR TRABAJO */}
           {estado === "ANTICIPO_RECIBIDO" && (
             <div className="bg-emerald-50 dark:bg-emerald-950/40 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-900 shadow-xs space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
@@ -1001,7 +996,7 @@ export default function TrabajoDetallePage({
             </div>
           )}
 
-          {/* FASE 9, 10, 11, 12, 13: EJECUCIÓN Y CONTROL DE MATERIALES / REPUESTOS / HERRAMIENTAS */}
+          {/* EJECUCIÓN Y CONTROL DE MATERIALES / REPUESTOS / HERRAMIENTAS */}
           {["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO"].includes(estado) && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-line-soft">
@@ -1138,7 +1133,7 @@ export default function TrabajoDetallePage({
                 )}
               </div>
 
-              {/* Botones de Transición de Fases */}
+              {/* Acciones del trabajo */}
               <div className="pt-3 border-t border-line-soft flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <span className="text-[11px] text-muted font-medium">
                   {estado === "EN_PROCESO" && "👉 Trabajo en curso. Cuando el técnico termine en el lugar, presiona 'Trabajo Físico Terminado'."}
@@ -1406,7 +1401,7 @@ export default function TrabajoDetallePage({
         </div>
       )}
 
-      {/* MODAL CIERRE FINANCIERO (FASE 13) */}
+      {/* MODAL CIERRE FINANCIERO */}
       {canManage && modalCierreFinanciero && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-surface rounded-2xl p-6 max-w-md w-full shadow-2xl border border-line-soft space-y-4">
