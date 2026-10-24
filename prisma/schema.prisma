@@ -681,6 +681,7 @@ model ProductoInventario {
   costoPromedio Decimal  @default(0.0) @db.Decimal(12, 2)
   precioVenta   Decimal  @default(0.0) @db.Decimal(12, 2)
   activo        Boolean  @default(true)
+  publicacionTienda TiendaPublicacion?
   
   existencias   ExistenciaInventario[]
   traspasos     TraspasoInventario[]
@@ -691,6 +692,24 @@ model ProductoInventario {
   updatedAt     DateTime @updatedAt
 
   @@index([codigoSku, categoria, activo])
+}
+
+model TiendaConfiguracion {
+  id String @id
+  datos Json
+  updatedAt DateTime @updatedAt
+}
+
+model TiendaPublicacion {
+  productoId String @id
+  producto ProductoInventario @relation(fields: [productoId], references: [id])
+  descripcion String @default("")
+  publicado Boolean @default(false)
+  destacado Boolean @default(false)
+  imagenContenido Bytes?
+  imagenKey String?
+  imagenHash String?
+  updatedAt DateTime @updatedAt
 }
 
 model MovimientoInventario {

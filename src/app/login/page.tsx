@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowRight, Check, Eye, EyeOff, Loader2, LockKeyhole, Mail, ShieldCheck, Wrench, Users, Wallet } from "lucide-react";
@@ -40,7 +41,7 @@ export default function LoginPage() {
       <div className="story-footer"><span className="flex items-center gap-2"><span className="status-dot" /> Gestión comercial y operativa</span><span>Hecho para avanzar.</span></div>
     </section>
     <section className="login-form-side" aria-labelledby="login-heading">
-      <div className="login-toolbar"><span className="text-sm font-semibold text-ink lg:invisible">SERVIGAZ<span className="text-[#F06529]">.</span></span><ThemeToggle /></div>
+      <div className="login-toolbar"><Link href="/tienda" className="text-sm font-semibold text-ink underline">Visitar tienda</Link><span className="text-sm font-semibold text-ink lg:invisible">SERVIGAZ<span className="text-[#F06529]">.</span></span><ThemeToggle /></div>
       <div className="login-form-wrap">
         <span className="login-lock"><LockKeyhole size={22} strokeWidth={1.6} /></span>
         <p className="text-xs font-semibold tracking-[0.16em] uppercase text-muted mt-7 mb-3">Bienvenido a tu espacio</p>

@@ -19,7 +19,7 @@ function createR2Storage(env = process.env) {
     requestChecksumCalculation: 'WHEN_REQUIRED', responseChecksumValidation: 'WHEN_REQUIRED',
   });
   function validateKey(key) {
-    if (!/^trabajos\/[a-f0-9-]{36}\/(inicial|final)\/[a-f0-9-]{36}-[a-f0-9]{64}\.jpg$/i.test(key)) throw new Error('Invalid R2 photo key');
+    if (!/^trabajos\/[a-f0-9-]{36}\/(inicial|final)\/[a-f0-9-]{36}-[a-f0-9]{64}\.jpg$/i.test(key) && !/^tienda\/[a-f0-9-]{36}\/[a-f0-9]{64}\.jpg$/i.test(key)) throw new Error('Invalid R2 photo key');
   }
   return {
     async put(key, bytes, hash) {
