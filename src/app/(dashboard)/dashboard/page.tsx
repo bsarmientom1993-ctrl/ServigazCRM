@@ -1,5 +1,6 @@
 "use client";
 
+import { PendingQuotes } from "@/components/PendingQuotes";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
@@ -88,6 +89,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <PendingQuotes compact />
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
