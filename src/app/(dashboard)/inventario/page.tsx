@@ -70,7 +70,7 @@ export default function InventarioPage() {
   return <div className="space-y-6">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div><p className="module-eyebrow">ABASTECIMIENTO Y DISTRIBUCIÓN</p><h2 className="text-2xl font-semibold text-ink">Almacenes y tiendas</h2><p className="text-sm text-muted mt-2">Existencias por ubicación y traspasos con recepción confirmada.</p></div>
-      <div className="flex flex-wrap gap-2"><Link className="theme-toggle" href="/sucursales"><Settings2 size={16} />Ubicaciones</Link><Link className="primary-action" href="/inventario/compras"><Plus size={16} />Registrar compra</Link></div>
+      <div className="flex flex-wrap gap-2">{!store && <Link className="theme-toggle" href="/sucursales"><Settings2 size={16} />Ubicaciones</Link>}<Link className="primary-action" href="/inventario/compras"><Plus size={16} />Registrar compra</Link></div>
     </div>
     {error && <p role="alert" className="module-error">{error}</p>}
     {message && <p role="status" className="module-success">{message}</p>}
