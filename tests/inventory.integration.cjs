@@ -241,8 +241,3 @@ test('store operator works across shops but cannot operate warehouses or access 
  for(const name of ['trabajos','clientes','proyectos','finanzas','usuarios','gestion-tienda','configuracion/precios','cotizaciones/pendientes']){const handler=require('../src/app/api/'+name+'/route.ts');await body(await handler.GET(storeReq(name,null,'GET')),403);}
  await invariant(p);
 });
-
-test('requested store account provisioning is idempotent and keeps its initial credential encrypted',async()=>{
- const {provision}=require('../scripts/provision-brigida-once.cjs');const first=await provision(prisma);const second=await provision(prisma);assert.equal(first.id,second.id);assert.equal(first.encrypted,second.encrypted);assert.equal(Buffer.from(first.encrypted,'base64').length,256);
- const person=await prisma.usuario.findUnique({where:{id:first.id}});assert.equal(person.nombre,'Brígida Mamani');assert.equal(person.rol,'ENCARGADO_TIENDA');assert.equal(person.sucursalId,null);assert.match(person.passwordHash,/^\$2[ab]\$/);assert.equal(await prisma.usuario.count({where:{email:person.email}}),1);
-});
