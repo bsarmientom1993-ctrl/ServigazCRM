@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSession, managers, workScope } from "@/lib/auth";
 import { apiError, ApiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { documentScope } from "@/lib/proformas";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireSession(req, managers); const { id } = await params;
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
     const page = trabajos.slice(0, 20);
-    return NextResponse.json({ cliente, trabajos: page, siguiente: trabajos.length > 20 ? page[page.length - 1].id : null });
+    const proformas=await prisma.documentoProforma.findMany({where:{AND:[{clienteId:id,tipo:'CLIENTE'},await documentScope(prisma,user)]},select:{id:true,numero:true,estado:true,datos:true,createdAt:true,validoHasta:true},orderBy:{createdAt:'desc'},take:100});
+    return NextResponse.json({ cliente, trabajos: page, proformas, siguiente: trabajos.length > 20 ? page[page.length - 1].id : null });
   } catch (error) { return apiError(error); }
 }

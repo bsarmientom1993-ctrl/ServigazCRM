@@ -29,7 +29,9 @@ export async function lockProduct(tx: Prisma.TransactionClient, id: string) {
   if (!product.activo) throw new ApiError(409, "El producto está inactivo.");
   const stocks = await tx.existenciaInventario.aggregate({ where: { productoId: id }, _sum: { stockActual: true } });
   const transit = await tx.traspasoInventario.aggregate({ where: { productoId: id, estado: "EN_TRANSITO" }, _sum: { cantidad: true } });
-  const total = new Prisma.Decimal(stocks._sum.stockActual || 0).add(transit._sum.cantidad || 0);
+  const issued = await tx.entregaMaterialItem.aggregate({ where: { productoId: id }, _sum: { cantidad: true, consumida: true, devuelta: true } });
+  const custody = new Prisma.Decimal(issued._sum.cantidad || 0).sub(issued._sum.consumida || 0).sub(issued._sum.devuelta || 0);
+  const total = new Prisma.Decimal(stocks._sum.stockActual || 0).add(transit._sum.cantidad || 0).add(custody);
   if (!product.stockActual.equals(total)) throw new ApiError(409, "El stock global y las ubicaciones requieren conciliación. Contacta al administrador.");
   return product;
 }

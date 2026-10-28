@@ -55,7 +55,9 @@ async function invariant(p) {
   const stock = await prisma.existenciaInventario.aggregate({ where: { productoId: p.id }, _sum: { stockActual: true } });
   const transit = await prisma.traspasoInventario.aggregate({ where: { productoId: p.id, estado: "EN_TRANSITO" }, _sum: { cantidad: true } });
   const global = await prisma.productoInventario.findUniqueOrThrow({ where: { id: p.id } });
-  assert.equal(Number(global.stockActual), Number(stock._sum.stockActual || 0) + Number(transit._sum.cantidad || 0));
+  const issued=await prisma.entregaMaterialItem.aggregate({where:{productoId:p.id},_sum:{cantidad:true,consumida:true,devuelta:true}});
+  const held=Number(issued._sum.cantidad||0)-Number(issued._sum.consumida||0)-Number(issued._sum.devuelta||0);
+  assert.equal(Number(global.stockActual), Number(stock._sum.stockActual || 0) + Number(transit._sum.cantidad || 0)+held);
 }
 
 before(async () => {
@@ -69,6 +71,7 @@ before(async () => {
   await prisma.productoInventario.update({ where: { id: opening.id }, data: { stockActual: 17.5, costoPromedio: 8 } });
   openingId = opening.id;
   assert.equal(await migrateInventory(prisma), true);
+  await require("../scripts/migrate-proformas.cjs").migrateProformas(prisma);
   branchA = await prisma.sucursal.create({ data: { nombre: "Sucursal A de prueba" } });
   branchB = await prisma.sucursal.create({ data: { nombre: "Sucursal B de prueba" } });
   async function user(role, branch, name) { return prisma.usuario.create({ data: { nombre: name, email: randomUUID() + "@example.invalid", passwordHash: "not-a-login-password", rol: role, sucursalId: branch?.id || null } }); }
@@ -240,4 +243,106 @@ test('store operator works across shops but cannot operate warehouses or access 
  await body(await purchases.POST(storeReq('inventario/compras',{productoId:p.id,ubicacionId:shopB.id,cantidad:1,precioCompraUnitario:10,proveedorNombre:'Proveedor de prueba',registrarEgresoCaja:false})));assert.equal(await balance(p,shopB),2);
  for(const name of ['trabajos','clientes','proyectos','finanzas','usuarios','gestion-tienda','configuracion/precios','cotizaciones/pendientes']){const handler=require('../src/app/api/'+name+'/route.ts');await body(await handler.GET(storeReq(name,null,'GET')),403);}
  await invariant(p);
+});
+
+const documents=require('../src/app/api/proformas/route.ts');
+const deliveries=require('../src/app/api/entregas/route.ts');
+const documentOptions=require('../src/app/api/proformas/opciones/route.ts');
+function docReq(user,route,data,method='POST',key=randomUUID()){
+ return new NextRequest('http://localhost/api/'+route,{method,headers:{'Content-Type':'application/json',Cookie:'servigaz_token='+jwt.sign({id:user.id},process.env.JWT_SECRET),'Idempotency-Key':key},...(method==='GET'?{}:{body:JSON.stringify(data)})});
+}
+async function documentFixture(){
+ const tech=await prisma.usuario.create({data:{nombre:'Técnico de materiales',email:randomUUID()+'@example.invalid',passwordHash:'test-only',rol:'TECNICO_FIJO',sucursalId:branchA.id}});
+ const store=await prisma.usuario.create({data:{nombre:'Encargada de materiales',email:randomUUID()+'@example.invalid',passwordHash:'test-only',rol:'ENCARGADO_TIENDA'}});
+ const client=await prisma.cliente.create({data:{nombreCompleto:'Cliente de proforma',telefonos:['76543210'],direccion:'Prueba',sucursalId:branchA.id}});
+ const work=await prisma.trabajo.create({data:{codigoCorrelativo:randomUUID(),clienteId:client.id,encargadoId:managerA.id,tecnicoId:tech.id,sucursalId:branchA.id,estado:'EN_PROCESO',tipoFlujo:'COMPLETO',subtipoCodigo:'3.3',subtipoNombre:'Mantenimiento'}});
+ const p=await product();await buy(p,10,shopA,admin);
+ const request={id:randomUUID(),tipo:'MATERIALES',ubicacionId:shopA.id,trabajoId:work.id,tecnicoId:tech.id,validoHasta:new Date(Date.now()+15*86400000).toISOString(),items:[{productoId:p.id,cantidad:6}]};
+ return {tech,store,client,work,p,request};
+}
+async function approvedRequest(f){const doc=await body(await documents.POST(docReq(f.tech,'proformas',f.request)));await body(await documents.PATCH(docReq(f.store,'proformas',{id:doc.id,estado:'APROBADA',motivo:'Material aprobado para el trabajo'},'PATCH')));return doc;}
+async function issue(f,doc,n=4,id=randomUUID()) {return deliveries.POST(docReq(f.store,'entregas',{id,proformaId:doc.id,items:[{productoId:f.p.id,cantidad:n}]}));}
+async function deliveryAction(f,d,accion,amount,user=f.tech,key=randomUUID(),item=d.items[0]){return deliveries.PATCH(docReq(user,'entregas',{id:d.id,accion,...(amount?{itemId:item.id,cantidad:amount,motivo:'Operación física comprobada'}:{})},'PATCH',key));}
+
+test('customer proformas require a registered scoped customer and preserve prices and issuer without moving inventory',async()=>{
+ const f=await documentFixture();
+ const input={id:randomUUID(),tipo:'CLIENTE',ubicacionId:shopA.id,clienteId:f.client.id,validoHasta:new Date(Date.now()+86400000).toISOString(),items:[{productoId:f.p.id,cantidad:2.5,precio:20.25}]};
+ await body(await documents.POST(docReq(f.store,'proformas',{...input,clienteId:undefined})),400);
+ await body(await documents.POST(docReq(f.tech,'proformas',input)),403);
+ await body(await documents.POST(docReq(managerB,'proformas',input)),403);
+ const doc=await body(await documents.POST(docReq(f.store,'proformas',input)));assert.equal(doc.datos.total,'50.63');assert.equal(doc.datos.autor,f.store.nombre);assert.equal(doc.clienteId,f.client.id);assert.ok(doc.datos.formato.empresa);
+ const historyRoute=require('../src/app/api/clientes/[id]/historial/route.ts');const history=await body(await historyRoute.GET(docReq(managerA,'clientes/'+f.client.id+'/historial',null,'GET'),{params:Promise.resolve({id:f.client.id})}));assert.ok(history.proformas.some(p=>p.id===doc.id));
+ const again=await body(await documents.POST(docReq(f.store,'proformas',input)));assert.equal(again.id,doc.id);
+ await body(await documents.POST(docReq(f.store,'proformas',{...input,items:[{productoId:f.p.id,cantidad:3,precio:20.25}]})),409);
+ assert.equal(await balance(f.p,shopA),10);assert.equal(await prisma.entregaMaterial.count({where:{proformaId:doc.id}}),0);
+ await body(await documents.PATCH(docReq(f.store,'proformas',{id:doc.id,estado:'APROBADA',motivo:'Cliente confirmó su aceptación'},'PATCH')));
+ await body(await issue(f,doc),400);
+ const techList=await body(await documents.GET(docReq(f.tech,'proformas',null,'GET')));assert.ok(!techList.documentos.some(d=>d.id===doc.id));
+ const registered=await body(await documentOptions.POST(docReq(f.store,'proformas/opciones',{id:randomUUID(),ubicacionId:shopB.id,nombreCompleto:'Cliente nuevo de tienda',telefono:'76543210',direccion:'Calle ejemplo 123'})));assert.equal(registered.sucursalId,branchB.id);
+ const techOptions=await body(await documentOptions.GET(docReq(f.tech,'proformas/opciones',null,'GET')));assert.equal(techOptions.clientes.length,0);assert.ok(techOptions.productos.every(p=>p.precioVenta===undefined&&p.costoPromedio===undefined));
+ await invariant(f.p);
+});
+
+test('material requests validate assignment, branch, expiry and approval before any stock leaves',async()=>{
+ const f=await documentFixture();
+ await body(await documents.POST(docReq(managerB,'proformas',f.request)),403);
+ await body(await documents.POST(docReq(f.tech,'proformas',{...f.request,tecnicoId:admin.id})),403);
+ await body(await documents.POST(docReq(f.store,'proformas',{...f.request,ubicacionId:shopB.id})),403);
+ await body(await documents.POST(docReq(f.store,'proformas',{...f.request,items:[{productoId:f.p.id,cantidad:0.001}]})),400);
+ const doc=await body(await documents.POST(docReq(f.tech,'proformas',f.request)));
+ assert.equal(doc.datos.total,undefined);assert.equal(doc.datos.items[0].precio,undefined);
+ await body(await issue(f,doc),409);
+ await body(await documents.PATCH(docReq(f.tech,'proformas',{id:doc.id,estado:'APROBADA',motivo:'Aprobar por mi cuenta'},'PATCH')),403);
+ await body(await documents.PATCH(docReq(f.store,'proformas',{id:doc.id,estado:'APROBADA',motivo:'Revisado por tienda'},'PATCH')));
+ await prisma.documentoProforma.update({where:{id:doc.id},data:{validoHasta:new Date(Date.now()-86400000)}});
+ await body(await issue(f,doc),409);assert.equal(await balance(f.p,shopA),10);
+});
+
+test('partial delivery retries and competing deliveries cannot oversupply or duplicate store stock deductions',async()=>{
+ const f=await documentFixture();const doc=await approvedRequest(f);const id=randomUUID();
+ const d=await body(await issue(f,doc,4,id));const retry=await body(await issue(f,doc,4,id));assert.equal(d.id,retry.id);assert.equal(await balance(f.p,shopA),6);
+ await body(await issue(f,doc,3,id),409);
+ const competing=await Promise.all([issue(f,doc,2),issue(f,doc,2)]);assert.deepEqual(competing.map(r=>r.status).sort(),[200,409]);
+ assert.equal(await balance(f.p,shopA),4);assert.equal(Number((await prisma.productoInventario.findUnique({where:{id:f.p.id}})).stockActual),10);
+ await body(await documents.PATCH(docReq(f.store,'proformas',{id:doc.id,estado:'ANULADA',motivo:'Intento de anular con entrega'},'PATCH')),409);
+ await invariant(f.p);
+});
+
+test('technician reception, consumption and physical returns preserve custody and book each cost only once',async()=>{
+ const f=await documentFixture();const doc=await approvedRequest(f);const d=await body(await issue(f,doc,4));
+ await body(await deliveryAction(f,d,'RECIBIR',null,f.store),403);
+ await body(await deliveryAction(f,d,'CONSUMIR',1),409);
+ const receiver=randomUUID();await body(await deliveryAction(f,d,'RECIBIR',null,f.tech,receiver));await body(await deliveryAction(f,d,'RECIBIR',null,f.tech,receiver));
+ await body(await deliveryAction(f,d,'DEVOLVER',1,f.tech),403);
+ const consumption=randomUUID();await body(await deliveryAction(f,d,'CONSUMIR',2,f.tech,consumption));await body(await deliveryAction(f,d,'CONSUMIR',2,f.tech,consumption));
+ assert.equal(await prisma.materialEjecucion.count({where:{trabajoId:f.work.id}}),1);assert.equal(Number((await prisma.materialEjecucion.findFirst({where:{trabajoId:f.work.id}})).subtotalCosto),20);
+ assert.equal(await balance(f.p,shopA),6);await invariant(f.p);
+ const operation=randomUUID();await body(await deliveryAction(f,d,'DEVOLVER',2,f.store,operation));await body(await deliveryAction(f,d,'DEVOLVER',2,f.store,operation));assert.equal(await balance(f.p,shopA),8);await invariant(f.p);
+ await body(await deliveryAction(f,d,'CONSUMIR',1),409);
+ const view=await body(await deliveries.GET(docReq(f.tech,'entregas',null,'GET')));const own=view.entregas.find(e=>e.id===d.id);assert.equal(own.items[0].costoUnitario,undefined);assert.ok(own.operaciones.every(o=>o.datos.realizadoPor));assert.equal(own.proforma.datos.total,undefined);
+ const foreign=await body(await deliveries.GET(docReq(managerB,'entregas',null,'GET')));assert.ok(!foreign.entregas.some(e=>e.id===d.id));
+});
+
+test('competing consume and return operations cannot settle the same issued units twice',async()=>{
+ const f=await documentFixture();const doc=await approvedRequest(f);const d=await body(await issue(f,doc,4));await body(await deliveryAction(f,d,'RECIBIR'));
+ const results=await Promise.all([deliveryAction(f,d,'CONSUMIR',4),deliveryAction(f,d,'DEVOLVER',4,f.store)]);assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);await invariant(f.p);
+});
+
+test('work completion and final settlement require every delivered unit to be consumed or returned',async()=>{
+ const f=await documentFixture();const doc=await approvedRequest(f);await body(await issue(f,doc,4));
+ const technicalEnd=await execution.POST(docReq(f.tech,'trabajos/'+f.work.id+'/ejecucion',{accion:'FINALIZAR_TECNICO',data:{}}),{params:Promise.resolve({id:f.work.id})});await body(technicalEnd,409);
+ const settlement=require('../src/app/api/trabajos/[id]/cierre-financiero/route.ts');const r=await settlement.POST(docReq(managerA,'trabajos/'+f.work.id+'/cierre-financiero',{costoManoObraReal:0,costoTransporteReal:0}),{params:Promise.resolve({id:f.work.id})});const blocked=await body(r,409);assert.match(blocked.error,/materiales entregados/);
+ await prisma.trabajo.update({where:{id:f.work.id},data:{estado:'VALIDADO'}});await body(await issue(f,doc,1),409);
+});
+
+test('an out-of-stock multi-product delivery rolls back every line and its document',async()=>{
+ const f=await documentFixture();const absent=await product();f.request.items.push({productoId:absent.id,cantidad:1});const doc=await approvedRequest(f);
+ await body(await deliveries.POST(docReq(f.store,'entregas',{id:randomUUID(),proformaId:doc.id,items:[{productoId:f.p.id,cantidad:2},{productoId:absent.id,cantidad:1}]})),409);
+ assert.equal(await balance(f.p,shopA),10);assert.equal(await prisma.entregaMaterial.count({where:{proformaId:doc.id}}),0);await invariant(f.p);
+});
+
+test('locations cannot be deactivated while their material is still held by a technician',async()=>{
+ const f=await documentFixture();const isolated=await prisma.ubicacionInventario.create({data:{nombre:'Tienda de custodia aislada',tipo:'TIENDA',sucursalId:branchA.id}});await buy(f.p,10,isolated,admin);f.request.ubicacionId=isolated.id;f.request.items[0].cantidad=10;const doc=await approvedRequest(f);const delivery=await body(await issue(f,doc,10));assert.equal(await balance(f.p,isolated),0);
+ await body(await locationEdit.PATCH(docReq(admin,'ubicaciones/'+isolated.id,{activo:false},'PATCH'),{params:Promise.resolve({id:isolated.id})}),409);
+ await body(await deliveryAction(f,delivery,'DEVOLVER',10,f.store));await invariant(f.p);
 });

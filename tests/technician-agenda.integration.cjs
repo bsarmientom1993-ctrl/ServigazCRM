@@ -37,6 +37,7 @@ before(async () => {
   const sql = fs.readFileSync(path.join(__dirname, "fixtures/inventory-baseline.sql"), "utf8");
   await prisma.$transaction(async tx => { for (const statement of sql.split(";").map(s => s.trim()).filter(Boolean)) await tx.$executeRawUnsafe(statement); }, { timeout: 60000 });
   await require("../scripts/migrate-inventory.cjs").migrateInventory(prisma);
+  await require("../scripts/migrate-proformas.cjs").migrateProformas(prisma);
   branch = await prisma.sucursal.create({ data: { nombre: "Sucursal pruebas" } }); otherBranch = await prisma.sucursal.create({ data: { nombre: "Otra sucursal" } });
   async function user(name, role, branchId) { return prisma.usuario.create({ data: { nombre: name, email: randomUUID() + "@example.invalid", passwordHash: "not-a-password", rol: role, sucursalId: branchId } }); }
   manager = await user("Encargado", "ENCARGADO", branch.id); otherManager = await user("Otro encargado", "ENCARGADO", otherBranch.id);

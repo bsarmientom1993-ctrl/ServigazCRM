@@ -22,7 +22,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (data.activo === false) {
         const stocks = await tx.existenciaInventario.count({ where: { ubicacionId: id, stockActual: { gt: 0 } } });
         const pending = await tx.traspasoInventario.count({ where: { estado: "EN_TRANSITO", OR: [{ origenId: id }, { destinoId: id }] } });
-        if (stocks || pending) throw new ApiError(409, "Distribuye el stock y resuelve los traspasos antes de desactivar.");
+        const issued=await tx.entregaMaterialItem.findMany({where:{entrega:{proforma:{ubicacionId:id}}},select:{cantidad:true,consumida:true,devuelta:true}});
+        if (stocks || pending || issued.some(i=>i.cantidad.gt(i.consumida.add(i.devuelta)))) throw new ApiError(409, "Distribuye el stock y resuelve los traspasos y materiales en poder de técnicos antes de desactivar.");
       }
       const location = await tx.ubicacionInventario.update({ where: { id }, data });
       await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: "UBICACIONES", accion: "UPDATE", entidadTipo: "UbicacionInventario", entidadId: id,

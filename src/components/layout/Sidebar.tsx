@@ -40,6 +40,8 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     { name: manager ? "Resumen" : "Mi agenda", href: manager ? "/dashboard" : "/agenda", icon: LayoutDashboard, show: !store, group: "principal" },
     { name: manager ? "Trabajos y órdenes" : "Mis trabajos", href: "/trabajos", icon: BriefcaseBusiness, show: !store, group: "principal" },
     { name: "Cotizaciones pendientes", href: "/cotizaciones", icon: FileClock, show: manager, group: "principal" },
+    { name: user.rol === "TECNICO_FIJO" ? "Mis solicitudes de material" : "Proformas y solicitudes", href: "/proformas", icon: FileClock, show: true, group: "principal" },
+    { name: user.rol === "TECNICO_FIJO" ? "Mis materiales" : "Entrega de material", href: "/entregas", icon: Package, show: true, group: "principal" },
     { name: "Proyectos", href: "/proyectos", icon: FolderClock, show: !store, group: "principal" },
     { name: "Clientes", href: "/clientes", icon: Users, show: manager, group: "principal" },
     { name: "Cotizador", href: "/cotizador", icon: Calculator, show: manager, group: "principal" },

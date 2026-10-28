@@ -28,6 +28,8 @@ before(async () => {
   await root.$executeRawUnsafe('CREATE SCHEMA "' + schema + '"');
   const sql = fs.readFileSync(path.join(__dirname, "fixtures/inventory-baseline.sql"), "utf8");
   await prisma.$transaction(async tx => { for (const statement of sql.split(";").map(s => s.trim()).filter(Boolean)) await tx.$executeRawUnsafe(statement); }, { timeout: 60000 });
+  await require("../scripts/migrate-inventory.cjs").migrateInventory(prisma);
+  await require("../scripts/migrate-proformas.cjs").migrateProformas(prisma);
   await require("../scripts/migrate-quote-template.cjs").migrateQuoteTemplate(prisma);
   branch = await prisma.sucursal.create({ data: { nombre: "Sucursal catálogo de prueba" } });
   async function user(role) { return prisma.usuario.create({ data: { nombre: role, email: randomUUID() + "@example.invalid", rol: role, passwordHash: "not-a-password", sucursalId: branch.id } }); }

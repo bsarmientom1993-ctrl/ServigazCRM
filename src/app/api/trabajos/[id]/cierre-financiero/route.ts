@@ -31,6 +31,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         return { success: true, egreso: work.egreso, utilidadReal: Number(work.egreso.utilidadNeta), garantia: work.garantia, yaCerrado: true };
       }
       const project = gasData(work).proyecto;
+      const issued = await tx.entregaMaterialItem.findMany({where:{entrega:{proforma:{trabajoId:id}}},select:{cantidad:true,consumida:true,devuelta:true}});
+      if(issued.some(i=>i.cantidad.gt(i.consumida.add(i.devuelta))))throw new ApiError(409,"Concilia los materiales entregados al técnico: registra su consumo o devolución antes de cerrar.");
       if (project?.incluido && project.estado !== "ENTREGADO") throw new ApiError(409, "El proyecto de gas debe estar entregado antes del cierre final.");
       const quote = work.cotizaciones[0];
       if (!quote || quote.estado !== "APROBADA") throw new ApiError(409, "Falta la cotización aceptada.");

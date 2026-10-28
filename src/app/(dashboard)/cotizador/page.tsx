@@ -10,6 +10,7 @@ export default function CotizadorPage() {
   const manager = user?.rol === "ADMIN" || user?.rol === "ENCARGADO";
   const [customers, setCustomers] = useState<Customer[]>([]), [selectedId, setSelectedId] = useState(""), [query, setQuery] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null), [works, setWorks] = useState<any[]>([]), [cursor, setCursor] = useState<string | null>(null);
+  const [proformas, setProformas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true), [historyLoading, setHistoryLoading] = useState(false), [moreLoading, setMoreLoading] = useState(false);
   const [error, setError] = useState(""), [historyError, setHistoryError] = useState(""), [reload, setReload] = useState(0);
   const initialSelection = useRef(false); const selectedRef = useRef(""); const moreBusy = useRef(false);
@@ -34,7 +35,7 @@ export default function CotizadorPage() {
     const controller = new AbortController(); setHistoryLoading(true);
     fetch("/api/clientes/" + encodeURIComponent(selectedId) + "/historial", { signal: controller.signal }).then(async res => {
       const data = await res.json(); if (!res.ok) throw new Error(data.error || "No se pudo cargar el historial.");
-      setCustomer(data.cliente); setWorks(data.trabajos); setCursor(data.siguiente);
+      setCustomer(data.cliente); setProformas(data.proformas || []); setWorks(data.trabajos); setCursor(data.siguiente);
     }).catch(err => { if (err.name !== "AbortError") setHistoryError(err.message); }).finally(() => { if (!controller.signal.aborted) setHistoryLoading(false); });
     return () => controller.abort();
   }, [selectedId, reload]);
@@ -61,6 +62,7 @@ export default function CotizadorPage() {
     {historyLoading && <p role="status" className="module-note">Consultando el registro del cliente…</p>}
     {historyError && <div role="alert" className="module-error">{historyError}<button className="theme-toggle ml-3" onClick={() => setReload(value => value + 1)}>Actualizar historial</button></div>}
     {customer && <><section className="module-card space-y-4"><h3 className="text-xl font-semibold text-ink">{customer.nombreCompleto}</h3><p className="text-sm text-secondary">{(customer.telefonos || []).join(", ")} · {customer.direccion || "Sin dirección"}</p><Link className="primary-action inline-flex" href={"/trabajos/nuevo?clienteId=" + encodeURIComponent(customer.id)}>Nueva cotización de servicio o compra</Link><p className="module-note">Primero registra el servicio o equipo solicitado. La cotización se emite desde esa orden y se guarda en este historial. Las instalaciones que requieren evaluación mantienen ese paso previo.</p></section>
+      {!!proformas.length && <section className="space-y-3"><h3 className="text-xl font-semibold text-ink">Proformas de equipos y materiales</h3>{proformas.map(doc=><article className="module-card flex flex-wrap justify-between gap-4" key={doc.id}><div><h4 className="font-semibold">PRO-{String(doc.numero).padStart(6,'0')} · Bs. {money(doc.datos.total)}</h4><p className="text-sm text-muted mt-1">{doc.estado} · Emitida por {doc.datos.autor} · Válida hasta {new Date(doc.validoHasta).toLocaleDateString('es-BO')}</p></div><Link className="theme-toggle" href={'/proformas/'+doc.id}>Ver proforma</Link></article>)}</section>}
       <section className="space-y-4"><h3 className="text-xl font-semibold text-ink">Servicios, compras y cotizaciones registradas</h3>{!works.length ? <p className="module-note">Este cliente todavía no tiene solicitudes registradas.</p> : works.map(work => {
         const quote = work.cotizaciones[0]; const paid = work.pagos.reduce((sum: number, payment: any) => sum + Number(payment.monto), 0);
         return <article key={work.id} className="module-card space-y-3"><div className="flex flex-wrap justify-between gap-2"><h4 className="font-semibold text-ink">{work.subtipoNombre}</h4><span className="text-xs text-muted">{work.codigoCorrelativo} · {new Date(work.createdAt).toLocaleDateString("es")}</span></div><p className="text-sm text-secondary">Estado de la solicitud: {work.estado.replaceAll("_", " ")}{work.egreso ? " · Cierre realizado" : ""}</p>{quote ? <p className="text-sm text-secondary">Cotización v{quote.numeroVersion}: <strong>Bs. {money(quote.totalCotizado)}</strong> · {quote.estado} · Pagado: Bs. {money(paid)}</p> : <p className="text-sm text-muted">Sin cotización emitida. Abre la solicitud para completar el paso pendiente.</p>}<div className="flex flex-wrap gap-3"><Link className="theme-toggle" href={"/trabajos/" + work.id + "#cotizacion"}>{quote ? "Ver solicitud y seguimiento" : "Abrir solicitud para cotizar"}</Link><Link className="theme-toggle" href={"/fotos/" + work.id}>Carpetas de fotos</Link>{quote && <Link className="theme-toggle" href={"/trabajos/" + work.id + "/cotizacion/" + quote.id + "/carta"}>Ver carta de cotización</Link>}</div></article>;

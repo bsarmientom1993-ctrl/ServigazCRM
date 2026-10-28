@@ -173,6 +173,10 @@ model Usuario {
   traspasosResueltos  TraspasoInventario[] @relation("TraspasoResuelto")
   movimientosInv      MovimientoInventario[]
   reclamosAsignados   ReclamoGarantia[]    @relation("ReclamoTecnico")
+  proformasEmitidas DocumentoProforma[] @relation("ProformaAutor")
+  proformasDecididas DocumentoProforma[] @relation("ProformaDecision")
+  solicitudesMateriales DocumentoProforma[] @relation("ProformaTecnico")
+  entregasRegistradas EntregaMaterial[]
   
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -227,6 +231,7 @@ model Cliente {
   
   trabajos            Trabajo[]
   historialNivel      HistorialFidelizacion[]
+  proformas DocumentoProforma[]
   
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -421,6 +426,7 @@ model Trabajo {
   cotizaciones             Cotizacion[]
   pagos                    Pago[]
   materiales               MaterialEjecucion[]
+  solicitudesMateriales DocumentoProforma[]
   egreso                   EgresoTrabajo?
   garantia                 CertificadoGarantia?
   reclamosDerivados        ReclamoGarantia[] @relation("TrabajoOriginalReclamo")
@@ -688,11 +694,81 @@ model ProductoInventario {
   traspasos     TraspasoInventario[]
   movimientos   MovimientoInventario[]
   materialesUso MaterialEjecucion[]
+  entregasMaterial EntregaMaterialItem[]
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([codigoSku, categoria, activo])
+}
+
+model DocumentoProforma {
+  id String @id @default(uuid())
+  numero Int @unique @default(autoincrement())
+  tipo String // CLIENTE | MATERIALES
+  estado String @default("PENDIENTE")
+  ubicacionId String
+  ubicacion UbicacionInventario @relation(fields:[ubicacionId], references:[id], onDelete:Restrict)
+  clienteId String?
+  cliente Cliente? @relation(fields:[clienteId], references:[id], onDelete:Restrict)
+  tecnicoId String?
+  tecnico Usuario? @relation("ProformaTecnico",fields:[tecnicoId], references:[id], onDelete:Restrict)
+  trabajoId String?
+  trabajo Trabajo? @relation(fields:[trabajoId], references:[id], onDelete:Restrict)
+  creadoPorId String
+  creadoPor Usuario @relation("ProformaAutor",fields:[creadoPorId], references:[id], onDelete:Restrict)
+  datos Json // Immutable document: parties, items, terms and author names
+  validoHasta DateTime
+  decisionMotivo String?
+  decididoPorId String?
+  decididoPor Usuario? @relation("ProformaDecision",fields:[decididoPorId], references:[id], onDelete:Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entregas EntregaMaterial[]
+  @@index([ubicacionId, tipo, createdAt])
+  @@index([tecnicoId, trabajoId])
+  @@index([clienteId])
+}
+
+model EntregaMaterial {
+  id String @id // Client operation UUID for retry protection
+  numero Int @unique @default(autoincrement())
+  proformaId String
+  proforma DocumentoProforma @relation(fields: [proformaId], references: [id])
+  creadoPorId String
+  creadoPor Usuario @relation(fields:[creadoPorId], references:[id], onDelete:Restrict)
+  creadoPorNombre String
+  huella String
+  observaciones String
+  recibidoAt DateTime?
+  createdAt DateTime @default(now())
+  items EntregaMaterialItem[]
+  operaciones OperacionEntrega[]
+  @@index([proformaId])
+}
+
+model EntregaMaterialItem {
+  id String @id @default(uuid())
+  entregaId String
+  entrega EntregaMaterial @relation(fields: [entregaId], references: [id])
+  productoId String
+  producto ProductoInventario @relation(fields:[productoId], references:[id], onDelete:Restrict)
+  descripcion String
+  unidad String
+  cantidad Decimal @db.Decimal(10,2)
+  consumida Decimal @default(0) @db.Decimal(10,2)
+  devuelta Decimal @default(0) @db.Decimal(10,2)
+  costoUnitario Decimal @db.Decimal(12,2)
+  @@index([productoId])
+}
+
+model OperacionEntrega {
+  id String @id
+  entregaId String
+  entrega EntregaMaterial @relation(fields:[entregaId], references:[id])
+  huella String
+  datos Json
+  createdAt DateTime @default(now())
 }
 
 model TiendaConfiguracion {
@@ -779,6 +855,7 @@ model UbicacionInventario {
   entradas TraspasoInventario[] @relation("TraspasoDestino")
   movimientosOrigen MovimientoInventario[] @relation("UbicacionMovOrigen")
   movimientosDestino MovimientoInventario[] @relation("UbicacionMovDestino")
+  proformas DocumentoProforma[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

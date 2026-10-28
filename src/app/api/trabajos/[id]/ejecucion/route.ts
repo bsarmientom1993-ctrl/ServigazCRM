@@ -84,6 +84,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         return user.rol === "TECNICO_FIJO" ? { success: true, material: { id: material.id, descripcion: material.descripcion, cantidad: material.cantidad } } : { success: true, material };
       } else if (body.accion === "FINALIZAR_TECNICO") {
         if (work.estado !== "EN_PROCESO") throw new ApiError(409, "Solo puede terminarse un trabajo en ejecución.");
+        const issued=await tx.entregaMaterialItem.findMany({where:{entrega:{proforma:{trabajoId:id}}},select:{cantidad:true,consumida:true,devuelta:true}});
+        if(issued.some(i=>i.cantidad.gt(i.consumida.add(i.devuelta))))throw new ApiError(409,"Registra el uso o devuelve los materiales entregados antes de terminar el trabajo técnico.");
         const data = z.object({ fotosTermino: evidence, observacionesTermino: z.string().trim().min(5, "Describe el resultado de las pruebas y el trabajo realizado.").max(3000) }).parse(body.data);
         await assertPhotoReferences(tx, data.fotosTermino, id, "FINAL");
         changes = { estado: "TERMINADO_TECNICO", fechaFinEjecucion: new Date(), porcentajeAvance: 100 };
