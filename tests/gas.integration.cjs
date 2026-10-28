@@ -308,3 +308,9 @@ test('independent project separates commercial origin, follow-up and installatio
  await body(await projectHistory.GET(req(follower,null,'GET'),context(work)),403);
  assert.ok((await body(await projectHistory.GET(req(manager,null,'GET'),context(work)))).historial.some(event=>event.tipo==='ASIGNAR_RESPONSABLES'));
 });
+
+test('adding commercial origin preserves a legacy free-text project responsible',async()=>{
+ const {work}=await fixture();const saved=await prisma.trabajo.findUnique({where:{id:work.id}});const metadata=saved.fechasSla;metadata.gas.proyecto.responsable='Responsable anterior';await prisma.trabajo.update({where:{id:work.id},data:{fechasSla:metadata}});
+ await body(await responsibilities.POST(req(manager,{captadoPorId:technician.id,responsableId:''}),context(work)));
+ assert.equal((await prisma.trabajo.findUnique({where:{id:work.id}})).fechasSla.gas.proyecto.responsable,'Responsable anterior');
+});
