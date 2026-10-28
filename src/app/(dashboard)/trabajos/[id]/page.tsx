@@ -6,6 +6,8 @@ import { activeAssignedVisit } from "@/lib/technician-agenda";
 import { WorkPhotoFolders, type PhotoReferences } from "@/components/trabajos/WorkPhotoFolders";
 import { ClientQuickActions } from "@/components/trabajos/ClientQuickActions";
 import { GasWorkflow } from "@/components/trabajos/GasWorkflow";
+import { WorkResponsibilities } from "@/components/trabajos/WorkResponsibilities";
+import { isIndependentProject } from "@/lib/work-responsibility-data";
 import { gasData, isGasWork } from "@/lib/gas-data";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -270,8 +272,8 @@ export default function TrabajoDetallePage({
         body: JSON.stringify({
           datosFormulario: { trabajo: trabajo.subtipoNombre },
           carta: { asunto: carta.asunto, proyecto: carta.proyecto, nota: carta.nota, alcance: carta.alcance || trabajo.subtipoNombre, condiciones: carta.condiciones, fechaValidez: new Date(carta.fecha + "T23:59:59-04:00").toISOString() },
-          subtotalMateriales: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalMateriales : presupuestoCalculo.subtotalMateriales),
-          subtotalManoObra: Number(isGasWork(trabajo) ? gasData(trabajo).calculo?.subtotalManoObra : presupuestoCalculo.subtotalManoObra),
+          subtotalMateriales: Number(isGasWork(trabajo) && !isIndependentProject(trabajo) ? gasData(trabajo).calculo?.subtotalMateriales : presupuestoCalculo.subtotalMateriales),
+          subtotalManoObra: Number(isGasWork(trabajo) && !isIndependentProject(trabajo) ? gasData(trabajo).calculo?.subtotalManoObra : presupuestoCalculo.subtotalManoObra),
           montoTransporte: Number(presupuestoCalculo.montoTransporte),
           porcentajeDescuento: presupuestoCalculo.porcentajeDescuento,
         }),
@@ -429,7 +431,8 @@ export default function TrabajoDetallePage({
   if (loading) return <div className="p-8 text-center text-muted font-semibold text-xs">Cargando orden de trabajo...</div>;
   if (!trabajo) return <div className="p-8 text-center text-red-600 dark:text-red-300 font-bold">{errorMsg || "Trabajo no encontrado"}</div>;
 
-  const isGas = isGasWork(trabajo);
+  const independent = isIndependentProject(trabajo);
+  const isGas = isGasWork(trabajo) && !independent;
   const gas = gasData(trabajo);
   const proyectoPendiente = gas.proyecto?.incluido && gas.proyecto.estado !== "ENTREGADO";
   const estado = trabajo.estado;
@@ -449,7 +452,7 @@ export default function TrabajoDetallePage({
   const anticipoPendiente = Math.max(0, anticipoRequerido - totalPagado);
   const listoParaIniciar = canManage ? Boolean(trabajo.tecnicoId) && cotizacionVigente?.estado === "APROBADA" && anticipoPendiente === 0 : estado === "ANTICIPO_RECIBIDO";
   const proximaAccionTecnica = estado === "EVALUACION_PENDIENTE" ? "Registrar evaluación y fotos de la visita" : estado === "EN_PROCESO" ? "Registrar materiales utilizados y terminar con evidencia" : estado === "ANTICIPO_RECIBIDO" ? "Iniciar la atención asignada" : estado === "TERMINADO_TECNICO" ? "Esperar la revisión de calidad del encargado" : ["VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) ? "Atención técnica completada" : "Coordinar la siguiente atención con el encargado";
-  const proximaAccion = !canManage ? proximaAccionTecnica : estado === "BORRADOR" ? "Programar la visita de evaluación" :
+  const proximaAccion = independent ? (estado === "EVALUADO" ? "Preparar la cotización del proyecto" : gas.proyecto?.estado !== "ENTREGADO" ? "Continuar el seguimiento desde el expediente del proyecto" : estado === "VALIDADO" ? "Conciliar los cobros y cerrar el proyecto" : estado === "FINALIZADO_FINANCIERO" ? "Proyecto entregado y cerrado" : "Revisar la entrega y validar el proyecto") : !canManage ? proximaAccionTecnica : estado === "BORRADOR" ? "Programar la visita de evaluación" :
     estado === "EVALUACION_PENDIENTE" ? "Registrar evaluación y fotos de la visita" :
     estado === "EVALUADO" ? (isGas && gas.supervision?.estado !== "APROBADO" ? "Revisar la medición y registrar el visto bueno del supervisor" : "Preparar y emitir la carta de cotización") :
     estado === "COTIZADO" ? "Registrar la respuesta del cliente a esta versión" :
@@ -461,7 +464,7 @@ export default function TrabajoDetallePage({
     estado === "RECHAZADO" ? "Cotización rechazada por el cliente" :
     estado === "FINALIZADO_FINANCIERO" ? "Cierre completado; entregar documentación al cliente" : "Revisar la situación de la orden";
 
-  const steps = !canManage ? [
+  const steps = independent ? [{label:"Registro del proyecto",done:true},{label:"Cotización",done:Boolean(cotizacionVigente)},{label:"Entrega del proyecto",done:gas.proyecto?.estado==="ENTREGADO"},{label:"Cierre financiero",done:estado==="FINALIZADO_FINANCIERO"}] : !canManage ? [
     { label: "Asignación", done: true },
     { label: "Visita y evaluación", done: trabajo.visitas?.some((v: any) => v.completada) || false },
     { label: "Ejecución", done: ["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"].includes(estado) },
@@ -493,7 +496,7 @@ export default function TrabajoDetallePage({
       <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl">
         <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Próximo paso</p>
         <p className="font-bold text-ink">{proximaAccion}</p>
-        <p className="text-xs text-secondary mt-1">Responsable: {trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"}{canManage && <> · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</>}</p>
+        <p className="text-xs text-secondary mt-1">Responsable: {independent ? gas.proyecto?.responsable || "Seguimiento sin asignar" : trabajo.tecnico?.nombre || trabajo.encargado?.nombre || "Pendiente"}{canManage && <> · Pagado: Bs. {totalPagado.toLocaleString("es-BO")} · Saldo: Bs. {saldoPendiente.toLocaleString("es-BO")}</>}</p>
       </div>
       {user?.rol === "TECNICO_FIJO" && trabajo.cliente && <ClientQuickActions client={trabajo.cliente} />}
       {(trabajo.observaciones || trabajo.fechasSla?.preferenciaCliente) && <div className="module-card space-y-3"><h3 className="font-semibold text-ink">Requerimiento e indicaciones del cliente</h3>{trabajo.observaciones && <p className="text-sm text-secondary whitespace-pre-wrap">{trabajo.observaciones}</p>}{trabajo.fechasSla?.preferenciaCliente && <p className="text-sm text-muted">Horario preferido: {trabajo.fechasSla.preferenciaCliente.fecha || "Día por coordinar"} · {trabajo.fechasSla.preferenciaCliente.desde} – {trabajo.fechasSla.preferenciaCliente.hasta}</p>}</div>}
@@ -586,6 +589,8 @@ export default function TrabajoDetallePage({
         </div>
       </div>
 
+      {canManage && <WorkResponsibilities work={trabajo} onSaved={cargarDatos}/>}
+      {canManage && independent && <section className="module-card space-y-3"><h3 className="font-semibold">Proyecto independiente · sin instalación</h3><p className="text-sm text-muted">Registra sus gestiones y entrega desde el expediente. No requiere técnico instalador ni fotografías de instalación.</p><Link href={"/proyectos/"+id} className="theme-toggle inline-flex">Abrir expediente e historial del proyecto</Link>{gas.proyecto?.estado === "ENTREGADO" && cotizacionVigente?.estado === "APROBADA" && ["APROBADO","PAGO_A_CUENTA_RECIBIDO","ANTICIPO_RECIBIDO"].includes(estado) && <button className="primary-action" onClick={handleValidarEncargado}>Validar entrega del proyecto</button>}{estado==="VALIDADO"&&<button className="primary-action" onClick={()=>setModalCierreFinanciero(true)}>Cerrar financieramente el proyecto</button>}{estado==="FINALIZADO_FINANCIERO"&&<p className="module-note">Proyecto entregado y cerrado financieramente.</p>}</section>}
       {canManage && <details className="module-card space-y-4">
         <summary className="font-semibold text-ink cursor-pointer">Quién realizó cada operación</summary>
         <p className="text-xs text-muted">Responsable de la orden: {trabajo.encargado?.nombre || "Por asignar"} · Técnico: {trabajo.tecnico?.nombre || "Por asignar"}. Últimas 100 operaciones.</p>
@@ -818,7 +823,7 @@ export default function TrabajoDetallePage({
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-secondary mb-1">Mano de obra y proyecto, si corresponde (Bs.)</label>
+                    <label className="block font-bold text-secondary mb-1">{independent ? "Honorarios del proyecto (Bs.)" : "Mano de obra y proyecto, si corresponde (Bs.)"}</label>
                     <input
                       type="number"
                       min="0"
@@ -956,21 +961,21 @@ export default function TrabajoDetallePage({
                     <span>💵 Registrar Cobro / Anticipo (Bs.)</span>
                   </button>
 
-                  <button
+                  {!independent && <button
                     onClick={handleIniciarEjecucion}
                     disabled={!listoParaIniciar}
                     className="px-5 py-2.5 bg-[#0F2C59] hover:bg-[#1A3E72] text-white font-bold rounded-xl flex items-center gap-2 shadow-xs cursor-pointer"
                   >
                     <Wrench className="h-4 w-4 text-[#F06529]" />
                     <span>▶️ Iniciar trabajo (anticipo y técnico requeridos)</span>
-                  </button>
+                  </button>}
                 </div>
               </div>
             </div>
           )}
 
           {/* ANTICIPO APROBADO -> INICIAR TRABAJO */}
-          {estado === "ANTICIPO_RECIBIDO" && (
+          {!independent && estado === "ANTICIPO_RECIBIDO" && (
             <div className="bg-emerald-50 dark:bg-emerald-950/40 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-900 shadow-xs space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
                 <div>
@@ -984,20 +989,20 @@ export default function TrabajoDetallePage({
               </div>
 
               <div className="flex justify-end pt-2">
-                <button
+                {!independent && <button
                   onClick={handleIniciarEjecucion}
                     disabled={!listoParaIniciar}
                   className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer"
                 >
                   <Wrench className="h-4 w-4" />
                   <span>Comenzar el Trabajo</span>
-                </button>
+                </button>}
               </div>
             </div>
           )}
 
           {/* EJECUCIÓN Y CONTROL DE MATERIALES / REPUESTOS / HERRAMIENTAS */}
-          {["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO"].includes(estado) && (
+          {!independent && ["EN_PROCESO", "TERMINADO_TECNICO", "VALIDADO", "FINALIZADO_FINANCIERO"].includes(estado) && (
             <div className="bg-surface p-6 rounded-2xl border border-line shadow-xs space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-line-soft">
                 <div>
@@ -1177,7 +1182,7 @@ export default function TrabajoDetallePage({
                 {estado === "FINALIZADO_FINANCIERO" && (
                   <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 shrink-0">
                     <Lock className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
-                    <span>Trabajo Finalizado con Garantía QR</span>
+                    <span>{independent ? "Proyecto cerrado financieramente" : "Trabajo Finalizado con Garantía QR"}</span>
                   </div>
                 )}
               </div>

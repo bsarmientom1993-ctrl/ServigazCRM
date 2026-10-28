@@ -1,3 +1,4 @@
+import { isIndependentProject } from "@/lib/work-responsibility";
 import { gasData } from "@/lib/gas-data";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -22,8 +23,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         materiales: true, pagos: true, egreso: true, garantia: true,
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 },
       } });
+      const independent=isIndependentProject(work);
       if (work.egreso) {
-        if (work.estado !== "FINALIZADO_FINANCIERO" || !work.garantia) {
+        if (work.estado !== "FINALIZADO_FINANCIERO" || (!independent && !work.garantia)) {
           throw new ApiError(409, "El cierre anterior está incompleto. Solicita conciliación al administrador.");
         }
         return { success: true, egreso: work.egreso, utilidadReal: Number(work.egreso.utilidadNeta), garantia: work.garantia, yaCerrado: true };
@@ -34,8 +36,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!quote || quote.estado !== "APROBADA") throw new ApiError(409, "Falta la cotización aceptada.");
       const paid = work.pagos.reduce((sum, p) => sum + cents(p.monto), 0);
       assertClose(work.estado, cents(quote.totalCotizado), paid);
-      const config = await tx.configuracionGarantia.findUnique({ where: { subtipoCodigo: work.subtipoCodigo } });
-      if (!config?.activo || config.mesesDefecto <= 0) throw new ApiError(409, "Configura la garantía del servicio antes del cierre.");
+      const config = independent ? null : await tx.configuracionGarantia.findUnique({ where: { subtipoCodigo: work.subtipoCodigo } });
+      if (!independent && (!config?.activo || config!.mesesDefecto <= 0)) throw new ApiError(409, "Configura la garantía del servicio antes del cierre.");
       const consumed = work.materiales.filter(m => m.consumido);
       const inventory = consumed.filter(m => m.tipoOrigen === "INVENTARIO");
       const manual = consumed.filter(m => m.tipoOrigen === "MANUAL_FUERA_INVENTARIO");
@@ -51,16 +53,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } });
       const start = new Date();
       const code = "GAR-" + work.codigoCorrelativo;
-      const garantia = work.garantia || await tx.certificadoGarantia.create({ data: {
-        trabajoId: id, codigoCertificado: code, mesesCobertura: config.mesesDefecto, fechaInicio: start,
-        fechaFin: addMonths(start, config.mesesDefecto),
+      const garantia = independent ? null : work.garantia || await tx.certificadoGarantia.create({ data: {
+        trabajoId: id, codigoCertificado: code, mesesCobertura: config!.mesesDefecto, fechaInicio: start,
+        fechaFin: addMonths(start, config!.mesesDefecto),
         qrCodeData: new URL("/api/garantias/" + encodeURIComponent(code), req.nextUrl.origin).toString(), activo: true,
       } });
       await tx.trabajo.update({ where: { id }, data: { estado: "FINALIZADO_FINANCIERO" } });
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "CIERRE_FINANCIERO", accion: "CREATE", entidadTipo: "EgresoTrabajo", entidadId: egreso.id,
         valoresNuevos: { realizadoPor: actor.nombre, trabajoId: id, cotizacionId: quote.id, totalIngreso: money(paid), totalEgreso: money(expense),
-          utilidadNeta: money(profit), garantiaId: garantia.id, condicionesGarantia: config.condiciones },
+          utilidadNeta: money(profit), garantiaId: garantia?.id || null, condicionesGarantia: config?.condiciones || null },
       } });
       return { success: true, egreso, utilidadReal: profit / 100, garantia };
     });

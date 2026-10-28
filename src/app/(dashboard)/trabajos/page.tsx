@@ -1,5 +1,6 @@
 "use client";
 
+import {commercialOrigin} from "@/lib/work-responsibility-data";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -93,7 +94,8 @@ export default function TrabajosPage() {
     const matchQuery =
       t.codigoCorrelativo?.toLowerCase().includes(busqueda.toLowerCase()) ||
       t.cliente?.nombreCompleto?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      t.subtipoNombre?.toLowerCase().includes(busqueda.toLowerCase());
+      t.subtipoNombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      commercialOrigin(t).nombre.toLowerCase().includes(busqueda.toLowerCase());
 
     // 3. Filtro por Categoría
     if (filtroCategoria === "TODOS") return matchQuery;
@@ -288,6 +290,7 @@ export default function TrabajosPage() {
                           <MapPin className="h-3 w-3" />
                           {t.cliente?.direccion || "Sin dirección registrada"}
                         </span>
+                        {user?.rol !== "TECNICO_FIJO" && <span>• Conseguido por: <strong>{commercialOrigin(t).nombre || "Sin registrar"}</strong></span>}
                         {t.tecnico && (
                           <span>• Técnico: <strong>{t.tecnico.nombre}</strong></span>
                         )}

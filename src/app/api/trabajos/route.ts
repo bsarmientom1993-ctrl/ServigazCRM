@@ -1,3 +1,4 @@
+import { activeTeamMember } from "@/lib/work-responsibility";
 import { Prisma } from "@prisma/client";
 import { technicalWorkSelect, technicalSchedule } from "@/lib/technical-work";
 import { newGasProject } from "@/lib/gas-data";
@@ -37,6 +38,8 @@ export async function POST(req: NextRequest) {
     const user = await requireSession(req, managers);
     const requestId = z.string().uuid("Clave de solicitud inválida.").optional().parse(req.headers.get("Idempotency-Key") || undefined);
     const body = z.object({
+      modalidad: z.enum(["SERVICIO", "PROYECTO_INDEPENDIENTE"]).default("SERVICIO"),
+      captadoPorId: z.string().trim().min(1).max(100).nullish(), responsableSeguimientoId: z.string().trim().min(1).max(100).nullish(),
       clienteId: z.string().min(1).nullish(),
       nuevoCliente: newCustomerSchema.nullish(),
       tipoFlujo: z.enum(["COMPLETO", "SIMPLIFICADO"]).default("COMPLETO"),
@@ -54,6 +57,9 @@ export async function POST(req: NextRequest) {
     if (Boolean(body.tecnicoId) !== Boolean(body.fechaProgramada)) throw new ApiError(400, "Para programar indica técnico y fecha.");
     if (body.fechaProgramada && !Number.isFinite(new Date(body.fechaProgramada).getTime())) throw new ApiError(400, "Fecha inválida.");
     if (body.preferenciaCliente && body.preferenciaCliente.desde >= body.preferenciaCliente.hasta) throw new ApiError(400, "Revisa el intervalo de preferencia del cliente.");
+    const independent = body.modalidad === "PROYECTO_INDEPENDIENTE";
+    if (independent && (body.tecnicoId || body.fechaProgramada)) throw new ApiError(400, "El proyecto independiente no requiere agendar una instalación.");
+    if (independent && !body.captadoPorId) throw new ApiError(400, "Indica quién consiguió o consolidó el proyecto.");
     const fingerprint = createHash("sha256").update(user.id + JSON.stringify(body)).digest("hex");
     const work = await prisma.$transaction(async tx => {
       // Protect the annual sequence without a schema change.
@@ -66,13 +72,16 @@ export async function POST(req: NextRequest) {
           return previous;
         }
       }
-      const codes = body.subtipoCodigos || body.subtipoCodigo.split("_");
+      const codes = independent ? ["PROYECTO.GAS"] : body.subtipoCodigos || body.subtipoCodigo.split("_");
       if (new Set(codes).size !== codes.length || codes.join("_").length > 300) throw new ApiError(400, "Revisa los servicios seleccionados.");
-      const subtypes = await tx.catalogoSubtipo.findMany({ where: { codigo: { in: codes }, activo: true }, include: { categoria: true } });
+      const subtypes = independent ? [{nombre:"Proyecto de gas independiente",categoria:{codigo:"GAS",activo:true,requiereVisita:false}}] : await tx.catalogoSubtipo.findMany({ where: { codigo: { in: codes }, activo: true }, include: { categoria: true } });
       if (subtypes.length !== codes.length || subtypes.some(s => !s.categoria.activo)) throw new ApiError(400, "Selecciona servicios activos del catálogo.");
+      const origin = body.captadoPorId ? await activeTeamMember(tx,user,body.captadoPorId,user.sucursalId) : null;
+      const responsible = body.responsableSeguimientoId ? await activeTeamMember(tx,user,body.responsableSeguimientoId,user.sucursalId) : null;
       const hasGas = subtypes.some(s => s.categoria.codigo === "GAS");
       if (body.incluyeProyectoGas && !hasGas) throw new ApiError(400, "El proyecto de gas requiere un servicio de gas.");
-      const direct = subtypes.every(s => !s.categoria.requiereVisita);
+      if (body.responsableSeguimientoId && (!hasGas || !independent && !body.incluyeProyectoGas)) throw new ApiError(400,"El seguimiento se asigna a una solicitud que incluya proyecto.");
+      const direct = independent || subtypes.every(s => !s.categoria.requiereVisita);
       if (body.tipoFlujo === "SIMPLIFICADO" && !direct) throw new ApiError(400, "El servicio requiere evaluación previa.");
       const agenda = schedulingSchema.parse(body.agenda || {});
       if (body.tecnicoId && body.fechaProgramada) await assertTechnicianSlot(tx, user, body.tecnicoId, new Date(body.fechaProgramada), agenda);
@@ -92,7 +101,7 @@ export async function POST(req: NextRequest) {
         ...(requestId ? { id: requestId } : {}), codigoCorrelativo: prefix + String(sequence).padStart(4, "0"), clienteId: clientId!, encargadoId: user.id, sucursalId: user.sucursalId,
         tecnicoId: body.tecnicoId || null, tipoFlujo: direct ? "SIMPLIFICADO" : "COMPLETO", subtipoCodigo: codes.join("_"),
         subtipoNombre: subtypes.map(s => s.nombre).join(" + "), observaciones: [body.detallesCliente ? "Detalles del cliente: " + body.detallesCliente : "", body.observaciones || ""].filter(Boolean).join("\n\n"),
-        fechasSla: { ...(body.preferenciaCliente ? { preferenciaCliente: body.preferenciaCliente } : {}), ...(hasGas ? { gas: JSON.parse(JSON.stringify({ aplica: true, proyecto: newGasProject(body.incluyeProyectoGas) })) } : {}) },
+        fechasSla: { modalidad: body.modalidad, captadoPor: origin, ...(body.preferenciaCliente ? { preferenciaCliente: body.preferenciaCliente } : {}), ...(hasGas ? { gas: JSON.parse(JSON.stringify({ aplica: true, proyecto: {...newGasProject(independent || body.incluyeProyectoGas), ...(responsible ? {responsableId:responsible.id,responsable:responsible.nombre} : {})} })) } : {}) },
         dificultadNivel: body.dificultadNivel, requiereInstaladorExtra: body.dificultadNivel >= 4,
         estado: direct ? "EVALUADO" : body.tecnicoId ? "EVALUACION_PENDIENTE" : "BORRADOR",
       } });
@@ -103,7 +112,7 @@ export async function POST(req: NextRequest) {
       } });
       const actor = await tx.usuario.findUniqueOrThrow({ where: { id: user.id }, select: { nombre: true } });
       await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: "TRABAJOS", accion: "CREATE", entidadTipo: "Trabajo", entidadId: trabajo.id,
-        valoresNuevos: { realizadoPor: actor.nombre, codigo: trabajo.codigoCorrelativo, estado: trabajo.estado, servicioDirecto: direct, ...(requestId ? { requestFingerprint: fingerprint } : {}) } } });
+        valoresNuevos: { realizadoPor: actor.nombre, captadoPor: origin, modalidad: body.modalidad, codigo: trabajo.codigoCorrelativo, estado: trabajo.estado, servicioDirecto: direct, ...(requestId ? { requestFingerprint: fingerprint } : {}) } } });
       return trabajo;
     }, { timeout: 15000 });
     return NextResponse.json(work, { status: 201 });

@@ -1,3 +1,4 @@
+import { isIndependentProject } from "@/lib/work-responsibility";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession, managers } from "@/lib/auth";
@@ -19,12 +20,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: { pagos: true, egreso: true, cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 } } });
       if (!isGasWork(work)) throw new ApiError(400, "Este seguimiento corresponde a trabajos de gas.");
       const metadata = objectRecord(work.fechasSla), gas = structuredClone(gasData(work)), project = gas.proyecto || newGasProject(false);
+      if (isIndependentProject(work) && body.accion !== "ACTUALIZAR_PROYECTO") throw new ApiError(409,"El proyecto independiente no tiene medición ni alcance de instalación.");
       const now = new Date().toISOString();
       if (body.accion === "ACTUALIZAR_PROYECTO") {
         if (!project.incluido) throw new ApiError(409, "El trabajo no incluye proyecto de gas.");
         if (body.estado !== project.estado && !projectTransitions[project.estado].includes(body.estado)) throw new ApiError(409, "El proyecto debe avanzar desde su etapa actual. Registra las observaciones antes de volver a elaborar.");
         const updated = { ...project, ...body, actualizado: now, ultimoSeguimiento: agendaDay(), ...(body.estado === "ENTREGADO" ? { proximoSeguimiento: "" } : {}) }; const { accion, ...saved } = updated;
-        gas.proyecto = saved;
+        gas.proyecto = {...saved, ...(saved.responsable !== project.responsable ? {responsableId:""} : {})};
       } else {
         if (!["BORRADOR", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado) || work.egreso || work.pagos.length || work.cotizaciones[0]?.estado === "APROBADA") throw new ApiError(409, "El alcance y la revisión se fijan antes de aceptar o cobrar la cotización.");
         if (body.accion === "INCLUIR_PROYECTO") {

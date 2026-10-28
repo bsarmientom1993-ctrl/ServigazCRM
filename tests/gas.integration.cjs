@@ -222,7 +222,7 @@ test("project board and history enforce branch and manager access and exclude in
     await body(await projectHistory.GET(req(actor, undefined, "GET"), context(work)), 403);
     await body(await projectHistory.POST(dailyReq(actor, dailyInput({ estado: "PENDIENTE" })), context(work)), 403);
   }
-  await body(await projects.GET(req(technician, undefined, "GET")), 403);
+  assert.equal((await body(await projects.GET(req(technician, undefined, "GET")))).proyectos.length,0);
   const board = await body(await projects.GET(req(manager, undefined, "GET")));
   assert.ok(board.proyectos.some(item => item.id === work.id)); assert.ok(!board.proyectos.some(item => item.id === minor.work.id));
   assert.ok(!(await body(await projects.GET(req(outsider, undefined, "GET")))).proyectos.some(item => item.id === work.id));
@@ -276,4 +276,35 @@ test('stationery rejects invalid raster payloads and accepts a valid image',asyn
  const formato={...defaultQuoteTemplate,encabezadoImagen:'data:image/png;base64,'+png.toString('base64')};
  assert.equal((await body(await templates.PUT(req(admin,formato,'PUT')))).formato.encabezadoImagen,formato.encabezadoImagen);
  await body(await templates.PUT(req(admin,defaultQuoteTemplate,'PUT')));
+});
+
+const responsibilities=require('../src/app/api/trabajos/[id]/responsables/route.ts');
+const executionRoute=require('../src/app/api/trabajos/[id]/ejecucion/route.ts');
+test('independent project separates commercial origin, follow-up and installation through quotation and closure',async()=>{
+ const follower=await prisma.usuario.create({data:{nombre:'Ana seguimiento',email:randomUUID()+'@example.invalid',passwordHash:'unused',rol:'TECNICO_FIJO',sucursalId:branch.id}});
+ await prisma.usuario.update({where:{id:technician.id},data:{nombre:'Blas comercial'}});
+ const input={modalidad:'PROYECTO_INDEPENDIENTE',clienteId:client.id,subtipoCodigo:'PROYECTO.GAS',subtipoNombre:'Proyecto',captadoPorId:technician.id,responsableSeguimientoId:follower.id,incluyeProyectoGas:true};
+ const work=await body(await works.POST(req(manager,input)),201);assert.equal(work.estado,'EVALUADO');assert.equal(work.tecnicoId,null);assert.equal(work.fechasSla.captadoPor.nombre,'Blas comercial');assert.equal(work.fechasSla.gas.proyecto.responsableId,follower.id);assert.equal(await prisma.visitaTecnica.count({where:{trabajoId:work.id}}),0);
+ await body(await works.POST(req(manager,{...input,captadoPorId:outsider.id})),403);
+ await body(await works.POST(req(manager,{...input,tecnicoId:technician.id,fechaProgramada:new Date(Date.now()+86400000).toISOString()})),400);
+ const board=await body(await projects.GET(req(follower,null,'GET')));assert.equal(board.proyectos.length,1);assert.equal(board.proyectos[0].independiente,true);
+ await body(await projectHistory.GET(req(technician,null,'GET'),context(work)),403);
+ const history=await body(await projectHistory.GET(req(follower,null,'GET'),context(work)));assert.equal(history.trabajo.captadoPor.nombre,'Blas comercial');assert.ok(!JSON.stringify(history).includes('subtotal'));
+ const {cotizacion:quote}=await issue(work,{subtotalMateriales:0,subtotalManoObra:500,montoTransporte:0});assert.equal(Number(quote.totalCotizado),500);assert.equal(quote.datosFormularioJson.carta.modalidad,'PROYECTO_INDEPENDIENTE');
+ await body(await quotes.POST(req(follower,quoteInput),context(work)),403);
+ await body(await decisions.POST(req(manager,{decision:'APROBAR',cotizacionId:quote.id}),context(work)));
+ await body(await executionRoute.POST(req(manager,{accion:'INICIAR_EJECUCION'}),context(work)),409);
+ await body(await executionRoute.POST(req(manager,{accion:'VALIDAR_ENCARGADO'}),context(work)),409);
+ for(const estado of ['EN_ELABORACION','EN_REVISION','PRESENTADO','APROBADO','ENTREGADO']){
+  const request=req(follower,{tipo:'SEGUIMIENTO',fechaGestion:agendaDay(),detalle:'Gestión registrada por el responsable asignado.',estado,entidad:'Entidad de prueba',referencia:'PROY-ONLY',proximoSeguimiento:'',documentosUrls:[]});request.headers.set('Idempotency-Key',randomUUID());await body(await projectHistory.POST(request,context(work)));
+ }
+ await body(await executionRoute.POST(req(manager,{accion:'VALIDAR_ENCARGADO'}),context(work)));
+ await body(await closing.POST(req(manager,{costoManoObraReal:100,costoTransporteReal:0}),context(work)),409);
+ await prisma.pago.create({data:{trabajoId:work.id,tipoPago:'PAGO_TOTAL',monto:500,registradoPorId:manager.id}});
+ const closed=await body(await closing.POST(req(manager,{costoManoObraReal:100,costoTransporteReal:0}),context(work)));assert.equal(closed.garantia,null);assert.equal(closed.utilidadReal,400);
+ assert.equal((await body(await closing.POST(req(manager,{costoManoObraReal:100,costoTransporteReal:0}),context(work)))).yaCerrado,true);
+ await body(await responsibilities.POST(req(manager,{captadoPorId:technician.id,responsableId:manager.id}),context(work)));
+ const saved=await prisma.trabajo.findUnique({where:{id:work.id}});assert.equal(saved.fechasSla.captadoPor.nombre,'Blas comercial');assert.equal(saved.tecnicoId,null);assert.equal(saved.fechasSla.gas.proyecto.responsableId,manager.id);
+ await body(await projectHistory.GET(req(follower,null,'GET'),context(work)),403);
+ assert.ok((await body(await projectHistory.GET(req(manager,null,'GET'),context(work)))).historial.some(event=>event.tipo==='ASIGNAR_RESPONSABLES'));
 });

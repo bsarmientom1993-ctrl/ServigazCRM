@@ -39,7 +39,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     { name: manager ? "Resumen" : "Mi agenda", href: manager ? "/dashboard" : "/agenda", icon: LayoutDashboard, show: true, group: "principal" },
     { name: manager ? "Trabajos y órdenes" : "Mis trabajos", href: "/trabajos", icon: BriefcaseBusiness, show: true, group: "principal" },
     { name: "Cotizaciones pendientes", href: "/cotizaciones", icon: FileClock, show: manager, group: "principal" },
-    { name: "Proyectos", href: "/proyectos", icon: FolderClock, show: manager, group: "principal" },
+    { name: "Proyectos", href: "/proyectos", icon: FolderClock, show: true, group: "principal" },
     { name: "Clientes", href: "/clientes", icon: Users, show: manager, group: "principal" },
     { name: "Cotizador", href: "/cotizador", icon: Calculator, show: manager, group: "principal" },
     { name: "Tienda pública", href: "/gestion-tienda", icon: ShoppingBag, show: user.rol === "ADMIN", group: "gestion" },

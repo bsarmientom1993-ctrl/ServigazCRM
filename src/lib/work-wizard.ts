@@ -23,6 +23,7 @@ export function selectedServices(catalog: Category[], categories: string[], subt
   });
 }
 const draftSchema = z.object({
+  captadoPorId: z.string().max(100).default(""),
   version: z.literal(2), step: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   customerId: z.string().nullable(), customer: z.object({ nombreCompleto: z.string(), telefono: z.string(), direccion: z.string(), email: z.string() }),
   categories: z.array(z.string()), subtypes: z.record(z.string()), notes: z.string(),

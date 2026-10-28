@@ -1,3 +1,4 @@
+import { isIndependentProject } from "@/lib/work-responsibility";
 import { approvedGasCalculation } from "@/lib/gas-policy";
 import { isGasWork } from "@/lib/gas-data";
 import { NextRequest, NextResponse } from "next/server";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } });
       if (!["EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado) || work.egreso ||
         work.pagos.length > 0 || work.cotizaciones[0]?.estado === "APROBADA") throw new ApiError(409, "No puede reemplazarse el presupuesto de una orden aceptada, cobrada o cerrada.");
-      const gasCalculation = isGasWork(work) ? await approvedGasCalculation(tx, work) : null;
+      const gasCalculation = isGasWork(work) && !isIndependentProject(work) ? await approvedGasCalculation(tx, work) : null;
       const material = gasCalculation ? cents(gasCalculation.subtotalMateriales) : cents(body.subtotalMateriales);
       const labor = gasCalculation ? cents(gasCalculation.subtotalManoObra) : cents(body.subtotalManoObra);
       const discountConfig = await tx.configuracionDescuento.findFirst({ where: { activo: true } });
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const template = await tx.formatoCotizacion.findUnique({ where: { id: 'general' } });
       const formato = resolveQuoteTemplate(template?.formato);
       if (!issuer?.nombre.trim()) throw new ApiError(409, "Completa tu nombre de usuario antes de emitir la cotización.");
-      const letter = { asunto: body.carta?.asunto || "Propuesta de servicios y equipos", proyecto: body.carta?.proyecto || work.subtipoNombre, nota: body.carta?.nota || "", cotizadoPorId: user.id, cotizadoPorNombre: issuer.nombre.trim(), alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
+      const letter = { modalidad: isIndependentProject(work) ? "PROYECTO_INDEPENDIENTE" : "SERVICIO", asunto: body.carta?.asunto || "Propuesta de servicios y equipos", proyecto: body.carta?.proyecto || work.subtipoNombre, nota: body.carta?.nota || "", cotizadoPorId: user.id, cotizadoPorNombre: issuer.nombre.trim(), alcance: body.carta?.alcance || work.subtipoNombre, condiciones: body.carta?.condiciones || "", clienteNombre: work.cliente?.nombreCompleto || "", clienteDireccion: work.cliente?.direccion || "", clienteEmail: work.cliente?.email || "", servicio: work.subtipoNombre, sucursal: work.sucursal?.nombre || "", emisor: "SERVIGAZ · Equipos e Instalaciones" };
       const version = (work.cotizaciones[0]?.numeroVersion || 0) + 1;
       await tx.cotizacion.updateMany({ where: { trabajoId: id, estado: "VIGENTE" }, data: { estado: "SUPERADA" } });
       const cotizacion = await tx.cotizacion.create({ data: {

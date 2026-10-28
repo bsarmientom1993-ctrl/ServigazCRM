@@ -1,3 +1,5 @@
+import { isIndependentProject } from "@/lib/work-responsibility";
+import { gasData } from "@/lib/gas-data";
 import { evidencePhoto, assertPhotoReferences } from "@/lib/work-photos";
 import { lockLocations, locationForOperation, lockProduct, takeStock } from "@/lib/inventory";
 import { NextRequest, NextResponse } from "next/server";
@@ -31,6 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 }, pagos: true, egreso: true,
       } });
       if (work.egreso) throw new ApiError(409, "El trabajo ya tiene cierre financiero.");
+      const independent=isIndependentProject(work);
+      if(independent && body.accion!=="VALIDAR_ENCARGADO") throw new ApiError(409,"Este proyecto se gestiona desde su expediente y no tiene ejecución de instalación.");
       let changes: Prisma.TrabajoUpdateInput = {};
       let details: Prisma.InputJsonObject = { accion: body.accion };
       if (body.accion === "INICIAR_EJECUCION") {
@@ -86,7 +90,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // Persist evidence with author and timestamp instead of discarding it.
         details = { ...details, fotosTermino: data.fotosTermino, observacionesTermino: data.observacionesTermino };
       } else {
-        if (work.estado !== "TERMINADO_TECNICO") throw new ApiError(409, "El técnico debe terminar el trabajo antes de validar calidad.");
+        if(independent){
+          if(gasData(work).proyecto?.estado!=="ENTREGADO" || work.cotizaciones[0]?.estado!=="APROBADA" || !["APROBADO","PAGO_A_CUENTA_RECIBIDO","ANTICIPO_RECIBIDO","VALIDADO"].includes(work.estado)) throw new ApiError(409,"Registra la entrega del proyecto y la aceptación de la cotización antes de validar.");
+        } else if (work.estado !== "TERMINADO_TECNICO") throw new ApiError(409, "El técnico debe terminar el trabajo antes de validar calidad.");
         changes = { estado: "VALIDADO" };
       }
       const trabajo = await tx.trabajo.update({ where: { id }, data: changes });

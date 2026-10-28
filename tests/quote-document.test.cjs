@@ -33,3 +33,8 @@ test('custom stationery renders saved colors, text and paper while preserving si
 test('template rejects executable content sources and CSS injection',()=>{
  for(const patch of [{encabezadoImagen:'https://tracker.example/image.png'},{pieImagen:'data:image/svg+xml;base64,PHN2Zz4='},{colorTexto:'red;display:none'},{papel:'a4; margin:0'},{fuente:40}]) assert.equal(quoteTemplateSchema.safeParse({...defaultQuoteTemplate,...patch}).success,false);
 });
+
+test('independent project budget identifies professional fees without fabricated installation measurements',()=>{
+ const rows=quoteDocumentRows({...quote,snapshotCalculoJson:{},datosFormularioJson:{carta:{modalidad:'PROYECTO_INDEPENDIENTE'}}});
+ assert.ok(rows.some(row=>row.concept==='Honorarios del proyecto'));assert.ok(!rows.some(row=>/lineales|Mano de obra/.test(row.concept)));
+});

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, ClipboardCheck, MapPin, Search, User, Wrench } from "lucide-react";
+import {TeamSelect} from "@/components/trabajos/WorkResponsibilities";
 import TechnicianAgenda from "@/components/trabajos/TechnicianAgenda";
 import { useAuth } from "@/context/AuthContext";
 import { Category, Customer, CustomerForm, customerError, emptyCustomer, localDateInput, restoreWizardDraft, selectedServices } from "@/lib/work-wizard";
@@ -25,6 +26,7 @@ export default function NuevoTrabajoWizardPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [subtypes, setSubtypes] = useState<Record<string, string>>({});
   const [includesGasProject, setIncludesGasProject] = useState(false);
+  const [captadoPorId,setCaptadoPorId]=useState("");
   const [notes, setNotes] = useState("");
   const [details, setDetails] = useState("");
   const [preference, setPreference] = useState({ fecha: "", desde: "", hasta: "" });
@@ -74,7 +76,7 @@ export default function NuevoTrabajoWizardPage() {
         if (draft && (!intent?.clientId || draft.customerId === intent.clientId)) {
           const restoredClient = clients.find((client: Customer) => client.id === draft.customerId);
           setCustomer(restoredClient ? customerDetails(restoredClient) : draft.customer); setCustomerId(draft.customerId); setCategories(draft.categories); setSubtypes(draft.subtypes);
-          setIncludesGasProject(draft.includesGasProject); setDetails(draft.details); setPreference(draft.preference); setDuration(draft.duration); setMargin(draft.margin);
+          setCaptadoPorId(draft.captadoPorId); setIncludesGasProject(draft.includesGasProject); setDetails(draft.details); setPreference(draft.preference); setDuration(draft.duration); setMargin(draft.margin);
           setNotes(draft.notes); setSchedule(draft.schedule); setTechnicianId(draft.technicianId); setDate(draft.date);
           setStep(draft.step); requestKey.current = draft.requestKey; setRestored(true);
         }
@@ -87,8 +89,8 @@ export default function NuevoTrabajoWizardPage() {
 
   useEffect(() => {
     if (loading || loadError || !draftKey || completed.current || !requestKey.current) return;
-    try { localStorage.setItem(draftKey, JSON.stringify({ version: 2, step, customerId, customer, categories, subtypes, notes, includesGasProject, details, preference, duration, margin, schedule, technicianId, date, requestKey: requestKey.current })); } catch { /* Optional local draft. */ }
-  }, [draftKey, loading, loadError, step, customerId, customer, categories, subtypes, notes, includesGasProject, details, preference, duration, margin, schedule, technicianId, date]);
+    try { localStorage.setItem(draftKey, JSON.stringify({ version: 2, captadoPorId, step, customerId, customer, categories, subtypes, notes, includesGasProject, details, preference, duration, margin, schedule, technicianId, date, requestKey: requestKey.current })); } catch { /* Optional local draft. */ }
+  }, [draftKey, loading, loadError, step, customerId, customer, categories, subtypes, notes, includesGasProject, captadoPorId, details, preference, duration, margin, schedule, technicianId, date]);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
 
   const clearSlot = useCallback(() => { setSchedule(false); setTechnicianId(""); setDate(""); }, []);
@@ -126,7 +128,7 @@ export default function NuevoTrabajoWizardPage() {
     setError(""); busy.current = true; setSaving(true);
     try {
       const response = await fetch("/api/trabajos", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": requestKey.current }, body: JSON.stringify({
-        clienteId: selectedCustomer?.id || null,
+        captadoPorId: captadoPorId || null, clienteId: selectedCustomer?.id || null,
         nuevoCliente: selectedCustomer ? null : { ...customer, email: customer.email.trim() || null },
         tipoFlujo: direct ? "SIMPLIFICADO" : "COMPLETO", subtipoCodigos: services.map(s => s.subtype.codigo),
         subtipoCodigo: services.map(s => s.subtype.codigo).join("_"), subtipoNombre: services.map(s => s.subtype.nombre).join(" + "),
@@ -180,6 +182,7 @@ export default function NuevoTrabajoWizardPage() {
           <label className="form-label block">Observaciones (opcional)<textarea rows={3} className="module-input mt-2" maxLength={3000} value={notes} onChange={e => setNotes(e.target.value)} /></label>
         </>}
         {step === 3 && <>
+          <section className="module-card"><TeamSelect label="Conseguido / consolidado por (opcional)" value={captadoPorId} onChange={setCaptadoPorId}/><p className="text-xs text-muted mt-2">Esta persona puede ser distinta del técnico asignado o del encargado del seguimiento.</p></section>
           <div><h3 className="text-lg font-semibold text-ink">Coordina con el técnico y confirma</h3><p className="text-sm text-muted mt-1">{direct ? "El trabajo quedará listo para preparar su cotización." : "El trabajo requiere una visita de evaluación antes de cotizar."}</p></div>
           <dl className="grid sm:grid-cols-2 gap-4 rounded-xl bg-wash p-4 text-sm"><div><dt className="text-muted text-xs">Cliente</dt><dd className="text-ink font-semibold mt-1">{customer.nombreCompleto}</dd><dd className="text-secondary mt-1">{customer.telefono || "Sin teléfono"}</dd></div><div><dt className="text-muted text-xs">Dirección</dt><dd className="text-secondary mt-1">{customer.direccion || "Sin dirección registrada"}</dd></div><div className="sm:col-span-2"><dt className="text-muted text-xs">Servicios</dt><dd className="text-ink mt-1">{services.map(s => s.subtype.nombre).join(" + ")}</dd></div>{notes && <div className="sm:col-span-2"><dt className="text-muted text-xs">Observaciones</dt><dd className="text-secondary mt-1 whitespace-pre-wrap">{notes}</dd></div>}</dl>
           {details && <p className="module-note whitespace-pre-wrap"><strong>Indicaciones del cliente:</strong> {details}</p>}

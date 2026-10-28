@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { objectRecord } from "./gas-data";
 
 export const projectEventTypes = ["SEGUIMIENTO", "CONTACTO_ENTIDAD", "OBSERVACION_ENTIDAD", "CORRECCION_ENVIADA", "DOCUMENTO_ADJUNTO"] as const;
-export const projectEventLabels: Record<string, string> = { SEGUIMIENTO: "Seguimiento diario", CONTACTO_ENTIDAD: "Contacto con la entidad", OBSERVACION_ENTIDAD: "Observación recibida", CORRECCION_ENVIADA: "Corrección enviada", DOCUMENTO_ADJUNTO: "Documento adjunto", ACTUALIZAR_PROYECTO: "Etapa o datos actualizados", INCLUIR_PROYECTO: "Alcance del proyecto actualizado" };
+export const projectEventLabels: Record<string, string> = { ASIGNAR_RESPONSABLES: "Origen comercial y responsables actualizados", SEGUIMIENTO: "Seguimiento diario", CONTACTO_ENTIDAD: "Contacto con la entidad", OBSERVACION_ENTIDAD: "Observación recibida", CORRECCION_ENVIADA: "Corrección enviada", DOCUMENTO_ADJUNTO: "Documento adjunto", ACTUALIZAR_PROYECTO: "Etapa o datos actualizados", INCLUIR_PROYECTO: "Alcance del proyecto actualizado" };
 export function projectHistoryScope(id: string): Prisma.AuditoriaLogWhereInput {
   return { entidadId: id, modulo: "PROYECTO_GAS", entidadTipo: { in: ["ProyectoGas", "Trabajo"] } };
 }
