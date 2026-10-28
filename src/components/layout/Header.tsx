@@ -20,9 +20,9 @@ export function Header({ title, onMenu }: { title?: string; onMenu?: () => void 
       </div>
     </div>
     <div className="flex items-center gap-2 sm:gap-3">
-      <button type="button" className="theme-toggle" aria-label="Abrir guía de ayuda" title="Ayuda y guía de bienvenida" onClick={openGuide}><CircleHelp size={18} /><span className="hidden lg:inline">Ayuda</span></button>
+      {user?.rol !== "ENCARGADO_TIENDA" && <button type="button" className="theme-toggle" aria-label="Abrir guía de ayuda" title="Ayuda y guía de bienvenida" onClick={openGuide}><CircleHelp size={18} /><span className="hidden lg:inline">Ayuda</span></button>}
       <ThemeToggle />
-      <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>
+      {user?.rol !== "ENCARGADO_TIENDA" && <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>}
       {(user?.rol === "ADMIN" || user?.rol === "ENCARGADO") &&
         <Link href="/trabajos/nuevo" className="primary-action"><Plus size={17} /><span className="hidden sm:inline">Nuevo trabajo</span><span className="sm:hidden">Nuevo</span></Link>}
     </div>

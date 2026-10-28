@@ -34,30 +34,31 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     return () => { document.removeEventListener("keydown", onKey); previous?.focus(); };
   }, [open, onClose]);
   if (!user) return null;
+  const store = user.rol === "ENCARGADO_TIENDA";
   const manager = user.rol === "ADMIN" || user.rol === "ENCARGADO";
   const navigation = [
-    { name: manager ? "Resumen" : "Mi agenda", href: manager ? "/dashboard" : "/agenda", icon: LayoutDashboard, show: true, group: "principal" },
-    { name: manager ? "Trabajos y órdenes" : "Mis trabajos", href: "/trabajos", icon: BriefcaseBusiness, show: true, group: "principal" },
+    { name: manager ? "Resumen" : "Mi agenda", href: manager ? "/dashboard" : "/agenda", icon: LayoutDashboard, show: !store, group: "principal" },
+    { name: manager ? "Trabajos y órdenes" : "Mis trabajos", href: "/trabajos", icon: BriefcaseBusiness, show: !store, group: "principal" },
     { name: "Cotizaciones pendientes", href: "/cotizaciones", icon: FileClock, show: manager, group: "principal" },
-    { name: "Proyectos", href: "/proyectos", icon: FolderClock, show: true, group: "principal" },
+    { name: "Proyectos", href: "/proyectos", icon: FolderClock, show: !store, group: "principal" },
     { name: "Clientes", href: "/clientes", icon: Users, show: manager, group: "principal" },
     { name: "Cotizador", href: "/cotizador", icon: Calculator, show: manager, group: "principal" },
     { name: "Tienda pública", href: "/gestion-tienda", icon: ShoppingBag, show: user.rol === "ADMIN", group: "gestion" },
     { name: "Sucursales y ubicaciones", href: "/sucursales", icon: Building2, show: manager, group: "gestion" },
-    { name: "Almacenes y tiendas", href: "/inventario", icon: Package, show: manager, group: "gestion" },
+    { name: store ? "Inventario de tiendas" : "Almacenes y tiendas", href: "/inventario", icon: Package, show: manager || store, group: "gestion" },
     { name: "Finanzas", href: "/finanzas", icon: Wallet, show: user.rol === "ADMIN", group: "gestion" },
     { name: "Garantías", href: "/garantias", icon: Award, show: manager, group: "gestion" },
-    { name: "Ayuda y práctica", href: "/ayuda", icon: CircleHelp, show: true, group: "gestion" },
+    { name: "Ayuda y práctica", href: "/ayuda", icon: CircleHelp, show: !store, group: "gestion" },
     { name: "Mi perfil", href: "/perfil", icon: Users, show: true, group: "gestion" },
-    { name: "Asistencia", href: "/asistencia", icon: Clock3, show: true, group: "gestion" },
+    { name: "Asistencia", href: "/asistencia", icon: Clock3, show: !store, group: "gestion" },
     { name: "Precios y tarifas", href: "/configuracion", icon: Settings2, show: manager, group: "gestion" },
   ];
-  const roles = { ADMIN: "Administrador", ENCARGADO: "Encargado", TECNICO_FIJO: "Técnico" };
+  const roles = { ENCARGADO_TIENDA: "Encargado de tienda", ADMIN: "Administrador", ENCARGADO: "Encargado", TECNICO_FIJO: "Técnico" };
   return <>
     {open && <button type="button" className="sidebar-backdrop lg:hidden" onClick={onClose} aria-label="Cerrar menú" tabIndex={-1} />}
     <aside ref={ref} inert={mobile && !open} role={mobile && open ? "dialog" : undefined} aria-modal={mobile && open ? true : undefined} id="main-navigation" className={"app-sidebar" + (open ? " is-open" : "")} aria-label="Navegación principal">
       <div className="sidebar-brand">
-        <Link href="/dashboard" onClick={onClose} className="flex items-center gap-3"><div className="brand-mark"><Image src="/logo.jpg" alt="Servigaz" width={44} height={44} priority /></div><div><span className="block font-semibold text-lg tracking-tight text-white">SERVIGAZ<span className="text-orange-400">.</span></span><small>Gestión de servicios</small></div></Link>
+        <Link href={store ? "/inventario" : "/dashboard"} onClick={onClose} className="flex items-center gap-3"><div className="brand-mark"><Image src="/logo.jpg" alt="Servigaz" width={44} height={44} priority /></div><div><span className="block font-semibold text-lg tracking-tight text-white">SERVIGAZ<span className="text-orange-400">.</span></span><small>Gestión de servicios</small></div></Link>
         <button type="button" className="sidebar-close lg:hidden" onClick={onClose} aria-label="Cerrar menú"><X size={20} /></button>
       </div>
       <nav className="sidebar-nav">
@@ -74,7 +75,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-white">{user.nombre}</p><span>{roles[user.rol]}</span></div>
         <button type="button" onClick={logout} aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={17} /></button>
       </div>
-      <div className="sidebar-location"><MapPin size={12} /><span className="truncate">{user.sucursal || "Central Servigaz"}</span></div>
+      <div className="sidebar-location"><MapPin size={12} /><span className="truncate">{store ? "Todas las tiendas" : user.sucursal || "Central Servigaz"}</span></div>
     </aside>
   </>;
 }

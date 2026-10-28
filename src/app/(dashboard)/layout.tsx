@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import {storePageAllowed} from "@/lib/store-role";
+import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { HelpProvider } from "@/components/help/HelpProvider";
@@ -10,6 +11,9 @@ import { Loader2 } from "lucide-react";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname=usePathname();
+  const storeRestricted=user?.rol==="ENCARGADO_TIENDA"&&!storePageAllowed(pathname);
+  useEffect(()=>{if(storeRestricted)router.replace("/inventario");},[storeRestricted,router]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   useEffect(() => { if (!loading && !user) router.push("/login"); }, [user, loading, router]);
@@ -27,6 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [sidebarOpen]);
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-canvas text-ink"><div className="flex flex-col items-center gap-4"><Loader2 className="h-7 w-7 animate-spin text-[#F06529]" /><p className="text-sm text-muted">Preparando tu espacio...</p></div></div>;
   if (!user) return null;
+  if(storeRestricted)return <p className="module-note">Abriendo el inventario de tiendas…</p>;
   return <HelpProvider><div className="app-shell">
     <Sidebar open={sidebarOpen} onClose={closeSidebar} />
     <div className="flex-1 flex flex-col min-w-0" inert={sidebarOpen}>

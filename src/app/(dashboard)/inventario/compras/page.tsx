@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import {useAuth} from "@/context/AuthContext";
 import Link from "next/link";
 import {
   Package,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 
 export default function ComprasProveedoresPage() {
+  const {user}=useAuth(); const store=user?.rol==="ENCARGADO_TIENDA";
   const [productos, setProductos] = useState<any[]>([]);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const purchaseKey = useRef("");
@@ -37,7 +39,7 @@ export default function ComprasProveedoresPage() {
     proveedorContacto: "",
     numeroDocumento: "",
     observaciones: "",
-    registrarEgresoCaja: true,
+    registrarEgresoCaja: !store,
   });
 
   const cargarDatos = async () => {
@@ -101,7 +103,7 @@ export default function ComprasProveedoresPage() {
       const res = await fetch("/api/inventario/compras", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Idempotency-Key": purchaseKey.current },
-        body: JSON.stringify({ ...formCompra, cantidad: Number(formCompra.cantidad), precioCompraUnitario: Number(formCompra.precioCompraUnitario) }),
+        body: JSON.stringify({ ...formCompra, registrarEgresoCaja:store?false:formCompra.registrarEgresoCaja, cantidad: Number(formCompra.cantidad), precioCompraUnitario: Number(formCompra.precioCompraUnitario) }),
       });
 
       const data = await res.json();
@@ -124,7 +126,7 @@ export default function ComprasProveedoresPage() {
         proveedorContacto: "",
         numeroDocumento: "",
         observaciones: "",
-        registrarEgresoCaja: true,
+        registrarEgresoCaja: !store,
       });
 
       cargarDatos();
@@ -321,7 +323,8 @@ export default function ComprasProveedoresPage() {
               </div>
               <input
                 type="checkbox"
-                checked={formCompra.registrarEgresoCaja}
+                disabled={store}
+                checked={!store && formCompra.registrarEgresoCaja}
                 onChange={(e) => setFormCompra({ ...formCompra, registrarEgresoCaja: e.target.checked })}
                 className="w-5 h-5 accent-[#F06529] rounded cursor-pointer"
               />

@@ -4,15 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireSession, managers } from "@/lib/auth";
+import { requireSession, inventoryOperators } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { cents } from "@/lib/workflow-policy";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireSession(req, managers);
+    const session = await requireSession(req, inventoryOperators);
     const compras = await prisma.movimientoInventario.findMany({
-      where: { tipoMovimiento: "COMPRA", ...(session.rol === "ADMIN" ? {} : { OR: [{ ubicacionDestino: { sucursalId: session.sucursalId || "__ninguna__" } }, { ubicacionDestinoId: null, usuarioId: session.id }] }) },
+      where: { tipoMovimiento: "COMPRA", ...(session.rol === "ADMIN" ? {} : session.rol === "ENCARGADO_TIENDA" ? {ubicacionDestino:{tipo:"TIENDA"}} : { OR: [{ ubicacionDestino: { sucursalId: session.sucursalId || "__ninguna__" } }, { ubicacionDestinoId: null, usuarioId: session.id }] }) },
       include: {
         ubicacionDestino: { select: { nombre: true } },
         producto: { select: { id: true, codigoSku: true, nombre: true, categoria: true, unidadMedida: true, costoPromedio: true } },
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, inventoryOperators);
     const requestId = z.string().uuid("Falta la clave de compra.").parse(req.headers.get("Idempotency-Key"));
     const body = z.object({
       ubicacionId: z.string().min(1),
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
       numeroDocumento: z.string().trim().max(200).optional(), observaciones: z.string().trim().max(2000).optional(),
       registrarEgresoCaja: z.boolean().default(false),
     }).parse(await req.json());
+    if(user.rol === "ENCARGADO_TIENDA" && body.registrarEgresoCaja) throw new ApiError(403,"Puedes ingresar compras al inventario; el registro de caja corresponde al administrador o encargado.");
     cents(body.precioCompraUnitario);
     const quantity = new Prisma.Decimal(body.cantidad);
     if (quantity.decimalPlaces() > 2) throw new ApiError(400, "La cantidad admite hasta dos decimales.");

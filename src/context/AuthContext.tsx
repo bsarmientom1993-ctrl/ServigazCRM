@@ -7,7 +7,7 @@ export interface UserSession {
   id: string;
   nombre: string;
   email: string;
-  rol: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO";
+  rol: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO" | "ENCARGADO_TIENDA";
   telefono?: string;
   sucursal?: string;
   sucursalId?: string | null;
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (res.ok && data.success) {
         setUser(data.user);
-        router.push(data.user.rol === "TECNICO_FIJO" ? "/agenda" : "/dashboard");
+        router.push(data.user.rol === "ENCARGADO_TIENDA" ? "/inventario" : data.user.rol === "TECNICO_FIJO" ? "/agenda" : "/dashboard");
         return { success: true };
       } else {
         return { success: false, error: data.error || "Error al iniciar sesión" };

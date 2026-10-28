@@ -1,4 +1,4 @@
-export type HelpRole = "ADMIN" | "ENCARGADO" | "TECNICO_FIJO";
+export type HelpRole = "ADMIN" | "ENCARGADO" | "TECNICO_FIJO" | "ENCARGADO_TIENDA";
 export type GuideStep = { title: string; description: string; points: string[]; icon: "welcome" | "client" | "calendar" | "stock" | "check" | "practice" };
 export function guideSteps(role: HelpRole): GuideStep[] {
   const technician = role === "TECNICO_FIJO";

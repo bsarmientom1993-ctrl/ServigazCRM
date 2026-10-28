@@ -12,6 +12,7 @@ const emptyProduct = { codigoSku: "", nombre: "", categoria: "", unidadMedida: "
 
 export default function InventarioPage() {
   const { user } = useAuth();
+  const store = user?.rol === "ENCARGADO_TIENDA";
   const admin = user?.rol === "ADMIN";
   const [products, setProducts] = useState<Product[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -118,8 +119,8 @@ export default function InventarioPage() {
       </form>
       <div className="module-table"><table><thead><tr><th>Producto / fecha</th><th>Recorrido</th><th>Cantidad</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{transfers.filter(t => !locationId || t.origen.id === locationId || t.destino.id === locationId).map(t =>
         <tr key={t.id}><td><strong>{t.producto.nombre}</strong><small>{new Date(t.createdAt).toLocaleString("es-BO")}</small></td><td>{t.origen.nombre}<small>→ {t.destino.nombre}</small></td><td>{Number(t.cantidad)} {t.producto.unidadMedida}</td><td><span className="text-xs font-semibold">{t.estado === "EN_TRANSITO" ? "En tránsito" : t.estado === "RECIBIDO" ? "Recibido" : "Devuelto al origen"}</span></td><td><div className="flex flex-wrap gap-2">
-          {t.estado === "EN_TRANSITO" && (admin || t.destino.sucursalId === user?.sucursalId) && <button disabled={saving} className="theme-toggle" onClick={async () => { if (await mutate("/api/inventario/traspasos", "PATCH", { id: t.id, accion: "RECIBIR" })) setMessage("Recepción confirmada y stock del destino actualizado."); }}><Check size={15} />Recibir</button>}
-          {t.estado === "EN_TRANSITO" && (admin || t.origen.sucursalId === user?.sucursalId) && <button disabled={saving} className="theme-toggle" onClick={() => { setCancelId(t.id); setCancelReason(""); }}><X size={15} />Devolver</button>}
+          {t.estado === "EN_TRANSITO" && (admin || store && t.destino.tipo === "TIENDA" || t.destino.sucursalId === user?.sucursalId) && <button disabled={saving} className="theme-toggle" onClick={async () => { if (await mutate("/api/inventario/traspasos", "PATCH", { id: t.id, accion: "RECIBIR" })) setMessage("Recepción confirmada y stock del destino actualizado."); }}><Check size={15} />Recibir</button>}
+          {t.estado === "EN_TRANSITO" && (admin || store && t.origen.tipo === "TIENDA" || t.origen.sucursalId === user?.sucursalId) && <button disabled={saving} className="theme-toggle" onClick={() => { setCancelId(t.id); setCancelReason(""); }}><X size={15} />Devolver</button>}
         </div></td></tr>)}
         {!transfers.length && <tr><td colSpan={5} className="text-center text-muted">Aún no hay traspasos.</td></tr>}</tbody></table></div><p className="text-xs text-muted">Se muestran los últimos 200 traspasos de tu ámbito.</p>
       {cancelId && <form className="module-card space-y-3" onSubmit={async e => { e.preventDefault(); if (await mutate("/api/inventario/traspasos", "PATCH", { id: cancelId, accion: "CANCELAR", motivo: cancelReason })) { setCancelId(""); setMessage("Traspaso anulado y material devuelto al origen."); } }}>

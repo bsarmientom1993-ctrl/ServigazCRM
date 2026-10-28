@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireSession, managers } from "@/lib/auth";
+import { requireSession, inventoryOperators } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { locationScope } from "@/lib/inventory";
 import { cents } from "@/lib/workflow-policy";
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 }
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, inventoryOperators);
     const data = z.object({ codigoSku: z.string().trim().min(1).max(80), nombre: z.string().trim().min(2).max(200),
       categoria: z.string().trim().min(1).max(100), unidadMedida: z.string().trim().min(1).max(30), precioVenta: z.number().finite().nonnegative() }).parse(await req.json());
     cents(data.precioVenta);

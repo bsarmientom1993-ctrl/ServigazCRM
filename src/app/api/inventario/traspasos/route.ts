@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireSession, managers } from "@/lib/auth";
+import { requireSession, inventoryOperators } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { lockLocations, locationForOperation, lockProduct, takeStock, addStock, quantity } from "@/lib/inventory";
 
@@ -10,9 +10,9 @@ const relations = { producto: { select: { id: true, nombre: true, codigoSku: tru
   enviadoPor: { select: { nombre: true } }, resueltoPor: { select: { nombre: true } } };
 export async function GET(req: NextRequest) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, inventoryOperators);
     const traspasos = await prisma.traspasoInventario.findMany({
-      where: user.rol === "ADMIN" ? {} : { OR: [{ origen: { sucursalId: user.sucursalId || "__ninguna__" } }, { destino: { sucursalId: user.sucursalId || "__ninguna__" } }] },
+      where: user.rol === "ADMIN" ? {} : user.rol === "ENCARGADO_TIENDA" ? {OR:[{origen:{tipo:"TIENDA"}},{destino:{tipo:"TIENDA"}}]} : { OR: [{ origen: { sucursalId: user.sucursalId || "__ninguna__" } }, { destino: { sucursalId: user.sucursalId || "__ninguna__" } }] },
       include: relations, orderBy: { createdAt: "desc" }, take: 200,
     });
     return NextResponse.json({ traspasos });
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 }
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, inventoryOperators);
     const id = z.string().uuid("Falta la clave del traspaso.").parse(req.headers.get("Idempotency-Key"));
     const data = z.object({ productoId: z.string().min(1), origenId: z.string().min(1), destinoId: z.string().min(1),
       cantidad: z.number().finite().positive(), observaciones: z.string().trim().max(1000).default("") }).parse(await req.json());
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       const source = await locationForOperation(tx, user, data.origenId);
       const destination = await tx.ubicacionInventario.findUnique({ where: { id: data.destinoId }, include: { sucursal: true } });
       if (!destination?.activo || destination.esInicial || (destination.sucursal && !destination.sucursal.activo)) throw new ApiError(400, "Selecciona un destino activo.");
+      if (user.rol === "ENCARGADO_TIENDA" && destination.tipo !== "TIENDA") throw new ApiError(403,"Selecciona otra tienda como destino.");
       const product = await lockProduct(tx, data.productoId);
       const previous = await tx.traspasoInventario.findUnique({ where: { id } });
       if (previous) {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
 }
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, inventoryOperators);
     const data = z.object({ id: z.string().uuid(), accion: z.enum(["RECIBIR", "CANCELAR"]), motivo: z.string().trim().max(1000).optional() }).parse(await req.json());
     if (data.accion === "CANCELAR" && (!data.motivo || data.motivo.length < 5)) throw new ApiError(400, "Describe el motivo y confirma que el material vuelve al origen.");
     const result = await prisma.$transaction(async tx => {

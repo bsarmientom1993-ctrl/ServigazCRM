@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireSession, managers } from "@/lib/auth";
+import { requireSession, inventoryOperators } from "@/lib/auth";
 import { ApiError, apiError } from "@/lib/api";
 import { locationScope } from "@/lib/inventory";
 
@@ -10,11 +10,11 @@ export async function GET(req: NextRequest) {
   try {
     const user = await requireSession(req);
     const directory = req.nextUrl.searchParams.get("directorio") === "1";
-    if (directory && !managers.includes(user.rol)) throw new ApiError(403, "No tienes permiso para consultar el directorio.");
+    if (directory && !inventoryOperators.includes(user.rol)) throw new ApiError(403, "No tienes permiso para consultar el directorio.");
     const inactive = req.nextUrl.searchParams.get("incluirInactivas") === "1";
     if (inactive && user.rol !== "ADMIN") throw new ApiError(403, "Solo el administrador puede consultar ubicaciones inactivas.");
     const ubicaciones = await prisma.ubicacionInventario.findMany({
-      where: { ...(directory ? { esInicial: false } : locationScope(user)), ...(inactive && !directory ? {} : { activo: true, OR: [{ sucursalId: null }, { sucursal: { activo: true } }] }) },
+      where: { ...(directory && user.rol !== "ENCARGADO_TIENDA" ? { esInicial: false } : locationScope(user)), ...(inactive && !directory ? {} : { activo: true, OR: [{ sucursalId: null }, { sucursal: { activo: true } }] }) },
       select: { id: true, nombre: true, tipo: true, sucursalId: true, direccion: true, esInicial: true, activo: true,
         sucursal: { select: { id: true, nombre: true } } },
       orderBy: [{ esInicial: "desc" }, { nombre: "asc" }],

@@ -64,6 +64,7 @@ before(async () => {
   await prisma.$transaction(async tx => {
     for (const statement of baseline.split(";").map(s => s.trim()).filter(Boolean)) await tx.$executeRawUnsafe(statement);
   }, { timeout: 60000 });
+  await require("../scripts/migrate-store-role.cjs").migrateStoreRole(prisma);
   const opening = await product();
   await prisma.productoInventario.update({ where: { id: opening.id }, data: { stockActual: 17.5, costoPromedio: 8 } });
   openingId = opening.id;
@@ -224,4 +225,24 @@ test("a new branch is also a store and can receive warehouse shipments", async (
   await body(await resolve(transfer, "RECIBIR", admin));
   assert.equal(await balance(p, store), 4); await invariant(p);
   await body(await branchRoutes.POST(req(managerA, { nombre: "No autorizada" })), 403);
+});
+
+test('store operator works across shops but cannot operate warehouses or access other CRM modules',async()=>{
+ const store=await prisma.usuario.create({data:{nombre:'Encargada de tiendas',email:randomUUID()+'@example.invalid',passwordHash:'test-only',rol:'ENCARGADO_TIENDA'}});
+ function storeReq(route,data,method='POST',key=randomUUID()){return new NextRequest('http://localhost/api/'+route,{method,headers:{'Content-Type':'application/json',Cookie:'servigaz_token='+jwt.sign({id:store.id},process.env.JWT_SECRET),'Idempotency-Key':key},...(method==='GET'?{}:{body:JSON.stringify(data)})});}
+ const locations=await body(await locationRoutes.GET(storeReq('ubicaciones',null,'GET')));assert.ok(locations.ubicaciones.some(item=>item.id===shopA.id));assert.ok(locations.ubicaciones.some(item=>item.id===shopB.id));assert.ok(locations.ubicaciones.every(item=>item.tipo==='TIENDA'&&!item.esInicial));
+ await body(await inventories.GET(storeReq('inventario',null,'GET')));await body(await require('../src/app/api/inventario/movimientos/route.ts').GET(storeReq('inventario/movimientos',null,'GET')));
+ const p=await product();await buy(p,10,central,admin);const transfer=await body(await send(p,3,central,shopA,admin));
+ await body(await transfers.PATCH(storeReq('inventario/traspasos',{id:transfer.id,accion:'RECIBIR'},'PATCH')));assert.equal(await balance(p,shopA),3);
+ await body(await transfers.POST(storeReq('inventario/traspasos',{productoId:p.id,origenId:central.id,destinoId:shopB.id,cantidad:1})),403);
+ const move=await body(await transfers.POST(storeReq('inventario/traspasos',{productoId:p.id,origenId:shopA.id,destinoId:shopB.id,cantidad:1})));await body(await transfers.PATCH(storeReq('inventario/traspasos',{id:move.id,accion:'RECIBIR'},'PATCH')));assert.equal(await balance(p,shopB),1);
+ await body(await purchases.POST(storeReq('inventario/compras',{productoId:p.id,ubicacionId:shopB.id,cantidad:1,precioCompraUnitario:10,proveedorNombre:'Proveedor de prueba',registrarEgresoCaja:true})),403);
+ await body(await purchases.POST(storeReq('inventario/compras',{productoId:p.id,ubicacionId:shopB.id,cantidad:1,precioCompraUnitario:10,proveedorNombre:'Proveedor de prueba',registrarEgresoCaja:false})));assert.equal(await balance(p,shopB),2);
+ for(const name of ['trabajos','clientes','proyectos','finanzas','usuarios','gestion-tienda','configuracion/precios','cotizaciones/pendientes']){const handler=require('../src/app/api/'+name+'/route.ts');await body(await handler.GET(storeReq(name,null,'GET')),403);}
+ await invariant(p);
+});
+
+test('requested store account provisioning is idempotent and keeps its initial credential encrypted',async()=>{
+ const {provision}=require('../scripts/provision-brigida-once.cjs');const first=await provision(prisma);const second=await provision(prisma);assert.equal(first.id,second.id);assert.equal(first.encrypted,second.encrypted);assert.equal(Buffer.from(first.encrypted,'base64').length,256);
+ const person=await prisma.usuario.findUnique({where:{id:first.id}});assert.equal(person.nombre,'Brígida Mamani');assert.equal(person.rol,'ENCARGADO_TIENDA');assert.equal(person.sucursalId,null);assert.match(person.passwordHash,/^\$2[ab]\$/);assert.equal(await prisma.usuario.count({where:{email:person.email}}),1);
 });
