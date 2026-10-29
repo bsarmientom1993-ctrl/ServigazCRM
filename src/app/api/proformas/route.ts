@@ -31,7 +31,9 @@ export async function POST(req:NextRequest){try{
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${input.id},0))`;
     const previous=await tx.documentoProforma.findUnique({where:{id:input.id}});
     if(previous){if(previous.creadoPorId!==user.id||(previous.datos as unknown as DocumentData).huella!==huella)throw new ApiError(409,'La clave del documento ya existe con otros datos.');return requireDocument(tx,user,input.id);}
-    await lockLocations(tx,[input.ubicacionId]);const location=await locationForOperation(tx,user,input.ubicacionId);
+    await lockLocations(tx,[input.ubicacionId]);
+    const requestedCentral=user.rol==='TECNICO_FIJO'&&input.tipo==='MATERIALES'?await tx.ubicacionInventario.findFirst({where:{id:input.ubicacionId,activo:true,esInicial:false,tipo:'ALMACEN',sucursalId:null}}):null;
+    const location=requestedCentral||await locationForOperation(tx,user,input.ubicacionId);
     if(location.esInicial)throw new ApiError(400,'Selecciona una tienda o almacén operativo.');
     const author=await tx.usuario.findUniqueOrThrow({where:{id:user.id},select:{nombre:true}});
     const datos:DocumentData={autor:author.nombre,huella,ubicacion:location.nombre,observaciones:input.observaciones,condiciones:input.condiciones,items:[]};
@@ -47,7 +49,7 @@ export async function POST(req:NextRequest){try{
       const tech=await tx.usuario.findFirst({where:{id:input.tecnicoId,...assignedRoleWhere('TECNICO_FIJO'),estado:'ACTIVO'}});
       if(!tech)throw new ApiError(400,'Selecciona un técnico activo.');
       const work=await operationalWork(tx,user,input.trabajoId,tech.id,location.sucursalId);
-      if(user.rol!=='ADMIN'&&!(user.rol==='ALMACENERO'&&!location.sucursalId)&&work.sucursalId!==location.sucursalId)throw new ApiError(403,'La solicitud debe salir de la sucursal del trabajo.');
+      if(user.rol!=='ADMIN'&&!(['ALMACENERO','TECNICO_FIJO'].includes(user.rol)&&location.tipo==='ALMACEN'&&!location.sucursalId)&&work.sucursalId!==location.sucursalId)throw new ApiError(403,'La solicitud debe salir de la sucursal del trabajo.');
       techId=tech.id;workId=work.id;datos.tecnico=tech.nombre;datos.trabajo=work.codigoCorrelativo;
     }
     let total=new Prisma.Decimal(0);

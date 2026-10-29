@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { isIndependentProject } from '@/lib/work-responsibility-data';
 export async function GET(req:NextRequest){try{
   const user=await requireSession(req);const technical=user.rol==='TECNICO_FIJO';
-  const ubicaciones=await prisma.ubicacionInventario.findMany({where:{AND:[locationScope(user),{activo:true,esInicial:false}]},select:{id:true,nombre:true,sucursalId:true},orderBy:{nombre:'asc'}});
+  const ubicaciones=await prisma.ubicacionInventario.findMany({where:{AND:[technical?{OR:[locationScope(user),{tipo:'ALMACEN',sucursalId:null}]}:locationScope(user),{activo:true,esInicial:false}]},select:{id:true,nombre:true,sucursalId:true},orderBy:{nombre:'asc'}});
   const branches=ubicaciones.map(l=>l.sucursalId).filter((id):id is string=>!!id);
   const clientes=technical||user.rol==='ALMACENERO'?[]:await prisma.cliente.findMany({where:user.rol==='ADMIN'?{}:{sucursalId:{in:branches}},select:{id:true,nombreCompleto:true,sucursalId:true},orderBy:{nombreCompleto:'asc'}});
   const trabajos=user.rol==='VENTAS'?[]:await prisma.trabajo.findMany({where:{AND:[user.rol==='ALMACENERO'?(ubicaciones.some(l=>!l.sucursalId)?{}:{sucursalId:{in:branches}}):user.rol==='ENCARGADO_TIENDA'?{sucursalId:{in:branches}}:workScope(user),{tecnicoId:{not:null},estado:{notIn:['CANCELADO','RECHAZADO','ARCHIVADO','FINALIZADO_FINANCIERO','TERMINADO_TECNICO','VALIDADO']}}]},select:{fechasSla:true,id:true,codigoCorrelativo:true,subtipoNombre:true,sucursalId:true,tecnicoId:true,tecnico:{select:{nombre:true}},cliente:{select:{nombreCompleto:true}}},orderBy:{createdAt:'desc'},take:300});
