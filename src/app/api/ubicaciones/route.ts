@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const inactive = req.nextUrl.searchParams.get("incluirInactivas") === "1";
     if (inactive && user.rol !== "ADMIN") throw new ApiError(403, "Solo el administrador puede consultar ubicaciones inactivas.");
     const ubicaciones = await prisma.ubicacionInventario.findMany({
-      where: { ...(directory && user.rol !== "ENCARGADO_TIENDA" ? { esInicial: false } : locationScope(user)), ...(inactive && !directory ? {} : { activo: true, OR: [{ sucursalId: null }, { sucursal: { activo: true } }] }) },
+      where: {AND:[directory && user.rol !== "ENCARGADO_TIENDA" ? { esInicial: false } : locationScope(user),inactive&&!directory?{}:{activo:true,OR:[{sucursalId:null},{sucursal:{activo:true}}]}]},
       select: { id: true, nombre: true, tipo: true, sucursalId: true, direccion: true, esInicial: true, activo: true,
         sucursal: { select: { id: true, nombre: true } } },
       orderBy: [{ esInicial: "desc" }, { nombre: "asc" }],

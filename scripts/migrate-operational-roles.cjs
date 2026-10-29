@@ -1,0 +1,4 @@
+const {PrismaClient}=require('@prisma/client');const {databaseUrl}=require('./migrate-inventory.cjs');
+async function migrateOperationalRoles(client){for(const role of ['VENTAS','SUPERVISOR','GESTOR_PROYECTOS','ALMACENERO','CAJA'])await client.$executeRawUnsafe(`ALTER TYPE "RolUsuario" ADD VALUE IF NOT EXISTS '${role}'`);}
+module.exports={migrateOperationalRoles};
+if(require.main===module){const url=databaseUrl(process.env);if(!url){console.error('Falta conexión para preparar roles operativos.');process.exitCode=1;}else{const client=new PrismaClient({datasources:{db:{url}}});migrateOperationalRoles(client).then(()=>console.log('Roles operativos preparados.')).catch(e=>{console.error('No se pudieron preparar los roles:',e.code||e.name);process.exitCode=1;}).finally(()=>client.$disconnect());}}

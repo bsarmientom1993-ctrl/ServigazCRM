@@ -8,7 +8,7 @@ export interface UserSession {
   id: string;
   nombre: string;
   email: string;
-  rol: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO" | "ENCARGADO_TIENDA";
+  rol: UserRole;
   roles?: UserRole[];
   telefono?: string;
   sucursal?: string;

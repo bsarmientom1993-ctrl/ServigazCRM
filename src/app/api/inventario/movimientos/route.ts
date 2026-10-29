@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const id = req.nextUrl.searchParams.get("ubicacionId");
     const movements = await prisma.movimientoInventario.findMany({
       where: { AND: [
-        user.rol === "ADMIN" ? {} : user.rol === "ENCARGADO_TIENDA" ? {OR:[{ubicacionOrigen:{tipo:"TIENDA"}},{ubicacionDestino:{tipo:"TIENDA"}}]} : { OR: [
+        user.rol === "ADMIN" ? {} : user.rol === "ALMACENERO" ? {OR:[{ubicacionOrigen:{tipo:"ALMACEN",OR:[{sucursalId:null},{sucursalId:user.sucursalId||"__ninguna__"}]}},{ubicacionDestino:{tipo:"ALMACEN",OR:[{sucursalId:null},{sucursalId:user.sucursalId||"__ninguna__"}]}}]} : user.rol === "ENCARGADO_TIENDA" ? {OR:[{ubicacionOrigen:{tipo:"TIENDA"}},{ubicacionDestino:{tipo:"TIENDA"}}]} : { OR: [
           { ubicacionOrigen: { sucursalId: user.sucursalId || "__ninguna__" } },
           { ubicacionDestino: { sucursalId: user.sucursalId || "__ninguna__" } },
           { ubicacionOrigenId: null, ubicacionDestinoId: null, usuarioId: user.id },
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json({ movimientos: movements.map(m => {
       const location = m.evento === "RECEPCION" || m.evento === "COMPRA" ? m.ubicacionDestino : m.ubicacionOrigen;
-      const visible = user.rol === "ADMIN" || (user.rol === "ENCARGADO_TIENDA" && location?.tipo === "TIENDA") || (location && location.sucursalId === user.sucursalId && !!user.sucursalId) || (!m.ubicacionOrigenId && !m.ubicacionDestinoId && m.usuarioId === user.id);
+      const visible = user.rol === "ADMIN" || (user.rol === "ALMACENERO" && location?.tipo==="ALMACEN" && (!location.sucursalId||location.sucursalId===user.sucursalId)) || (user.rol === "ENCARGADO_TIENDA" && location?.tipo === "TIENDA") || (user.rol!=="ALMACENERO" && location && location.sucursalId === user.sucursalId && !!user.sucursalId) || (!m.ubicacionOrigenId && !m.ubicacionDestinoId && m.usuarioId === user.id);
       return { ...m, stockAnterior: visible ? m.stockAnterior : null, stockNuevo: visible ? m.stockNuevo : null };
     }) });
   } catch (error) { return apiError(error); }

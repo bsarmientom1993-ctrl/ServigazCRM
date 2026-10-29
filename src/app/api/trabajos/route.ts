@@ -8,7 +8,7 @@ import { assertTechnicianSlot, schedulingSchema } from "@/lib/scheduling";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { requireSession, managers, workScope } from "@/lib/auth";
+import { requireSession, managers, workScope,assignedRoleWhere } from "@/lib/auth";
 import { apiError, ApiError } from "@/lib/api";
 
 export async function GET(req: NextRequest) {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, ["ADMIN","ENCARGADO","VENTAS"]);
     const requestId = z.string().uuid("Clave de solicitud inválida.").optional().parse(req.headers.get("Idempotency-Key") || undefined);
     const body = z.object({
       modalidad: z.enum(["SERVICIO", "PROYECTO_INDEPENDIENTE"]).default("SERVICIO"),
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         const previous = await tx.trabajo.findUnique({ where: { id: requestId } });
         if (previous) {
           const audit = await tx.auditoriaLog.findFirst({ where: { entidadId: requestId, entidadTipo: "Trabajo", accion: "CREATE", usuarioId: user.id }, orderBy: { timestamp: "asc" } });
-          if (previous.encargadoId !== user.id || (audit?.valoresNuevos as any)?.requestFingerprint !== fingerprint) throw new ApiError(409, "Esta clave ya se utilizó para otra solicitud. Revisa el trabajo creado antes de volver a guardar.");
+          if (user.rol!=='VENTAS'&&previous.encargadoId !== user.id || (audit?.valoresNuevos as any)?.requestFingerprint !== fingerprint) throw new ApiError(409, "Esta clave ya se utilizó para otra solicitud. Revisa el trabajo creado antes de volver a guardar.");
           return previous;
         }
       }
@@ -76,7 +76,10 @@ export async function POST(req: NextRequest) {
       if (new Set(codes).size !== codes.length || codes.join("_").length > 300) throw new ApiError(400, "Revisa los servicios seleccionados.");
       const subtypes = independent ? [{nombre:"Proyecto de gas independiente",categoria:{codigo:"GAS",activo:true,requiereVisita:false}}] : await tx.catalogoSubtipo.findMany({ where: { codigo: { in: codes }, activo: true }, include: { categoria: true } });
       if (subtypes.length !== codes.length || subtypes.some(s => !s.categoria.activo)) throw new ApiError(400, "Selecciona servicios activos del catálogo.");
-      const origin = body.captadoPorId ? await activeTeamMember(tx,user,body.captadoPorId,user.sucursalId) : null;
+      const originId=body.captadoPorId||(user.rol==='VENTAS'?user.id:null);
+      const origin = originId ? await activeTeamMember(tx,user,originId,user.sucursalId) : null;
+      const coordinator=user.rol==='VENTAS'?await tx.usuario.findFirst({where:{estado:'ACTIVO',sucursalId:user.sucursalId,...assignedRoleWhere('ENCARGADO')},select:{id:true}})||await tx.usuario.findFirst({where:{estado:'ACTIVO',...assignedRoleWhere('ADMIN')},select:{id:true}}):null;
+      if(user.rol==='VENTAS'&&!coordinator)throw new ApiError(409,'Configura un encargado o administrador activo para coordinar esta solicitud.');
       const responsible = body.responsableSeguimientoId ? await activeTeamMember(tx,user,body.responsableSeguimientoId,user.sucursalId) : null;
       const hasGas = subtypes.some(s => s.categoria.codigo === "GAS");
       if (body.incluyeProyectoGas && !hasGas) throw new ApiError(400, "El proyecto de gas requiere un servicio de gas.");
@@ -98,7 +101,7 @@ export async function POST(req: NextRequest) {
       const previous = await tx.trabajo.findMany({ where: { codigoCorrelativo: { startsWith: prefix } }, select: { codigoCorrelativo: true } });
       const sequence = previous.reduce((max, w) => Math.max(max, Number(w.codigoCorrelativo.slice(prefix.length)) || 0), 0) + 1;
       const trabajo = await tx.trabajo.create({ data: {
-        ...(requestId ? { id: requestId } : {}), codigoCorrelativo: prefix + String(sequence).padStart(4, "0"), clienteId: clientId!, encargadoId: user.id, sucursalId: user.sucursalId,
+        ...(requestId ? { id: requestId } : {}), codigoCorrelativo: prefix + String(sequence).padStart(4, "0"), clienteId: clientId!, encargadoId: coordinator?.id||user.id, sucursalId: user.sucursalId,
         tecnicoId: body.tecnicoId || null, tipoFlujo: direct ? "SIMPLIFICADO" : "COMPLETO", subtipoCodigo: codes.join("_"),
         subtipoNombre: subtypes.map(s => s.nombre).join(" + "), observaciones: [body.detallesCliente ? "Detalles del cliente: " + body.detallesCliente : "", body.observaciones || ""].filter(Boolean).join("\n\n"),
         fechasSla: { modalidad: body.modalidad, captadoPor: origin, ...(body.preferenciaCliente ? { preferenciaCliente: body.preferenciaCliente } : {}), ...(hasGas ? { gas: JSON.parse(JSON.stringify({ aplica: true, proyecto: {...newGasProject(independent || body.incluyeProyectoGas), ...(responsible ? {responsableId:responsible.id,responsable:responsible.nombre} : {})} })) } : {}) },

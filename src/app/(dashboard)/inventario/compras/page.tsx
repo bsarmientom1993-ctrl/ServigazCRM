@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 export default function ComprasProveedoresPage() {
-  const {user}=useAuth(); const store=user?.rol==="ENCARGADO_TIENDA";
+  const {user}=useAuth(); const store=["ENCARGADO_TIENDA","ALMACENERO"].includes(user?.rol||"");
   const [productos, setProductos] = useState<any[]>([]);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const purchaseKey = useRef("");

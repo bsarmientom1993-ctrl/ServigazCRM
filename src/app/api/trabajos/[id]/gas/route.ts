@@ -1,3 +1,4 @@
+import {objectRecord as roleRecord} from "@/lib/gas-data";
 import { isIndependentProject } from "@/lib/work-responsibility";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!isGasWork(work)) throw new ApiError(400, "Este seguimiento corresponde a trabajos de gas.");
       const metadata = objectRecord(work.fechasSla), gas = structuredClone(gasData(work)), project = gas.proyecto || newGasProject(false);
       if (isIndependentProject(work) && body.accion !== "ACTUALIZAR_PROYECTO") throw new ApiError(409,"El proyecto independiente no tiene medición ni alcance de instalación.");
+      if(body.accion==="REVISAR_MEDICION"&&roleRecord(roleRecord(roleRecord(work.fechasSla).gas).revisionTecnica).estado==="CORRECCION_SOLICITADA")throw new ApiError(409,"El supervisor solicitó corregir la evaluación antes de continuar con el presupuesto.");
       const now = new Date().toISOString();
       if (body.accion === "ACTUALIZAR_PROYECTO") {
         if (!project.incluido) throw new ApiError(409, "El trabajo no incluye proyecto de gas.");

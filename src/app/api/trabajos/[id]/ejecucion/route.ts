@@ -28,7 +28,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const user = await requireSession(req);
     const { id } = await params;
     const body = z.object({ accion: z.enum(["INICIAR_EJECUCION", "REGISTRAR_MATERIAL", "FINALIZAR_TECNICO", "VALIDAR_ENCARGADO"]), data: z.unknown().optional() }).parse(await req.json());
-    if (body.accion === "VALIDAR_ENCARGADO" && !managers.includes(user.rol)) throw new ApiError(403, "La calidad debe aprobarla el encargado.");
+    if(user.rol==='SUPERVISOR'&&body.accion!=='VALIDAR_ENCARGADO')throw new ApiError(403,'Supervisión solo puede validar la calidad técnica.');
+    if (body.accion === "VALIDAR_ENCARGADO" && ![...managers,'SUPERVISOR'].includes(user.rol)) throw new ApiError(403, "La calidad debe aprobarla el encargado o supervisor.");
     const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id }, include: {
         cotizaciones: { orderBy: { numeroVersion: "desc" }, take: 1 }, pagos: true, egreso: true,

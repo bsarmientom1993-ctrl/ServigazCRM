@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {useAuth} from "@/context/AuthContext";
 import React, { useState, useEffect } from "react";
 import {
   Users,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 export default function ClientesPage() {
+  const {user}=useAuth();
   const [clientes, setClientes] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [modalNuevo, setModalNuevo] = useState(false);
@@ -148,7 +150,7 @@ export default function ClientesPage() {
                 {c._count?.trabajos ?? 0}
               </span>
             </div>
-            <Link className="theme-toggle mt-4 inline-flex" href={"/cotizador?clienteId=" + encodeURIComponent(c.id)}>Cotizar / Ver historial</Link>
+            <Link className="theme-toggle mt-4 inline-flex" href={user?.rol==="VENTAS"?"/trabajos/nuevo?clienteId="+encodeURIComponent(c.id):"/cotizador?clienteId=" + encodeURIComponent(c.id)}>{user?.rol==="VENTAS"?"Registrar solicitud":"Cotizar / Ver historial"}</Link>
           </div>
         ))}
       </div>

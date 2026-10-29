@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireSession, inventoryOperators } from '@/lib/auth';
+import { requireSession, inventoryOperators,proformaOperators } from '@/lib/auth';
 import { apiError, ApiError } from '@/lib/api';
 import { documentInput, documentScope, requireDocument, operationalWork, DocumentData, safeDelivery } from '@/lib/proformas';
 import { lockLocations, locationForOperation, quantity } from '@/lib/inventory';
@@ -23,7 +23,8 @@ export async function POST(req:NextRequest){try{
   const user=await requireSession(req);const input=documentInput.parse(await req.json());
   const huella=createHash('sha256').update(user.id+JSON.stringify(input)).digest('hex');
   if(user.rol==='TECNICO_FIJO'&&(input.tipo!=='MATERIALES'||input.tecnicoId!==user.id))throw new ApiError(403,'Solo puedes solicitar materiales para tus trabajos.');
-  if(input.tipo==='CLIENTE'&&!inventoryOperators.includes(user.rol))throw new ApiError(403,'Tu rol no puede emitir proformas comerciales.');
+  if(user.rol==='VENTAS'&&input.tipo!=='CLIENTE')throw new ApiError(403,'Ventas solo prepara proformas para clientes.');
+  if(input.tipo==='CLIENTE'&&!proformaOperators.includes(user.rol))throw new ApiError(403,'Tu rol no puede emitir proformas comerciales.');
   if(new Set(input.items.map(i=>i.productoId)).size!==input.items.length)throw new ApiError(400,'Agrupa las cantidades de cada producto en una sola línea.');
   const until=new Date(input.validoHasta);if(until<=new Date()||until.getTime()>Date.now()+366*86400000)throw new ApiError(400,'La validez debe ser futura y de hasta un año.');
   const result=await prisma.$transaction(async tx=>{
@@ -46,7 +47,7 @@ export async function POST(req:NextRequest){try{
       const tech=await tx.usuario.findFirst({where:{id:input.tecnicoId,...assignedRoleWhere('TECNICO_FIJO'),estado:'ACTIVO'}});
       if(!tech)throw new ApiError(400,'Selecciona un técnico activo.');
       const work=await operationalWork(tx,user,input.trabajoId,tech.id,location.sucursalId);
-      if(user.rol!=='ADMIN'&&work.sucursalId!==location.sucursalId)throw new ApiError(403,'La solicitud debe salir de la sucursal del trabajo.');
+      if(user.rol!=='ADMIN'&&!(user.rol==='ALMACENERO'&&!location.sucursalId)&&work.sucursalId!==location.sucursalId)throw new ApiError(403,'La solicitud debe salir de la sucursal del trabajo.');
       techId=tech.id;workId=work.id;datos.tecnico=tech.nombre;datos.trabajo=work.codigoCorrelativo;
     }
     let total=new Prisma.Decimal(0);

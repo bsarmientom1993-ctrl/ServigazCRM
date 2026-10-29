@@ -21,7 +21,7 @@ export function HelpProvider({ children }: { children: React.ReactNode }) {
   const openGuide = useCallback(() => { setStep(0); setOpen(true); }, []);
   useEffect(() => {
     if (!key) return;
-    if(user?.rol === "ENCARGADO_TIENDA"){setOpen(false);return;}
+    if(!["ADMIN","ENCARGADO","TECNICO_FIJO"].includes(user?.rol||"")){setOpen(false);return;}
     try { setOpen(!hasSeenGuide(localStorage.getItem(key))); } catch { setOpen(true); }
     setStep(0);
   }, [key]);

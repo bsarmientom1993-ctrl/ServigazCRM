@@ -3,11 +3,12 @@ import { ApiError } from "./api";
 import { Session } from "./auth";
 
 export const locationScope = (user: Session): Prisma.UbicacionInventarioWhereInput =>
-  user.rol === "ENCARGADO_TIENDA" ? {tipo:"TIENDA",esInicial:false,sucursal:{activo:true}} : user.rol === "ADMIN" ? {} : { sucursalId: user.sucursalId || "__sin_sucursal__", esInicial: false };
+  user.rol === "ENCARGADO_TIENDA" ? {tipo:"TIENDA",esInicial:false,sucursal:{activo:true}} : user.rol==='ALMACENERO'?{tipo:'ALMACEN',esInicial:false,OR:[{sucursalId:null},{sucursalId:user.sucursalId||'__ninguna__'}]}:user.rol === "ADMIN" ? {} : { sucursalId: user.sucursalId || "__sin_sucursal__", esInicial: false };
 
 export function assertLocationAccess(user: Session, location: { sucursalId: string | null; esInicial: boolean; tipo?: string }) {
   if (user.rol === "ENCARGADO_TIENDA") {if(location.tipo === "TIENDA" && !location.esInicial)return;throw new ApiError(403,"Solo puedes operar inventario de tiendas.");}
   if (user.rol === "ADMIN") return;
+  if(user.rol==='ALMACENERO'){if(location.tipo==='ALMACEN'&&!location.esInicial&&(!location.sucursalId||location.sucursalId===user.sucursalId))return;throw new ApiError(403,'Solo puedes operar los almacenes centrales y de tu sucursal.');}
   if (!location.esInicial && user.sucursalId && location.sucursalId === user.sucursalId) return;
   throw new ApiError(403, "Solo puedes operar el inventario de tu sucursal.");
 }

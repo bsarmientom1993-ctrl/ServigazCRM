@@ -10,7 +10,7 @@ export function Header({ title, onMenu }: { title?: string; onMenu?: () => void 
   const { user } = useAuth();
   const { openGuide } = useHelp();
   const pathname = usePathname();
-  const sections: Record<string, string> = { proformas: "Proformas y solicitudes", entregas: "Entrega de material", cotizaciones: "Cotizaciones pendientes", "gestion-tienda": "Tienda pública", fotos: "Registro fotográfico", proyectos: "Proyectos de gas", agenda: "Mi agenda", perfil: "Mi perfil y equipo", ayuda: "Ayuda y práctica", dashboard: "Resumen general", trabajos: "Trabajos y órdenes", clientes: "Clientes", cotizador: "Cotizador", inventario: "Almacenes y tiendas", sucursales: "Sucursales y ubicaciones", garantias: "Garantías", configuracion: "Precios y tarifas", asistencia: "Asistencia", finanzas: "Finanzas" };
+  const sections: Record<string, string> = { atencion:"Atención al cliente y ventas", supervision:"Supervisión técnica", caja:"Caja y conciliación", proformas: "Proformas y solicitudes", entregas: "Entrega de material", cotizaciones: "Cotizaciones pendientes", "gestion-tienda": "Tienda pública", fotos: "Registro fotográfico", proyectos: "Proyectos de gas", agenda: "Mi agenda", perfil: "Mi perfil y equipo", ayuda: "Ayuda y práctica", dashboard: "Resumen general", trabajos: "Trabajos y órdenes", clientes: "Clientes", cotizador: "Cotizador", inventario: "Almacenes y tiendas", sucursales: "Sucursales y ubicaciones", garantias: "Garantías", configuracion: "Precios y tarifas", asistencia: "Asistencia", finanzas: "Finanzas" };
   return <header className="app-header">
     <div className="flex items-center gap-3 min-w-0">
       <button type="button" onClick={onMenu} className="theme-toggle mobile-menu-toggle" aria-label="Abrir menú" aria-controls="main-navigation"><Menu size={20} /></button>
@@ -20,10 +20,10 @@ export function Header({ title, onMenu }: { title?: string; onMenu?: () => void 
       </div>
     </div>
     <div className="flex items-center gap-2 sm:gap-3">
-      {user?.rol !== "ENCARGADO_TIENDA" && <button type="button" className="theme-toggle" aria-label="Abrir guía de ayuda" title="Ayuda y guía de bienvenida" onClick={openGuide}><CircleHelp size={18} /><span className="hidden lg:inline">Ayuda</span></button>}
+      {["ADMIN","ENCARGADO","TECNICO_FIJO"].includes(user?.rol||"") && <button type="button" className="theme-toggle" aria-label="Abrir guía de ayuda" title="Ayuda y guía de bienvenida" onClick={openGuide}><CircleHelp size={18} /><span className="hidden lg:inline">Ayuda</span></button>}
       <ThemeToggle />
-      {user?.rol !== "ENCARGADO_TIENDA" && <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>}
-      {(user?.rol === "ADMIN" || user?.rol === "ENCARGADO") &&
+      {["ADMIN","ENCARGADO","TECNICO_FIJO"].includes(user?.rol||"") && <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>}
+      {(user?.rol === "ADMIN" || user?.rol === "ENCARGADO" || user?.rol === "VENTAS") &&
         <Link href="/trabajos/nuevo" className="primary-action"><Plus size={17} /><span className="hidden sm:inline">Nuevo trabajo</span><span className="sm:hidden">Nuevo</span></Link>}
     </div>
   </header>;

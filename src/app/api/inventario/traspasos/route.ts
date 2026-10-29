@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await requireSession(req, inventoryOperators);
     const traspasos = await prisma.traspasoInventario.findMany({
-      where: user.rol === "ADMIN" ? {} : user.rol === "ENCARGADO_TIENDA" ? {OR:[{origen:{tipo:"TIENDA"}},{destino:{tipo:"TIENDA"}}]} : { OR: [{ origen: { sucursalId: user.sucursalId || "__ninguna__" } }, { destino: { sucursalId: user.sucursalId || "__ninguna__" } }] },
+      where: user.rol === "ADMIN" ? {} : user.rol === "ALMACENERO" ? {OR:[{origen:{tipo:"ALMACEN",OR:[{sucursalId:null},{sucursalId:user.sucursalId||"__ninguna__"}]}},{destino:{tipo:"ALMACEN",OR:[{sucursalId:null},{sucursalId:user.sucursalId||"__ninguna__"}]}}]} : user.rol === "ENCARGADO_TIENDA" ? {OR:[{origen:{tipo:"TIENDA"}},{destino:{tipo:"TIENDA"}}]} : { OR: [{ origen: { sucursalId: user.sucursalId || "__ninguna__" } }, { destino: { sucursalId: user.sucursalId || "__ninguna__" } }] },
       include: relations, orderBy: { createdAt: "desc" }, take: 200,
     });
     return NextResponse.json({ traspasos });

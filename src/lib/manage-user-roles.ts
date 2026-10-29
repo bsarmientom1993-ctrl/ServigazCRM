@@ -3,7 +3,7 @@ import { prisma } from './prisma';
 import { ApiError } from './api';
 import type { Session } from './auth';
 import { availableRoles, rolesOf } from './user-roles';
-export const rolesSchema=z.object({roles:z.array(z.enum(availableRoles)).max(4).refine(r=>new Set(r).size===r.length,'No repitas roles.')}).strict();
+export const rolesSchema=z.object({roles:z.array(z.enum(availableRoles)).max(availableRoles.length).refine(r=>new Set(r).size===r.length,'No repitas roles.')}).strict();
 export async function updateUserRoles(actor:Session,id:string,input:unknown){
   if(actor.rol!=='ADMIN')throw new ApiError(403,'Solo el administrador puede asignar roles.');
   const {roles}=rolesSchema.parse(input);

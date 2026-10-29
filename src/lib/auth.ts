@@ -1,4 +1,4 @@
-import {storeApiAllowed} from "./store-role";
+import {roleApiAllowed} from "./role-access";
 import { activeRole, UserRole } from './user-roles';
 import { NextRequest } from "next/server";
 import * as jwt from "jsonwebtoken";
@@ -31,7 +31,7 @@ export async function requireSession(req: NextRequest, roles?: RolUsuario[]) {
   if (!user || user.estado !== "ACTIVO") throw new ApiError(401, "La cuenta no está activa.");
   const selected=activeRole(user,req.cookies.get('servigaz_rol')?.value);
   if(!selected)throw new ApiError(401,'La cuenta no tiene roles asignados. Contacta al administrador.');
-  if (selected === "ENCARGADO_TIENDA" && !storeApiAllowed(req.nextUrl.pathname,req.method)) throw new ApiError(403,"Tu acceso está limitado al inventario y las operaciones de las tiendas.");
+  if (!roleApiAllowed(selected,req.nextUrl.pathname,req.method)) throw new ApiError(403,"Tu rol activo no permite acceder a este apartado.");
   if (roles && !roles.includes(selected)) throw new ApiError(403, "Tu rol no permite esta acción.");
   return {id:user.id,rol:selected,estado:user.estado,sucursalId:user.sucursalId};
 }
@@ -39,11 +39,14 @@ export async function requireSession(req: NextRequest, roles?: RolUsuario[]) {
 export function assignedRoleWhere(role:UserRole):Prisma.UsuarioWhereInput{return {OR:[{rolesAsignados:{array_contains:[role]}},{rol:role,rolesAsignados:{equals:Prisma.DbNull}}]};}
 
 export type Session = Awaited<ReturnType<typeof requireSession>>;
-export const inventoryOperators: RolUsuario[] = ["ADMIN","ENCARGADO","ENCARGADO_TIENDA"];
+export const inventoryOperators: RolUsuario[] = ["ADMIN","ENCARGADO","ENCARGADO_TIENDA","ALMACENERO"];
 export const managers: RolUsuario[] = ["ADMIN", "ENCARGADO"];
+export const intakeOperators:RolUsuario[]=['ADMIN','ENCARGADO','VENTAS'];
+export const proformaOperators:RolUsuario[]=['ADMIN','ENCARGADO','VENTAS','ENCARGADO_TIENDA'];
+export const paymentOperators:RolUsuario[]=['ADMIN','ENCARGADO','CAJA'];
 
 export function workScope(user: Session): Prisma.TrabajoWhereInput {
-  if (user.rol === "ENCARGADO_TIENDA") throw new ApiError(403,"No tienes acceso a trabajos ni cotizaciones.");
+  if (["ENCARGADO_TIENDA","ALMACENERO","GESTOR_PROYECTOS"].includes(user.rol)) throw new ApiError(403,"No tienes acceso al expediente comercial del trabajo.");
   if (user.rol === "ADMIN") return {};
   if (user.rol === "TECNICO_FIJO") return { tecnicoId: user.id };
   // A manager without a branch can only access their own orders.
@@ -51,7 +54,7 @@ export function workScope(user: Session): Prisma.TrabajoWhereInput {
 }
 
 export function assertWorkAccess(user: Session, work: { tecnicoId: string | null; encargadoId: string; sucursalId: string | null }) {
-  if (user.rol === "ENCARGADO_TIENDA") throw new ApiError(403,"No tienes acceso a esta orden.");
+  if (["ENCARGADO_TIENDA","ALMACENERO","GESTOR_PROYECTOS"].includes(user.rol)) throw new ApiError(403,"No tienes acceso a esta orden.");
   if (user.rol === "ADMIN") return;
   if (user.rol === "TECNICO_FIJO" ? work.tecnicoId === user.id :
     work.encargadoId === user.id || Boolean(user.sucursalId && user.sucursalId === work.sucursalId)) return;

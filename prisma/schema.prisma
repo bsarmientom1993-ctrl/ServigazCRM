@@ -12,6 +12,11 @@ datasource db {
 // --------------------------------------------------------
 
 enum RolUsuario {
+  VENTAS
+  SUPERVISOR
+  GESTOR_PROYECTOS
+  ALMACENERO
+  CAJA
   ENCARGADO_TIENDA
   ADMIN
   ENCARGADO

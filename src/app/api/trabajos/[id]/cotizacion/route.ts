@@ -1,3 +1,4 @@
+import {objectRecord as roleRecord} from "@/lib/gas-data";
 import { isIndependentProject } from "@/lib/work-responsibility";
 import { approvedGasCalculation } from "@/lib/gas-policy";
 import { isGasWork } from "@/lib/gas-data";
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } });
       if (!["EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado) || work.egreso ||
         work.pagos.length > 0 || work.cotizaciones[0]?.estado === "APROBADA") throw new ApiError(409, "No puede reemplazarse el presupuesto de una orden aceptada, cobrada o cerrada.");
+      if(roleRecord(roleRecord(roleRecord(work.fechasSla).gas).revisionTecnica).estado==="CORRECCION_SOLICITADA")throw new ApiError(409,"El supervisor solicitó corregir la evaluación antes de continuar con el presupuesto.");
       const gasCalculation = isGasWork(work) && !isIndependentProject(work) ? await approvedGasCalculation(tx, work) : null;
       const material = gasCalculation ? cents(gasCalculation.subtotalMateriales) : cents(body.subtotalMateriales);
       const labor = gasCalculation ? cents(gasCalculation.subtotalManoObra) : cents(body.subtotalManoObra);

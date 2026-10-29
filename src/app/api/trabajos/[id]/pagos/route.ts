@@ -15,7 +15,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, ["ADMIN","ENCARGADO","CAJA"]);
     const { id } = await params;
     const key = z.string().uuid("Falta una clave válida para evitar cobros duplicados.").parse(req.headers.get("Idempotency-Key"));
     const body = schema.parse(await req.json());

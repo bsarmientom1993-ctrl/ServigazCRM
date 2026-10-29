@@ -26,7 +26,8 @@
     "test:catalog": "node --require ./tests/register.cjs --test tests/catalog.integration.cjs",
     "test:store": "node --require ./tests/register.cjs --test tests/store.integration.cjs",
     "test:photos": "node --require ./tests/register.cjs --test tests/photos.integration.cjs",
-    "photos:r2": "node scripts/move-photos-to-r2.cjs"
+    "photos:r2": "node scripts/move-photos-to-r2.cjs",
+    "test:roles": "node --require ./tests/register.cjs --test tests/operational-roles.integration.cjs"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { UserRound, Users } from "lucide-react";
 import {UserRoleEditor} from '@/components/UserRoleEditor';
-import type {UserRole} from '@/lib/user-roles';
+import {roleLabels,type UserRole} from '@/lib/user-roles';
 type Profile = { id: string; nombre: string; telefono?: string | null; email: string; rol: string; roles?:UserRole[]; estado?: string; sucursal?: { nombre: string } };
-const roles: Record<string, string> = { ENCARGADO_TIENDA:"Encargado de tienda", ADMIN: "Administrador", ENCARGADO: "Encargado", TECNICO_FIJO: "Técnico" };
+const roles:Record<string,string> = roleLabels;
 export default function ProfilePage() {
   const { user, loading, refreshUser } = useAuth();
   const [name, setName] = useState(""), [phone, setPhone] = useState("");

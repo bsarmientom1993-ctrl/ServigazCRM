@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO", "VENTAS"]);
     const categorias = await prisma.catalogoCategoria.findMany({
       where: { activo: true },
       orderBy: { orden: "asc" },

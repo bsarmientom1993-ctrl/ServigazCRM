@@ -8,7 +8,7 @@ import { localParts, reservationEnd, schedulingSchema, slotConflicts, technician
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await requireSession(req, managers);
+    const user = await requireSession(req, ["ADMIN","ENCARGADO","VENTAS"]);
     const params = req.nextUrl.searchParams;
     const start = new Date(z.string().datetime({ offset: true }).parse(params.get("desde")));
     const end = new Date(z.string().datetime({ offset: true }).parse(params.get("hasta")));

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await requireSession(req, inventoryOperators);
     const compras = await prisma.movimientoInventario.findMany({
-      where: { tipoMovimiento: "COMPRA", ...(session.rol === "ADMIN" ? {} : session.rol === "ENCARGADO_TIENDA" ? {ubicacionDestino:{tipo:"TIENDA"}} : { OR: [{ ubicacionDestino: { sucursalId: session.sucursalId || "__ninguna__" } }, { ubicacionDestinoId: null, usuarioId: session.id }] }) },
+      where: { tipoMovimiento: "COMPRA", ...(session.rol === "ADMIN" ? {} : session.rol === "ALMACENERO" ? {ubicacionDestino:{tipo:"ALMACEN",OR:[{sucursalId:null},{sucursalId:session.sucursalId||"__ninguna__"}]}} : session.rol === "ENCARGADO_TIENDA" ? {ubicacionDestino:{tipo:"TIENDA"}} : { OR: [{ ubicacionDestino: { sucursalId: session.sucursalId || "__ninguna__" } }, { ubicacionDestinoId: null, usuarioId: session.id }] }) },
       include: {
         ubicacionDestino: { select: { nombre: true } },
         producto: { select: { id: true, codigoSku: true, nombre: true, categoria: true, unidadMedida: true, costoPromedio: true } },
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       numeroDocumento: z.string().trim().max(200).optional(), observaciones: z.string().trim().max(2000).optional(),
       registrarEgresoCaja: z.boolean().default(false),
     }).parse(await req.json());
-    if(user.rol === "ENCARGADO_TIENDA" && body.registrarEgresoCaja) throw new ApiError(403,"Puedes ingresar compras al inventario; el registro de caja corresponde al administrador o encargado.");
+    if(["ENCARGADO_TIENDA","ALMACENERO"].includes(user.rol) && body.registrarEgresoCaja) throw new ApiError(403,"Puedes ingresar compras al inventario; el registro de caja corresponde al administrador o encargado.");
     cents(body.precioCompraUnitario);
     const quantity = new Prisma.Decimal(body.cantidad);
     if (quantity.decimalPlaces() > 2) throw new ApiError(400, "La cantidad admite hasta dos decimales.");

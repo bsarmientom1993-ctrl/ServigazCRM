@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO", "VENTAS"]);
     const clientes = await prisma.cliente.findMany({
       where: session.rol === "ADMIN" ? {} : { sucursalId: session.sucursalId },
       orderBy: { nombreCompleto: "asc" },
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireSession(req, ["ADMIN", "ENCARGADO"]);
+    const session = await requireSession(req, ["ADMIN", "ENCARGADO", "VENTAS"]);
     const body = await req.json();
     const { nombreCompleto, telefono, email, direccion, ubicacionMapsUrl } = body;
 

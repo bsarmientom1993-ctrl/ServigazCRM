@@ -21,7 +21,7 @@ export type DocumentData = {
 export async function documentScope(tx: Prisma.TransactionClient, user: Session): Promise<Prisma.DocumentoProformaWhereInput> {
   if(user.rol==='TECNICO_FIJO') return { tipo:'MATERIALES', tecnicoId:user.id };
   const locations=await tx.ubicacionInventario.findMany({where:locationScope(user),select:{id:true}});
-  return {ubicacionId:{in:locations.map(l=>l.id)}};
+  return {ubicacionId:{in:locations.map(l=>l.id)},...(user.rol==='VENTAS'?{tipo:'CLIENTE'}:user.rol==='ALMACENERO'?{tipo:'MATERIALES'}:{})};
 }
 export async function requireDocument(tx:Prisma.TransactionClient,user:Session,id:string) {
   const doc=await tx.documentoProforma.findFirst({where:{AND:[{id},await documentScope(tx,user)]}});
@@ -32,7 +32,7 @@ export async function operationalWork(tx:Prisma.TransactionClient,user:Session,i
   await tx.$queryRaw`SELECT id FROM "Trabajo" WHERE id=${id} FOR UPDATE`;
   const work=await tx.trabajo.findUnique({where:{id},include:{egreso:true}});
   if(!work)throw new ApiError(404,'Trabajo no encontrado.');
-  if(user.rol==='ENCARGADO_TIENDA'){if(work.sucursalId!==branchId)throw new ApiError(403,'Selecciona un trabajo de la sucursal de origen.');}
+  if(['ENCARGADO_TIENDA','ALMACENERO'].includes(user.rol)){if((user.rol==='ENCARGADO_TIENDA'||branchId)&&work.sucursalId!==branchId)throw new ApiError(403,'Selecciona un trabajo de la sucursal de origen.');}
   else assertWorkAccess(user,work);
   if(work.tecnicoId!==tecnicoId)throw new ApiError(409,'El técnico debe estar asignado al trabajo.');
   if(work.egreso||isIndependentProject(work)||['CANCELADO','RECHAZADO','ARCHIVADO','FINALIZADO_FINANCIERO','TERMINADO_TECNICO','VALIDADO'].includes(work.estado))throw new ApiError(409,'El trabajo no admite nuevas entregas ni consumo de materiales.');

@@ -8,5 +8,5 @@ export async function activeTeamMember(tx:Prisma.TransactionClient,user:Session,
   if(!person||person.estado!=='ACTIVO'||user.rol!=='ADMIN'&&person.sucursalId!==branchId)throw new ApiError(403,'Selecciona una persona activa de tu equipo.');
   return {id:person.id,nombre:person.nombre};
 }
-export function projectScope(user:Session):Prisma.TrabajoWhereInput {return user.rol==='TECNICO_FIJO'?{fechasSla:{path:['gas','proyecto','responsableId'],equals:user.id}}:workScope(user);}
-export function assertProjectAccess(user:Session,work:any){if(user.rol==='TECNICO_FIJO'){if(gasData(work).proyecto?.responsableId!==user.id)throw new ApiError(403,'El proyecto no está asignado a tu seguimiento.');}else assertWorkAccess(user,work);}
+export function projectScope(user:Session):Prisma.TrabajoWhereInput {return ['TECNICO_FIJO','GESTOR_PROYECTOS'].includes(user.rol)?{fechasSla:{path:['gas','proyecto','responsableId'],equals:user.id}}:workScope(user);}
+export function assertProjectAccess(user:Session,work:any){if(['TECNICO_FIJO','GESTOR_PROYECTOS'].includes(user.rol)){if(gasData(work).proyecto?.responsableId!==user.id)throw new ApiError(403,'El proyecto no está asignado a tu seguimiento.');}else assertWorkAccess(user,work);}

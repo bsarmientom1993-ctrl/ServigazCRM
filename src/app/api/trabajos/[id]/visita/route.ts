@@ -24,7 +24,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const body = await req.json();
     const action = z.enum(["AGENDAR_VISITA", "COMPLETAR_VISITA", "GUARDAR_EVALUACION"]).parse(body.accion);
-    if (action === "AGENDAR_VISITA" && !managers.includes(user.rol)) throw new ApiError(403, "El encargado debe programar la visita.");
+    if (action === "AGENDAR_VISITA" && ![...managers,"VENTAS"].includes(user.rol)) throw new ApiError(403, "El encargado debe programar la visita.");
+    if(user.rol==="VENTAS"&&action!=="AGENDAR_VISITA")throw new ApiError(403,"Ventas solo puede coordinar visitas.");
     const result = await withWork(id, user, async (tx, actor) => {
       const work = await tx.trabajo.findUniqueOrThrow({ where: { id } });
       if (action === "AGENDAR_VISITA") {

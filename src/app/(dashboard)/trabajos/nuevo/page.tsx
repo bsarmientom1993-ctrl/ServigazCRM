@@ -141,16 +141,16 @@ export default function NuevoTrabajoWizardPage() {
       if (!result.id) throw new Error("El servidor no devolvió el trabajo. Intenta nuevamente para recuperar el resultado.");
       completed.current = true;
       try { localStorage.removeItem(draftKey); } catch { /* Saving succeeded even if storage is blocked. */ }
-      router.push("/trabajos/" + result.id);
+      router.push(user?.rol==="VENTAS"?"/atencion?creado="+result.id:"/trabajos/" + result.id);
     } catch (err: any) { setError(err.message || "No se pudo conectar. Puedes volver a intentar sin duplicar la solicitud."); busy.current = false; setSaving(false); }
   }
   const normalized = query.trim().toLowerCase();
   const matches = normalized.length >= 2 ? customers.filter(c => (c.nombreCompleto + " " + c.telefonos.join(" ") + " " + (c.direccion || "")).toLowerCase().includes(normalized)).slice(0, 8) : [];
   if (loading) return <p role="status" className="module-note">Cargando clientes, servicios y técnicos…</p>;
-  if (loadError) return <div className="module-card space-y-4"><p role="alert" className="module-error">{loadError}</p><button className="primary-action" onClick={() => setReload(n => n + 1)}>Volver a cargar</button><Link className="theme-toggle" href="/trabajos">Volver a trabajos</Link></div>;
+  if (loadError) return <div className="module-card space-y-4"><p role="alert" className="module-error">{loadError}</p><button className="primary-action" onClick={() => setReload(n => n + 1)}>Volver a cargar</button><Link className="theme-toggle" href={user?.rol==="VENTAS"?"/atencion":"/trabajos"}>Volver a trabajos</Link></div>;
 
   return <div className="max-w-4xl mx-auto space-y-5 pb-8">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="module-eyebrow">NUEVA SOLICITUD</p><h2 className="text-2xl font-semibold text-ink">Nuevo trabajo</h2><p className="text-sm text-muted mt-2">Selecciona el cliente, define el servicio y revisa antes de guardar.</p></div><Link className="theme-toggle" href="/trabajos"><ArrowLeft size={16} />Trabajos</Link></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="module-eyebrow">NUEVA SOLICITUD</p><h2 className="text-2xl font-semibold text-ink">Nuevo trabajo</h2><p className="text-sm text-muted mt-2">Selecciona el cliente, define el servicio y revisa antes de guardar.</p></div><Link className="theme-toggle" href={user?.rol==="VENTAS"?"/atencion":"/trabajos"}><ArrowLeft size={16} />Trabajos</Link></div>
     {restored && <p className="module-note">Recuperamos tu borrador. Revisa los datos antes de crear el trabajo.</p>}
     {selectedCustomer && <p className="module-note">Cliente seleccionado: <strong>{selectedCustomer.nombreCompleto}</strong> · {selectedCustomer.telefonos.join(", ")} · {selectedCustomer.direccion}</p>}
     <nav aria-label="Pasos del nuevo trabajo" className="grid grid-cols-3 gap-2">{[{ number: 1, name: "Cliente", icon: User }, { number: 2, name: "Servicio", icon: Wrench }, { number: 3, name: "Coordinar", icon: ClipboardCheck }].map(item => <button type="button" key={item.number} disabled={saving} aria-current={step === item.number ? "step" : undefined} onClick={() => go(item.number as 1 | 2 | 3)} className={"module-card flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 !p-3 text-left " + (step === item.number ? "ring-2 ring-[#F06529]" : "")}><span className="rounded-full bg-wash w-7 h-7 flex items-center justify-center shrink-0 text-ink text-sm">{step > item.number ? <Check size={16} /> : item.number}</span><span className="text-xs sm:text-sm font-semibold text-ink">{item.name}</span></button>)}</nav>
