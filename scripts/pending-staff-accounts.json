@@ -1,0 +1,32 @@
+[
+  {
+    "nombre": "Carolina",
+    "email": "carolina@servigaz.local",
+    "passwordHash": "$2b$12$6MGndTMkCEXJd.MrJ1zM.eagHsyg524mp1Xs3BTNgef/Wzvk5hDWK"
+  },
+  {
+    "nombre": "Belén",
+    "email": "belen@servigaz.local",
+    "passwordHash": "$2b$12$I046QE07lxmWfZJPCv0mU.Dcx6.NGapMtHr0N.ZZayhIUufZuQGJC"
+  },
+  {
+    "nombre": "Waldo",
+    "email": "waldo@servigaz.local",
+    "passwordHash": "$2b$12$v46VoR7K3YmcoqcejBhfL.0dFQZvkj3efYiLA1thF8F29G/mqFMwW"
+  },
+  {
+    "nombre": "Félix",
+    "email": "felix@servigaz.local",
+    "passwordHash": "$2b$12$s9XDq24A9A4WCEcdgQIkaOhc8ON/y4GT1kDtrHo7wpD0cBKJLK6Hi"
+  },
+  {
+    "nombre": "Persi",
+    "email": "persi@servigaz.local",
+    "passwordHash": "$2b$12$ZCIa9UrQGMOWRAQK6fVvEe7MViiGtqbT1SnvqqC8WTCpZijeuAycC"
+  },
+  {
+    "nombre": "Cristian",
+    "email": "cristian@servigaz.local",
+    "passwordHash": "$2b$12$zLTGdo8aHKSFLzTCXSAg0.ZDLCiPtAPNmHCBU6mKNnciMGIrBsMXi"
+  }
+]
