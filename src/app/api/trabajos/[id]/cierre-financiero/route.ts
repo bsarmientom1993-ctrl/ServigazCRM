@@ -1,4 +1,5 @@
 import { isIndependentProject } from "@/lib/work-responsibility";
+import {generateWorkCommission} from '@/lib/commissions';
 import { gasData,objectRecord } from "@/lib/gas-data";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         qrCodeData: new URL("/api/garantias/" + encodeURIComponent(code), req.nextUrl.origin).toString(), activo: true,
       } });
       await tx.trabajo.update({ where: { id }, data: { estado: "FINALIZADO_FINANCIERO" } });
+      await generateWorkCommission(tx,work,profit,actor);
       await tx.auditoriaLog.create({ data: {
         usuarioId: user.id, modulo: "CIERRE_FINANCIERO", accion: "CREATE", entidadTipo: "EgresoTrabajo", entidadId: egreso.id,
         valoresNuevos: { realizadoPor: actor.nombre, trabajoId: id, cotizacionId: quote.id, totalIngreso: money(paid), totalEgreso: money(expense),

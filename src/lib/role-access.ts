@@ -1,5 +1,6 @@
 import {storeApiAllowed,storePageAllowed} from './store-role';
 export function roleApiAllowed(role:string,path:string,method:string){
+  if(path==='/api/comisiones'&&method==='GET')return true;
   if(role==='ENCARGADO_TIENDA')return storeApiAllowed(path,method);
   if(['ADMIN','ENCARGADO','TECNICO_FIJO'].includes(role))return true;
   const common:Record<string,string[]>={'/api/auth/me':['GET','PATCH'],'/api/auth/logout':['POST'],'/api/auth/rol':['POST']};
@@ -16,6 +17,7 @@ export function roleApiAllowed(role:string,path:string,method:string){
   return false;
 }
 export function rolePageAllowed(role:string,path:string){
+  if(path==='/comisiones')return true;
   if(role==='ENCARGADO_TIENDA')return storePageAllowed(path);
   if(['ADMIN','ENCARGADO','TECNICO_FIJO'].includes(role))return true;
   if(path==='/perfil')return true;

@@ -418,7 +418,7 @@ export default function TrabajoDetallePage({
       const data = await res.json();
       if (res.ok) {
         setErrorMsg("");
-        setSuccessMsg(`✅ Trabajo finalizado con éxito. Certificado de garantía emitido. Ganancia Real: Bs. ${Number(data.utilidadReal || 0).toLocaleString("es-CL")}`);
+        setSuccessMsg(`✅ Trabajo finalizado con éxito. Certificado de garantía emitido. Utilidad antes de comisiones: Bs. ${Number(data.utilidadReal || 0).toLocaleString("es-CL")}`);
         setModalCierreFinanciero(false);
         cargarDatos();
       } else {

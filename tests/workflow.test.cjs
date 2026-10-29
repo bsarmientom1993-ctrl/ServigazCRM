@@ -50,6 +50,7 @@ beforeEach(() => {
     configuracionDescuento: { findFirst: async () => ({ pctMaxEncargado: decimal(10), topeMaximoPct: decimal(20) }) },
     formatoCotizacion: { findUnique: async () => null },
     configuracionAnticipo: { findUnique: async () => null },
+    comisionTrabajo:{findUnique:async()=>null,create:writer("commission")}, configuracionComision:{findUnique:async()=>null},
     egresoTrabajo: { create: writer("expense") }, certificadoGarantia: { create: writer("warranty") },
     catalogoSubtipo: { findUnique: async () => ({ categoria: { codigo: "GAS" } }) },
     visitaTecnica: { findFirst: async () => null },
@@ -174,7 +175,7 @@ test("closure freezes exact costs and uses service-specific warranty duration", 
   const data = await response.json();
   assert.equal(data.utilidadReal, 790);
   assert.equal(data.garantia.mesesCobertura, 2);
-  assert.equal(writes.filter(([type]) => ["expense", "warranty", "work", "audit"].includes(type)).length, 4);
+  assert.equal(writes.filter(([type]) => ["expense", "warranty", "work", "audit"].includes(type)).length, 5);
 });
 test("closure retries return existing complete close without writing again", async () => {
   work.estado = "FINALIZADO_FINANCIERO"; work.egreso = { id: "closed", utilidadNeta: decimal(790) }; work.garantia = { id: "warranty" };

@@ -39,6 +39,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
   const store = user.rol === "ENCARGADO_TIENDA";const warehouse=user.rol==="ALMACENERO",sales=user.rol==="VENTAS",tech=user.rol==="TECNICO_FIJO";
   const manager = user.rol === "ADMIN" || user.rol === "ENCARGADO";
   const navigation = [
+    {name:user.rol==='ADMIN'?'Comisiones del equipo':'Mis comisiones',href:'/comisiones',icon:Wallet,show:true,group:'gestion'},
     {name:"Recepción en sucursal",href:"/recepcion",icon:Users,show:manager||sales,group:"principal"},
     {name:"Atención al cliente y ventas",href:"/atencion",icon:Users,show:manager||sales,group:"principal"},
     {name:"Supervisión técnica",href:"/supervision",icon:BriefcaseBusiness,show:manager||user.rol==="SUPERVISOR",group:"principal"},
