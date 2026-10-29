@@ -171,6 +171,30 @@ input, textarea, select { scroll-margin-top: 100px; }
   .login-form-wrap h2 { font-size: 35px; }
   .login-footer { font-size: 9px; }
 }
+.warranty-seal { width:70mm; height:40mm; box-sizing:border-box; padding:2mm; border:0.35mm solid #172a43; background:white; color:#111; font-family:Arial,sans-serif; display:flex; flex-direction:column; gap:0.4mm; overflow:hidden; box-shadow:0 6px 24px #00000010; }
+.warranty-seal > * { flex-shrink:0; }
+.warranty-seal header { display:flex; justify-content:space-between; align-items:center; border-bottom:0.3mm solid #172a43; padding-bottom:0.7mm; font-size:6pt; }
+.warranty-seal header strong { font-size:11pt; letter-spacing:0.5pt; }
+.seal-code { font-family:monospace; font-weight:700; font-size:8pt; letter-spacing:0.3pt; }
+.seal-equipment { display:flex; flex-direction:column; font-size:6pt; line-height:1.16; }
+.seal-equipment strong { font-size:7pt; }
+.seal-equipment > * { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.seal-dates { display:flex; justify-content:space-between; font-size:6pt; }
+.seal-coverage { font-size:5.8pt; line-height:1.16; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.seal-warning { border:0.3mm solid #111; font-size:5.8pt; line-height:1.1; font-weight:bold; text-align:center; padding:0.65mm; margin-top:auto; }
+.warranty-seal footer { display:flex; justify-content:space-between; gap:1mm; font-size:5.2pt; line-height:1.1; }
+.warranty-seal footer span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.warranty-seal footer span:first-child { max-width:40%; }
+.warranty-seal footer span:last-child { max-width:60%; }
+.warranty-seal-void { border:0.6mm dashed #991b1b; }
+@page warrantySeal { size:70mm 40mm; margin:0; }
+@media print {
+  body:has(.seal-print-page) { margin:0 !important; padding:0 !important; }
+  body:has(.seal-print-page) .app-shell { display:block !important; min-height:0 !important; }
+  body:has(.seal-print-page) .app-content { margin:0 !important; padding:0 !important; }
+  .seal-print-page { page:warrantySeal; margin:0 !important; padding:0 !important; }
+  .seal-print-page .warranty-seal { margin:0 !important; box-shadow:none; break-inside:avoid; print-color-adjust:exact; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *:before, *:after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }

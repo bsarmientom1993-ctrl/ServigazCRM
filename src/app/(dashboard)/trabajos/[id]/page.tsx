@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { activeAssignedVisit } from "@/lib/technician-agenda";
 import { WorkPhotoFolders, type PhotoReferences } from "@/components/trabajos/WorkPhotoFolders";
+import { WorkWarrantyLabels } from "@/components/trabajos/WarrantyLabels";
 import { ClientQuickActions } from "@/components/trabajos/ClientQuickActions";
 import { GasWorkflow } from "@/components/trabajos/GasWorkflow";
 import { WorkResponsibilities } from "@/components/trabajos/WorkResponsibilities";
@@ -569,6 +570,7 @@ export default function TrabajoDetallePage({
         </div>
       )}
       <WorkPhotoFolders key={trabajo.estado} workId={id} onPhotosChange={handlePhotoReferences} />
+      {!isIndependentProject(trabajo) && <WorkWarrantyLabels workId={id} />}
       {/* Timeline */}
       <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs overflow-x-auto">
         <div className={canManage ? "flex items-center justify-between min-w-[750px] gap-2" : "grid grid-cols-4 gap-2"}>

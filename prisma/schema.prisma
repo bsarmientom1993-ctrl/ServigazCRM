@@ -435,6 +435,7 @@ model Trabajo {
   solicitudesMateriales DocumentoProforma[]
   egreso                   EgresoTrabajo?
   garantia                 CertificadoGarantia?
+  etiquetasGarantia        EtiquetaGarantia[]
   reclamosDerivados        ReclamoGarantia[] @relation("TrabajoOriginalReclamo")
   reclamosGenerados        ReclamoGarantia[] @relation("TrabajoDerivadoReclamo")
   
@@ -584,6 +585,31 @@ model EgresoTrabajo {
 // --------------------------------------------------------
 // MÓDULO 7: GARANTÍAS, POST-VENTA Y RECLAMOS
 // --------------------------------------------------------
+
+model EtiquetaGarantia {
+  id String @id @default(uuid())
+  trabajoId String
+  trabajo Trabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  codigo String @unique
+  operacion String
+  equipo String
+  marca String
+  modelo String
+  serie String
+  cobertura String
+  condiciones String
+  fechaInicio DateTime
+  fechaFin DateTime
+  emitidaPorId String
+  emitidaPorNombre String
+  solicitudHash String
+  anuladaAt DateTime?
+  anuladaPorId String?
+  anuladaPorNombre String?
+  motivoAnulacion String?
+  createdAt DateTime @default(now())
+  @@index([trabajoId, createdAt])
+}
 
 model CertificadoGarantia {
   id                String   @id @default(uuid())

@@ -4,6 +4,7 @@ if (process.env.VERCEL === "1") {
   execSync("node scripts/migrate-store-role.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-operational-roles.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-user-roles.cjs", { stdio: "inherit" });
+  execSync("node scripts/migrate-warranty-labels.cjs", { stdio: "inherit" });
   execSync("node scripts/provision-pending-staff.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-inventory.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-proformas.cjs", { stdio: "inherit" });
