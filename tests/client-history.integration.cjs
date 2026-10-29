@@ -22,6 +22,7 @@ const closing = require("../src/app/api/trabajos/[id]/cierre-financiero/route.ts
 const visits = require("../src/app/api/trabajos/[id]/visita/route.ts");
 const decisions = require("../src/app/api/trabajos/[id]/decision/route.ts");
 const history = require("../src/app/api/clientes/[id]/historial/route.ts");
+const clientDirectory=require('../src/app/api/clientes/route.ts');
 const legacyCalculator = require("../src/app/api/cotizador/calcular/route.ts");
 const { configureExampleCatalog } = require("../src/lib/catalog-examples.cjs");
 const works = require("../src/app/api/trabajos/route.ts");
@@ -106,4 +107,19 @@ test("pagination returns the whole customer history without foreign orders or du
   await body(await history.GET(request(manager), context(foreign.clienteId)), 403);
   const adminView = await body(await history.GET(request(admin), context(foreign.clienteId)));
   assert.deepEqual(adminView.trabajos.map(item => item.id), [foreign.id]);
+});
+test('client directory groups duplicate records, returns pending work only and opens full history separately',async()=>{
+ const first=await prisma.cliente.create({data:{nombreCompleto:'José Cliente agrupado',direccion:'Dirección ficticia',telefonos:['+591 70000004'],sucursalId:branch.id}});
+ const duplicate=await prisma.cliente.create({data:{nombreCompleto:'JOSE CLIENTE AGRUPADO',direccion:'Otra referencia',telefonos:['70000004'],sucursalId:branch.id}});
+ const homonym=await prisma.cliente.create({data:{nombreCompleto:'José Cliente agrupado',direccion:'Dirección distinta',telefonos:['70000005'],sucursalId:branch.id}});
+ const foreign=await prisma.cliente.create({data:{nombreCompleto:'José Cliente agrupado',direccion:'Otra sucursal',telefonos:['70000004'],sucursalId:outsider.sucursalId}});
+ const make=(clienteId,estado)=>prisma.trabajo.create({data:{codigoCorrelativo:'DIRECTORY-'+randomUUID(),clienteId,encargadoId:manager.id,sucursalId:branch.id,tipoFlujo:'SIMPLIFICADO',subtipoCodigo:'EQUIPO.PROVISION',subtipoNombre:'Provisión de equipo',estado}});
+ const a=await make(first.id,'EVALUADO'),b=await make(duplicate.id,'VALIDADO'),done=await make(duplicate.id,'FINALIZADO_FINANCIERO');
+ await make(first.id,'CANCELADO');await make(first.id,'RECHAZADO');await make(first.id,'ARCHIVADO');
+ function directoryReq(user,historyId){return new NextRequest('http://localhost/api/clientes?directorio=1'+(historyId?'&historial='+historyId:''),{headers:{Cookie:'servigaz_token='+jwt.sign({id:user.id},process.env.JWT_SECRET)}});}
+ const result=await body(await clientDirectory.GET(directoryReq(manager)));const card=result.find(c=>c.registrosIds.includes(first.id));assert.equal(result.filter(c=>c.registrosIds.includes(first.id)||c.registrosIds.includes(duplicate.id)).length,1);
+ assert.deepEqual(new Set(card.pendientes.map(w=>w.id)),new Set([a.id,b.id]));assert.ok(!JSON.stringify(result).includes(done.id));assert.ok(!card.registrosIds.includes(foreign.id));assert.ok(result.some(c=>c.id===homonym.id));
+ const full=await body(await clientDirectory.GET(directoryReq(manager,duplicate.id)));assert.equal(full.trabajos.length,6);assert.ok(full.trabajos.some(w=>w.id===done.id));assert.ok(full.trabajos.every(w=>!('cotizaciones'in w)&&!('pagos'in w)));
+ await body(await clientDirectory.GET(directoryReq(outsider,first.id)),404);
+ const raw=await body(await clientDirectory.GET(req(manager,undefined,'GET')));assert.ok(raw.some(c=>c.id===first.id));assert.ok(raw.some(c=>c.id===duplicate.id));assert.equal(await prisma.cliente.count({where:{id:{in:[first.id,duplicate.id]}}}),2);
 });
