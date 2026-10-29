@@ -1,4 +1,5 @@
 import {storeApiAllowed} from "./store-role";
+import { activeRole, UserRole } from './user-roles';
 import { NextRequest } from "next/server";
 import * as jwt from "jsonwebtoken";
 import { RolUsuario, Prisma } from "@prisma/client";
@@ -25,13 +26,17 @@ export async function requireSession(req: NextRequest, roles?: RolUsuario[]) {
   }
   const user = await prisma.usuario.findUnique({
     where: { id: userId },
-    select: { id: true, rol: true, estado: true, sucursalId: true },
+    select: { id: true, rol: true, rolesAsignados:true, estado: true, sucursalId: true },
   });
   if (!user || user.estado !== "ACTIVO") throw new ApiError(401, "La cuenta no está activa.");
-  if (user.rol === "ENCARGADO_TIENDA" && !storeApiAllowed(req.nextUrl.pathname,req.method)) throw new ApiError(403,"Tu acceso está limitado al inventario y las operaciones de las tiendas.");
-  if (roles && !roles.includes(user.rol)) throw new ApiError(403, "Tu rol no permite esta acción.");
-  return user;
+  const selected=activeRole(user,req.cookies.get('servigaz_rol')?.value);
+  if(!selected)throw new ApiError(401,'La cuenta no tiene roles asignados. Contacta al administrador.');
+  if (selected === "ENCARGADO_TIENDA" && !storeApiAllowed(req.nextUrl.pathname,req.method)) throw new ApiError(403,"Tu acceso está limitado al inventario y las operaciones de las tiendas.");
+  if (roles && !roles.includes(selected)) throw new ApiError(403, "Tu rol no permite esta acción.");
+  return {id:user.id,rol:selected,estado:user.estado,sucursalId:user.sucursalId};
 }
+
+export function assignedRoleWhere(role:UserRole):Prisma.UsuarioWhereInput{return {OR:[{rolesAsignados:{array_contains:[role]}},{rol:role,rolesAsignados:{equals:Prisma.DbNull}}]};}
 
 export type Session = Awaited<ReturnType<typeof requireSession>>;
 export const inventoryOperators: RolUsuario[] = ["ADMIN","ENCARGADO","ENCARGADO_TIENDA"];

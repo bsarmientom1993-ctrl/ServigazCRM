@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import {RoleSwitcher} from './RoleSwitcher';
 import { LayoutDashboard, BriefcaseBusiness, Calculator, Users, Clock3, Package, Settings2, Award, LogOut, ChevronRight, MapPin, Wallet, X, Building2, CircleHelp, FolderClock, FileClock, ShoppingBag } from "lucide-react";
 
 export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
@@ -51,7 +52,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     { name: "Finanzas", href: "/finanzas", icon: Wallet, show: user.rol === "ADMIN", group: "gestion" },
     { name: "Garantías", href: "/garantias", icon: Award, show: manager, group: "gestion" },
     { name: "Ayuda y práctica", href: "/ayuda", icon: CircleHelp, show: !store, group: "gestion" },
-    { name: "Mi perfil", href: "/perfil", icon: Users, show: true, group: "gestion" },
+    { name: user.rol === "ADMIN" ? "Usuarios y roles" : "Mi perfil", href: "/perfil", icon: Users, show: true, group: "gestion" },
     { name: "Asistencia", href: "/asistencia", icon: Clock3, show: !store, group: "gestion" },
     { name: "Precios y tarifas", href: "/configuracion", icon: Settings2, show: manager, group: "gestion" },
   ];
@@ -63,6 +64,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         <Link href={store ? "/inventario" : "/dashboard"} onClick={onClose} className="flex items-center gap-3"><div className="brand-mark"><Image src="/logo.jpg" alt="Servigaz" width={44} height={44} priority /></div><div><span className="block font-semibold text-lg tracking-tight text-white">SERVIGAZ<span className="text-orange-400">.</span></span><small>Gestión de servicios</small></div></Link>
         <button type="button" className="sidebar-close lg:hidden" onClick={onClose} aria-label="Cerrar menú"><X size={20} /></button>
       </div>
+      <div className="px-5 pb-2"><RoleSwitcher/></div>
       <nav className="sidebar-nav">
         {[{ id: "principal", label: "ESPACIO DE TRABAJO" }, { id: "gestion", label: "GESTIÓN" }].map(group => <div key={group.id} className="sidebar-group">
           <p>{group.label}</p>

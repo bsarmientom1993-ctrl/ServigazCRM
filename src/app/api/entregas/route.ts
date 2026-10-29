@@ -1,3 +1,4 @@
+import {hasAssignedRole} from '@/lib/user-roles';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
@@ -33,7 +34,7 @@ export async function POST(req:NextRequest){try{
     const doc=await requireDocument(tx,user,candidate.id);
     if(doc.estado!=='APROBADA'||doc.validoHasta<new Date())throw new ApiError(409,'La solicitud debe estar aprobada y vigente.');
     await lockLocations(tx,[doc.ubicacionId]);const location=await locationForOperation(tx,user,doc.ubicacionId);
-    const tech=await tx.usuario.findUnique({where:{id:doc.tecnicoId!}});if(!tech||tech.estado!=='ACTIVO'||tech.rol!=='TECNICO_FIJO')throw new ApiError(409,'El técnico no está activo.');
+    const tech=await tx.usuario.findUnique({where:{id:doc.tecnicoId!}});if(!tech||tech.estado!=='ACTIVO'||!hasAssignedRole(tech,'TECNICO_FIJO'))throw new ApiError(409,'El técnico no está activo.');
     const requested=(doc.datos as unknown as DocumentData).items;
     const prior=await tx.entregaMaterialItem.findMany({where:{entrega:{proformaId:doc.id}}});
     const author=await tx.usuario.findUniqueOrThrow({where:{id:user.id},select:{nombre:true}});

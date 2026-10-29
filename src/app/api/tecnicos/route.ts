@@ -1,3 +1,4 @@
+import {assignedRoleWhere} from '@/lib/auth';
 import { requireSession } from "@/lib/auth";
 import { apiError, ApiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
     const tecnicos = await prisma.usuario.findMany({
       where: {
         ...(session.rol === "ADMIN" ? {} : { sucursalId: session.sucursalId }),
-        rol: "TECNICO_FIJO",
+        ...assignedRoleWhere("TECNICO_FIJO"),
         estado: "ACTIVO",
       },
       select: {

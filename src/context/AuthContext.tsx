@@ -2,12 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { roleHome, UserRole } from '@/lib/user-roles';
 
 export interface UserSession {
   id: string;
   nombre: string;
   email: string;
   rol: "ADMIN" | "ENCARGADO" | "TECNICO_FIJO" | "ENCARGADO_TIENDA";
+  roles?: UserRole[];
   telefono?: string;
   sucursal?: string;
   sucursalId?: string | null;
@@ -47,7 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchSession();
-  }, []);
+    const focus=()=>void fetchSession();window.addEventListener('focus',focus);
+    return ()=>window.removeEventListener('focus',focus);
+  }, [pathname]);
 
   const login = async (email: string, pass: string) => {
     try {
@@ -59,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (res.ok && data.success) {
         setUser(data.user);
-        router.push(data.user.rol === "ENCARGADO_TIENDA" ? "/inventario" : data.user.rol === "TECNICO_FIJO" ? "/agenda" : "/dashboard");
+        router.push(roleHome(data.user.rol));
         return { success: true };
       } else {
         return { success: false, error: data.error || "Error al iniciar sesión" };

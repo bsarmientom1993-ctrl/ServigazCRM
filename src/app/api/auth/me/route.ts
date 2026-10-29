@@ -4,6 +4,7 @@ import { ApiError, apiError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import * as jwt from "jsonwebtoken";
+import { activeRole, rolesOf } from '@/lib/user-roles';
 
 
 export async function GET(req: NextRequest) {
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
         nombre: true,
         email: true,
         rol: true,
+        rolesAsignados:true,
         telefono: true,
         estado: true,
         sucursal: { select: { id: true, nombre: true } },
@@ -31,13 +33,15 @@ export async function GET(req: NextRequest) {
     if (!user || user.estado !== "ACTIVO") {
       return NextResponse.json({ user: null });
     }
+    const rol=activeRole(user,req.cookies.get('servigaz_rol')?.value);
+    if(!rol)return NextResponse.json({user:null});
 
     return NextResponse.json({
       user: {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
-        rol: user.rol,
+        rol,roles:rolesOf(user),
         telefono: user.telefono,
         sucursal: user.sucursal?.nombre,
         sucursalId: user.sucursal?.id || null,

@@ -1,3 +1,4 @@
+import {hasAssignedRole} from '@/lib/user-roles';
 import { isIndependentProject } from "@/lib/work-responsibility";
 import { gasData } from "@/lib/gas-data";
 import { evidencePhoto, assertPhotoReferences } from "@/lib/work-photos";
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         assertStart(work.estado, Boolean(work.tecnicoId), quote.estado === "APROBADA", cents(quote.anticipoMinimoRequerido),
           work.pagos.reduce((sum, p) => sum + cents(p.monto), 0));
         const technician = await tx.usuario.findUnique({ where: { id: work.tecnicoId! } });
-        if (!technician || technician.estado !== "ACTIVO" || technician.rol !== "TECNICO_FIJO") throw new ApiError(409, "Asigna un técnico activo.");
+        if (!technician || technician.estado !== "ACTIVO" || !hasAssignedRole(technician,"TECNICO_FIJO")) throw new ApiError(409, "Asigna un técnico activo.");
         changes = { estado: "EN_PROCESO", fechaInicioEjecucion: new Date() };
       } else if (body.accion === "REGISTRAR_MATERIAL") {
         if (work.estado !== "EN_PROCESO") throw new ApiError(409, "Registra materiales durante la ejecución.");

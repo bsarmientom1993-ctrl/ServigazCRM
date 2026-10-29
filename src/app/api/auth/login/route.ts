@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
+import { activeRole, rolesOf } from '@/lib/user-roles';
 
 
 export async function POST(req: NextRequest) {
@@ -59,12 +60,13 @@ export async function POST(req: NextRequest) {
     }
 
     stage = "TOKEN_SIGNING";
+    const rol=activeRole(user);if(!rol)throw new ApiError(403,'La cuenta no tiene roles asignados. Contacta al administrador.');
     const token = jwt.sign(
       {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
-        rol: user.rol,
+        rol,
         sucursalId: user.sucursalId,
       },
       jwtSecret(),
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
-        rol: user.rol,
+        rol,roles:rolesOf(user),
         telefono: user.telefono,
         sucursal: user.sucursal?.nombre,
         sucursalId: user.sucursalId,
@@ -105,6 +107,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
+    response.cookies.set('servigaz_rol',rol,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:7*86400});
     return response;
   } catch (error) {
     if (error instanceof ApiError || error instanceof z.ZodError || error instanceof SyntaxError) return apiError(error);

@@ -32,6 +32,9 @@ before(async () => {
   await prisma.$transaction(async tx => { for (const statement of sql.split(";").map(s => s.trim()).filter(Boolean)) await tx.$executeRawUnsafe(statement); }, { timeout: 60000 });
   await require("../scripts/migrate-inventory.cjs").migrateInventory(prisma);
   await require("../scripts/migrate-proformas.cjs").migrateProformas(prisma);
+  await require("../scripts/migrate-store-role.cjs").migrateStoreRole(prisma);
+  await require("../scripts/migrate-user-roles.cjs").migrateUserRoles(prisma);
+  await require("../scripts/migrate-user-roles.cjs").migrateUserRoles(prisma);
   branch = await prisma.sucursal.create({ data: { nombre: "Sucursal catálogo de prueba" } });
   async function user(role) { return prisma.usuario.create({ data: { nombre: role, email: randomUUID() + "@example.invalid", rol: role, passwordHash: "not-a-password", sucursalId: branch.id } }); }
   admin = await user("ADMIN"); manager = await user("ENCARGADO"); technician = await user("TECNICO_FIJO");
@@ -91,4 +94,58 @@ test("quote, sale, payment, execution and closure retain their authors across la
   assert.equal(final.historialActividad.find(e => e.accion === "Cotización emitida").nombre, "Marta Soto");
   assert.equal(final.historialActividad.find(e => e.accion === "Trabajo terminado por el técnico").nombre, "Pedro Muñoz");
   await body(await detail.GET(req(outsider, undefined, "GET"), ctx), 403);
+});
+
+const switchRole=require('../src/app/api/auth/rol/route.ts');
+const {requireSession}=require('../src/lib/auth.ts');
+function roleReq(user,path,body,method='POST',role){return new NextRequest('http://localhost/api/'+path,{method,headers:{'Content-Type':'application/json',...(user?{Cookie:'servigaz_token='+jwt.sign({id:user.id,rol:'ADMIN'},process.env.JWT_SECRET)+(role?'; servigaz_rol='+role:'')}:{})},...(method==='GET'?{}:{body:JSON.stringify(body)})});}
+async function member(name='Persona con roles'){return prisma.usuario.create({data:{nombre:name,email:randomUUID()+'@example.invalid',passwordHash:'not-a-password',rol:'TECNICO_FIJO',sucursalId:branch.id}});}
+
+test('administrator assigns multiple checkbox roles and each role keeps its own server restrictions',async()=>{
+ const person=await member();const changes={roles:['TECNICO_FIJO','ENCARGADO_TIENDA']};
+ await body(await profiles.PATCH(roleReq(manager,'usuarios/'+person.id,changes,'PATCH'),context(person.id)),403);
+ const saved=await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,changes,'PATCH'),context(person.id)));assert.deepEqual(saved.user.roles,['TECNICO_FIJO','ENCARGADO_TIENDA']);
+ const listed=await body(await directory.GET(roleReq(admin,'usuarios',null,'GET')));assert.equal(listed.find(u=>u.id===person.id).roles.length,2);
+ const techSession=await body(await me.GET(roleReq(person,'auth/me',null,'GET','TECNICO_FIJO')));assert.equal(techSession.user.rol,'TECNICO_FIJO');assert.equal(techSession.user.roles.length,2);
+ const switched=await body(await switchRole.POST(roleReq(person,'auth/rol',{rol:'ENCARGADO_TIENDA'})));assert.equal(switched.rol,'ENCARGADO_TIENDA');
+ const storeSession=await body(await me.GET(roleReq(person,'auth/me',null,'GET','ENCARGADO_TIENDA')));assert.equal(storeSession.user.rol,'ENCARGADO_TIENDA');
+ await body(await directory.GET(roleReq(person,'usuarios',null,'GET','ENCARGADO_TIENDA')),403);
+ await body(await switchRole.POST(roleReq(person,'auth/rol',{rol:'ADMIN'},'POST','ENCARGADO_TIENDA')),403);
+ await body(await directory.GET(roleReq(person,'usuarios',null,'GET','ADMIN')),403);
+ const audit=await prisma.auditoriaLog.findFirst({where:{modulo:'USUARIOS',entidadId:person.id}});assert.equal(audit.usuarioId,admin.id);assert.deepEqual(audit.valoresNuevos.roles,changes.roles);
+});
+
+test('revocation applies to an existing signed session, and no roles disables login access',async()=>{
+ const person=await member();await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,{roles:['TECNICO_FIJO','ADMIN']},'PATCH'),context(person.id)));
+ await body(await directory.GET(roleReq(person,'usuarios',null,'GET','ADMIN')));
+ await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,{roles:['TECNICO_FIJO']},'PATCH'),context(person.id)));
+ await body(await directory.GET(roleReq(person,'usuarios',null,'GET','ADMIN')),403);
+ const after=await body(await me.GET(roleReq(person,'auth/me',null,'GET','ADMIN')));assert.equal(after.user.rol,'TECNICO_FIJO');
+ await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,{roles:[]},'PATCH'),context(person.id)));
+ assert.equal((await prisma.usuario.findUnique({where:{id:person.id}})).estado,'INACTIVO');assert.equal((await body(await me.GET(roleReq(person,'auth/me',null,'GET')))).user,null);
+ await assert.rejects(()=>requireSession(roleReq(person,'auth/rol',{},'POST')),e=>e.status===401);
+ await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,{roles:['ENCARGADO_TIENDA']},'PATCH'),context(person.id)));
+ const restored=await body(await me.GET(roleReq(person,'auth/me',null,'GET')));assert.equal(restored.user.rol,'ENCARGADO_TIENDA');assert.equal((await prisma.usuario.findUnique({where:{id:person.id}})).estado,'ACTIVO');
+});
+
+test('technical assignment recognizes a secondary technician role and stops listing it once removed',async()=>{
+ const person=await member();await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,{roles:['ENCARGADO_TIENDA']},'PATCH'),context(person.id)));
+ await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,{roles:['ENCARGADO_TIENDA','TECNICO_FIJO']},'PATCH'),context(person.id)));
+ const techRoute=require('../src/app/api/tecnicos/route.ts');const listed=await body(await techRoute.GET(roleReq(admin,'tecnicos',null,'GET')));assert.ok(listed.some(t=>t.id===person.id));
+ await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,{roles:['ENCARGADO_TIENDA']},'PATCH'),context(person.id)));
+ const removed=await body(await techRoute.GET(roleReq(admin,'tecnicos',null,'GET')));assert.ok(!removed.some(t=>t.id===person.id));
+});
+
+test('last active administrator is protected and role inputs cannot modify other account fields',async()=>{
+ for(const changes of [{roles:[]},{roles:['TECNICO_FIJO']}])await body(await profiles.PATCH(roleReq(admin,'usuarios/'+admin.id,changes,'PATCH'),context(admin.id)),409);
+ const person=await member();
+ for(const invalid of [{roles:['ADMIN','ADMIN']},{roles:['SUPERADMIN']},{roles:['ADMIN'],passwordHash:'forged'},{roles:['ADMIN'],email:'forged@example.invalid'}])await body(await profiles.PATCH(roleReq(admin,'usuarios/'+person.id,invalid,'PATCH'),context(person.id)),400);
+ await body(await me.PATCH(roleReq(person,'auth/me',{nombre:'Cambio indebido',roles:['ADMIN']},'PATCH')),400);
+});
+
+test('concurrent administrator removals cannot leave the system without an active administrator',async()=>{
+ const second=await member('Segundo administrador');await body(await profiles.PATCH(roleReq(admin,'usuarios/'+second.id,{roles:['ADMIN']},'PATCH'),context(second.id)));
+ const results=await Promise.all([profiles.PATCH(roleReq(admin,'usuarios/'+second.id,{roles:['TECNICO_FIJO']},'PATCH'),context(second.id)),profiles.PATCH(roleReq(second,'usuarios/'+admin.id,{roles:['TECNICO_FIJO']},'PATCH','ADMIN'),context(admin.id))]);
+ assert.equal(results.filter(r=>r.status===200).length,1);assert.ok(results.every(r=>[200,403,409].includes(r.status)));
+ const {rolesOf}=require('../src/lib/user-roles.ts');const remaining=await prisma.usuario.findMany({where:{estado:'ACTIVO'}});assert.equal(remaining.filter(u=>rolesOf(u).includes('ADMIN')).length,1);
 });

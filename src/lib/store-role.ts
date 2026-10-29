@@ -2,6 +2,7 @@ export const storeRole = 'ENCARGADO_TIENDA' as const;
 export function storeApiAllowed(path:string,method:string){
  const permissions:Record<string,string[]>={
   '/api/auth/me':['GET','PATCH'],'/api/auth/logout':['POST'],
+  '/api/auth/rol':['POST'],
   '/api/inventario':['GET','POST'],'/api/inventario/compras':['GET','POST'],
   '/api/inventario/movimientos':['GET'],'/api/inventario/minimos':['PATCH'],
   '/api/inventario/traspasos':['GET','POST','PATCH'],'/api/ubicaciones':['GET'],

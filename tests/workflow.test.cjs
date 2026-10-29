@@ -205,7 +205,7 @@ test("public setup endpoint cannot reset credentials", async () => {
 
 test("all internal handlers reject missing sessions before accessing business data", async () => {
   const routes = [
-    ["proformas", ["GET","POST","PATCH"]], ["proformas/opciones", ["GET","POST"]], ["entregas", ["GET","POST","PATCH"]],
+    ["auth/rol", ["POST"]], ["proformas", ["GET","POST","PATCH"]], ["proformas/opciones", ["GET","POST"]], ["entregas", ["GET","POST","PATCH"]],
     ["catalogo/servicios", ["GET", "POST"]], ["clientes", ["GET", "POST"]], ["clientes/[id]/historial", ["GET"]],
     ["equipo", ["GET"]], ["trabajos/[id]/responsables", ["POST"]], ["cotizaciones/pendientes", ["GET"]], ["gestion-tienda", ["GET", "PUT"]], ["configuracion/precios", ["GET", "POST"]], ["cotizador/calcular", ["POST"]],
     ["dashboard/stats", ["GET"]], ["finanzas", ["GET", "POST"]], ["finanzas/balance", ["GET"]],

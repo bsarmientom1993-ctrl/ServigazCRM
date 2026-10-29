@@ -1,3 +1,4 @@
+import {hasAssignedRole} from './user-roles';
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { ApiError } from "./api";
@@ -44,7 +45,7 @@ export async function technicianReservations(tx: Prisma.TransactionClient, ids: 
 export async function assertTechnicianSlot(tx: Prisma.TransactionClient, user: Session, id: string, start: Date, config: Scheduling) {
   await tx.$queryRaw(Prisma.sql`SELECT id FROM "Usuario" WHERE id = ${id} FOR UPDATE`);
   const technician = await tx.usuario.findUnique({ where: { id } });
-  if (!technician || technician.rol !== "TECNICO_FIJO" || technician.estado !== "ACTIVO" || (user.rol !== "ADMIN" && technician.sucursalId !== user.sucursalId)) throw new ApiError(400, "Selecciona un técnico activo de tu sucursal.");
+  if (!technician || !hasAssignedRole(technician,"TECNICO_FIJO") || technician.estado !== "ACTIVO" || (user.rol !== "ADMIN" && technician.sucursalId !== user.sucursalId)) throw new ApiError(400, "Selecciona un técnico activo de tu sucursal.");
   if (!Number.isFinite(start.getTime()) || start.getTime() <= Date.now()) throw new ApiError(400, "Selecciona una fecha y hora futura.");
   if (!withinWorkingHours(start, config, await workingHours(tx))) throw new ApiError(409, "El horario está fuera de la jornada de trabajo. Consulta la agenda.");
   const day = localParts(start, config.zonaHoraria).day;

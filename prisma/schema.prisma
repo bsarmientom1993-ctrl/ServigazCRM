@@ -154,6 +154,7 @@ model Usuario {
   passwordHash  String
   telefono      String?
   rol           RolUsuario
+  rolesAsignados Json? // null preserves legacy role; [] explicitly removes every role
   estado        EstadoUsuario @default(ACTIVO)
   sucursalId    String?
   sucursal      Sucursal?     @relation(fields: [sucursalId], references: [id])

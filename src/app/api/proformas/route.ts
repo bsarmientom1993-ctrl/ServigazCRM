@@ -1,3 +1,4 @@
+import {assignedRoleWhere} from '@/lib/auth';
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
@@ -42,7 +43,7 @@ export async function POST(req:NextRequest){try{
       datos.cliente=client.nombreCompleto;clientId=client.id;
     }else{
       if(!input.tecnicoId||!input.trabajoId)throw new ApiError(400,'Selecciona el técnico y el trabajo.');
-      const tech=await tx.usuario.findFirst({where:{id:input.tecnicoId,rol:'TECNICO_FIJO',estado:'ACTIVO'}});
+      const tech=await tx.usuario.findFirst({where:{id:input.tecnicoId,...assignedRoleWhere('TECNICO_FIJO'),estado:'ACTIVO'}});
       if(!tech)throw new ApiError(400,'Selecciona un técnico activo.');
       const work=await operationalWork(tx,user,input.trabajoId,tech.id,location.sucursalId);
       if(user.rol!=='ADMIN'&&work.sucursalId!==location.sucursalId)throw new ApiError(403,'La solicitud debe salir de la sucursal del trabajo.');

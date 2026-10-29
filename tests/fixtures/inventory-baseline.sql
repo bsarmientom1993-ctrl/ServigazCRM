@@ -728,3 +728,4 @@ ALTER TABLE "MovimientoInventario" ADD CONSTRAINT "MovimientoInventario_usuarioI
 ALTER TABLE "AuditoriaLog" ADD CONSTRAINT "AuditoriaLog_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 CREATE TABLE "FormatoCotizacion" ("id" TEXT PRIMARY KEY, "formato" JSONB NOT NULL, "modificadoPor" TEXT NOT NULL, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE "Usuario" ADD COLUMN "rolesAsignados" JSONB;

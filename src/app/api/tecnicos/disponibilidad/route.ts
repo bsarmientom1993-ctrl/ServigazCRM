@@ -1,3 +1,4 @@
+import {assignedRoleWhere} from '@/lib/auth';
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     const config = schedulingSchema.parse({ duracionMinutos: Number(params.get("duracionMinutos") || 60), margenMinutos: Number(params.get("margenMinutos") || 30), zonaHoraria: params.get("zonaHoraria") || undefined });
     if (localParts(start, config.zonaHoraria).day !== localParts(new Date(end.getTime() - 1), config.zonaHoraria).day) throw new ApiError(400, "Consulta un solo día de agenda.");
     const result = await prisma.$transaction(async tx => {
-      const technicians = await tx.usuario.findMany({ where: { rol: "TECNICO_FIJO", estado: "ACTIVO", ...(user.rol === "ADMIN" ? {} : { sucursalId: user.sucursalId }) }, select: { id: true, nombre: true }, orderBy: { nombre: "asc" } });
+      const technicians = await tx.usuario.findMany({ where: { ...assignedRoleWhere("TECNICO_FIJO"), estado: "ACTIVO", ...(user.rol === "ADMIN" ? {} : { sucursalId: user.sucursalId }) }, select: { id: true, nombre: true }, orderBy: { nombre: "asc" } });
       const hours = await workingHours(tx);
       const visits = await technicianReservations(tx, technicians.map(t => t.id), start, end);
       const day = localParts(start, config.zonaHoraria).day;
