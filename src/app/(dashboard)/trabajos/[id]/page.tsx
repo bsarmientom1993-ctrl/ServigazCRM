@@ -570,6 +570,7 @@ export default function TrabajoDetallePage({
         </div>
       )}
       <WorkPhotoFolders key={trabajo.estado} workId={id} onPhotosChange={handlePhotoReferences} />
+      {trabajo.fechasSla?.recepcion&&<Link className="theme-toggle" href={'/recepcion/'+id}>Ver recepción, seguimiento y equipos en custodia</Link>}
       {!isIndependentProject(trabajo) && <WorkWarrantyLabels workId={id} />}
       {/* Timeline */}
       <div className="bg-surface p-5 rounded-2xl border border-line shadow-xs overflow-x-auto">

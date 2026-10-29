@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const work = await prisma.trabajo.findUnique({ where: { id }, select: photoWorkSelect });
     if (!work) throw new ApiError(404, "Trabajo no encontrado.");
     const permisos = photoPermissions(user,work);
-    const photos = await prisma.fotoTrabajo.findMany({ where: { trabajoId: id }, select: photoMetadataSelect, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+    const photos = await prisma.fotoTrabajo.findMany({ where: { trabajoId: id,...(user.rol==='VENTAS'?{etapa:'INICIAL'}:{}) }, select: photoMetadataSelect, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
     return NextResponse.json({ trabajo: { id, codigo: work.codigoCorrelativo, cliente: work.cliente.nombreCompleto }, permisos, fotos: photos.map(photo=>({...photo,url:photoUrl(id,photo.id)})) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch(error) { return apiError(error); }
 }

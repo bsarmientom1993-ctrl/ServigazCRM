@@ -436,6 +436,7 @@ model Trabajo {
   egreso                   EgresoTrabajo?
   garantia                 CertificadoGarantia?
   etiquetasGarantia        EtiquetaGarantia[]
+  equiposRecibidos         RecepcionEquipo[]
   reclamosDerivados        ReclamoGarantia[] @relation("TrabajoOriginalReclamo")
   reclamosGenerados        ReclamoGarantia[] @relation("TrabajoDerivadoReclamo")
   
@@ -585,6 +586,31 @@ model EgresoTrabajo {
 // --------------------------------------------------------
 // MÓDULO 7: GARANTÍAS, POST-VENTA Y RECLAMOS
 // --------------------------------------------------------
+
+model RecepcionEquipo {
+  id String @id @default(uuid())
+  trabajoId String
+  trabajo Trabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  codigo String @unique
+  equipo String
+  marca String
+  modelo String
+  serie String
+  estadoIngreso String
+  accesorios String
+  fallaReportada String
+  clienteNombre String
+  sucursalNombre String
+  recibidoPorId String
+  recibidoPorNombre String
+  devueltoAt DateTime?
+  devueltoPorId String?
+  devueltoPorNombre String?
+  entregadoA String?
+  observacionesDevolucion String?
+  createdAt DateTime @default(now())
+  @@index([trabajoId, createdAt])
+}
 
 model EtiquetaGarantia {
   id String @id @default(uuid())

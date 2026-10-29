@@ -28,7 +28,8 @@
     "test:photos": "node --require ./tests/register.cjs --test tests/photos.integration.cjs",
     "photos:r2": "node scripts/move-photos-to-r2.cjs",
     "test:roles": "node --require ./tests/register.cjs --test tests/operational-roles.integration.cjs",
-    "test:warranty-labels": "node --require ./tests/register.cjs --test tests/warranty-labels.integration.cjs"
+    "test:warranty-labels": "node --require ./tests/register.cjs --test tests/warranty-labels.integration.cjs",
+    "test:reception": "node --require ./tests/register.cjs --test tests/reception.integration.cjs"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

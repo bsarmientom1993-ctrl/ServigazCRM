@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   ShieldCheck,
@@ -25,6 +25,7 @@ import {
 export default function GarantiasPage() {
   const { user } = useAuth();
   const isAdmin = user?.rol === "ADMIN";
+  const claimRequest = useRef({key:"",snapshot:""});
 
   const [tabActiva, setTabActiva] = useState<"certificados" | "reclamos">("certificados");
   const [certificados, setCertificados] = useState<any[]>([]);
@@ -70,17 +71,20 @@ export default function GarantiasPage() {
   const handleCrearReclamo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/garantias/reclamos", {
+      const snapshot=JSON.stringify(nuevoReclamoData);
+      if(claimRequest.current.snapshot!==snapshot)claimRequest.current={key:crypto.randomUUID(),snapshot};
+      const res = await fetch("/api/recepcion/reclamos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key":claimRequest.current.key },
         body: JSON.stringify({
-          trabajoOriginalId: nuevoReclamoData.trabajoOriginalId,
+          trabajoId: nuevoReclamoData.trabajoOriginalId,
           descripcionFalla: nuevoReclamoData.descripcionFalla,
         }),
       });
 
       if (res.ok) {
         setMsgExito("✅ Reclamo de post-venta ingresado exitosamente.");
+        claimRequest.current={key:"",snapshot:""};
         setModalNuevoReclamo(false);
         setNuevoReclamoData({ trabajoOriginalId: "", descripcionFalla: "" });
         cargarGarantias();
@@ -93,7 +97,7 @@ export default function GarantiasPage() {
   const handleResolverDictamen = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/garantias/reclamos/${reclamoEditando.id}`, {
+      const res = await fetch(`/api/garantias/reclamo/${reclamoEditando.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

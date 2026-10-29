@@ -14,7 +14,7 @@ export function photoPermissions(user: Session, work: PhotoWork) {
   if (manager) assertWorkAccess(user, work);
   else if (!assigned && !(branch && proposalAccepted(work))) throw new ApiError(403, "No tienes acceso al registro fotográfico de este trabajo.");
   const initial = (manager || assigned) && !proposalAccepted(work) && ["BORRADOR", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "COTIZACION_VENCIDA", "EN_NEGOCIACION"].includes(work.estado);
-  return { INICIAL: initial, FINAL: proposalAccepted(work) && (manager || assigned || branch) };
+  return { INICIAL: initial, FINAL: user.rol!=='VENTAS' && proposalAccepted(work) && (manager || assigned || branch) };
 }
 export function photoWorkScope(user: Session): Prisma.TrabajoWhereInput {
   if (user.rol !== "TECNICO_FIJO") return workScope(user);

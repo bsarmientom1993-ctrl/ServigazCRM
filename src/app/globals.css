@@ -334,3 +334,9 @@ input, textarea, select { scroll-margin-top: 100px; }
 .quote-footer-text { padding: 16px 40px; font-size: 11px; border-top: 2px solid var(--quote-ink); }
 .quote-letter[data-paper="a4"] { max-width: 794px; min-height: 1123px; }
 @media print { .quote-letter[data-paper="a4"] { max-width: none; min-height: 0; } }
+@page equipmentReceipt { size:A4; margin:12mm; }
+@media print {
+ .equipment-receipt-page { page:equipmentReceipt; }
+ .equipment-receipt { color:#111 !important; background:#fff !important; box-shadow:none !important; border:0 !important; break-after:page; }
+ .equipment-receipt:last-child { break-after:auto; }
+}
