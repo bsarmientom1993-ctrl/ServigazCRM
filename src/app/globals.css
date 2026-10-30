@@ -340,3 +340,16 @@ input, textarea, select { scroll-margin-top: 100px; }
  .equipment-receipt { color:#111 !important; background:#fff !important; box-shadow:none !important; border:0 !important; break-after:page; }
  .equipment-receipt:last-child { break-after:auto; }
 }
+
+/* Native modal keeps the attendance panel square on desktop and phones. */
+.attendance-clock-dialog { margin:auto; padding:0; width:min(560px,calc(100vw - 24px),calc(100dvh - 24px)); height:auto; aspect-ratio:1; max-width:none; max-height:none; border:1px solid var(--line); border-radius:24px; background:var(--surface); color:var(--ink); overflow:hidden; box-shadow:0 30px 100px #0007; }
+.attendance-clock-dialog::backdrop { background:rgb(4 12 26 / .76); backdrop-filter:blur(7px); }
+.attendance-clock-shell { display:flex; flex-direction:column; height:100%; min-height:0; background:linear-gradient(145deg,rgba(240,101,41,.08),transparent 48%); }
+.attendance-clock-header { display:flex; align-items:start; justify-content:space-between; gap:12px; padding:22px 24px 12px; flex-shrink:0; }
+.attendance-clock-body { padding:0 24px; display:flex; flex-direction:column; gap:12px; flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.attendance-clock-footer { padding:14px 24px 18px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:10px; border-top:1px solid var(--line); background:var(--surface); }
+.attendance-motivation { display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--line); border-radius:16px; background:rgba(240,101,41,.04); }
+.attendance-motivation-text { font-size:13px; line-height:1.5; min-height:39px; animation:attendance-message-in .3s ease-out; }
+@keyframes attendance-message-in { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+@media (max-width:480px), (max-height:600px) { .attendance-clock-header { padding:14px 16px 8px; }.attendance-clock-body { padding:0 16px; gap:9px; }.attendance-clock-footer { padding:10px 16px 12px; gap:8px; }.attendance-clock-body .attendance-motivation { padding:10px; }.attendance-clock-body .attendance-motivation-text { font-size:12px; } }
+@media (prefers-reduced-motion:reduce) { .attendance-motivation-text { animation:none; } }
