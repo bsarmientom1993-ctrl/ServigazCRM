@@ -8,6 +8,7 @@ if (process.env.VERCEL === "1") {
   execSync("node scripts/migrate-reception.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-commissions.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-portal-notifications.cjs", { stdio: "inherit" });
+  execSync("node scripts/migrate-personal.cjs", { stdio: "inherit" });
   execSync("node scripts/provision-pending-staff.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-inventory.cjs", { stdio: "inherit" });
   execSync("node scripts/migrate-proformas.cjs", { stdio: "inherit" });

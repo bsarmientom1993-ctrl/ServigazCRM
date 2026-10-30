@@ -1110,3 +1110,99 @@ model FotoTrabajo {
   @@unique([trabajoId, etapa, sha256])
   @@index([trabajoId, etapa, createdAt])
 }
+
+model PuntoAsistencia {
+ sucursalId String @id
+ latitud Decimal @db.Decimal(10,7)
+ longitud Decimal @db.Decimal(10,7)
+ activo Boolean @default(true)
+ modificadoPorNombre String
+ updatedAt DateTime @updatedAt
+}
+model ReglaNomina {
+ id String @id @default(uuid())
+ vigenteDesde String @unique
+ inicioControl DateTime @db.Date
+ divisorDia Int
+ descuentoFaltaPct Decimal @db.Decimal(5,2)
+ descuentoTardanzaPct Decimal @db.Decimal(5,2)
+ diasNoLaborables Json
+ activa Boolean @default(true)
+ modificadoPorNombre String
+ updatedAt DateTime @updatedAt
+}
+model ConfiguracionLaboral {
+ id String @id @default(uuid())
+ usuarioId String
+ vigenteDesde String
+ sueldoMensual Decimal @db.Decimal(12,2)
+ fechaIngreso DateTime @db.Date
+ fechaBaja DateTime? @db.Date
+ horaEntrada String
+ horaSalida String
+ toleranciaMinutos Int
+ diasLaborales Json
+ sucursalesAutorizadas Json
+ activo Boolean @default(true)
+ modificadoPorNombre String
+ updatedAt DateTime @updatedAt
+ @@unique([usuarioId,vigenteDesde])
+}
+model MarcacionPersonal {
+ id String @id @default(uuid())
+ asistenciaId String
+ usuarioId String
+ sucursalId String
+ tipo String
+ origen String
+ latitud Float?
+ longitud Float?
+ precisionMetros Float?
+ distanciaMetros Float?
+ centroLatitud Float?
+ centroLongitud Float?
+ muestraAt DateTime?
+ registradoAt DateTime @default(now())
+ minutosTarde Int @default(0)
+ justificacion String @default("")
+ solicitudHash String
+ @@unique([asistenciaId,tipo])
+ @@index([usuarioId,registradoAt])
+}
+model GestionPermiso {
+ permisoId String @id
+ goceHaberes Boolean @default(true)
+ motivoDecision String @default("")
+ decididoPorNombre String?
+ retirado Boolean @default(false)
+}
+model IncidenciaPersonal {
+ id String @id @default(uuid())
+ usuarioId String
+ fecha DateTime @db.Date
+ descripcion String
+ estado String @default("PENDIENTE")
+ justificaDia Boolean @default(false)
+ resolucion String @default("")
+ resueltoPorNombre String?
+ resueltoAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([usuarioId,fecha])
+}
+model LiquidacionPersonal {
+ id String @id @default(uuid())
+ usuarioId String
+ periodo String
+ version Int
+ estado String @default("CERRADA")
+ snapshot Json
+ totalBruto Decimal @db.Decimal(12,2)
+ totalDescuentos Decimal @db.Decimal(12,2)
+ totalNeto Decimal @db.Decimal(12,2)
+ creadoPorNombre String
+ createdAt DateTime @default(now())
+ motivoAnulacion String @default("")
+ anuladaAt DateTime?
+ @@unique([usuarioId,periodo,version])
+}

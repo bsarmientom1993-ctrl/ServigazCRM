@@ -1,5 +1,6 @@
 import {storeApiAllowed,storePageAllowed} from './store-role';
 export function roleApiAllowed(role:string,path:string,method:string){
+  if(path==='/api/personal'&&method==='GET'||['/api/personal/marcacion','/api/personal/permisos','/api/personal/incidencias'].includes(path)&&method==='POST')return true;
   if(path==='/api/notificaciones'&&['GET','POST','PATCH'].includes(method)||path==='/api/notificaciones/dispositivos'&&['POST','DELETE'].includes(method))return true;
   if(path==='/api/comisiones'&&method==='GET')return true;
   if(role==='ENCARGADO_TIENDA')return storeApiAllowed(path,method);
@@ -19,6 +20,7 @@ export function roleApiAllowed(role:string,path:string,method:string){
   return false;
 }
 export function rolePageAllowed(role:string,path:string){
+  if(path==='/personal'||path==='/asistencia')return true;
   if(path==='/empresas-instaladoras')return role==='ADMIN';
   if(path==='/pedidos-profesionales')return ['ADMIN','ENCARGADO','VENTAS'].includes(role);
   if(path==='/notificaciones')return true;

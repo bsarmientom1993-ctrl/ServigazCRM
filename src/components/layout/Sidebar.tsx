@@ -62,7 +62,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     { name: "Garantías", href: "/garantias", icon: Award, show: manager, group: "gestion" },
     { name: "Ayuda y práctica", href: "/ayuda", icon: CircleHelp, show: manager||tech, group: "gestion" },
     { name: user.rol === "ADMIN" ? "Usuarios y roles" : "Mi perfil", href: "/perfil", icon: Users, show: true, group: "gestion" },
-    { name: "Asistencia", href: "/asistencia", icon: Clock3, show: manager||tech, group: "gestion" },
+    { name: user.rol === "ADMIN" ? "Personal, sueldos y asistencia" : "Mi personal y asistencia", href: "/personal", icon: Clock3, show: true, group: "gestion" },
     { name: "Precios y tarifas", href: "/configuracion", icon: Settings2, show: manager, group: "gestion" },
   ];
   const roles = roleLabels;

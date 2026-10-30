@@ -32,7 +32,7 @@ export async function requireSession(req: NextRequest, roles?: RolUsuario[]) {
   const selected=activeRole(user,req.cookies.get('servigaz_rol')?.value);
   if(!selected)throw new ApiError(401,'La cuenta no tiene roles asignados. Contacta al administrador.');
   if (!roleApiAllowed(selected,req.nextUrl.pathname,req.method)) throw new ApiError(403,"Tu rol activo no permite acceder a este apartado.");
-  if(['VENTAS','SUPERVISOR','CAJA'].includes(selected)&&!user.sucursalId&&!req.nextUrl.pathname.startsWith('/api/auth/')&&req.nextUrl.pathname!=='/api/comisiones'&&!req.nextUrl.pathname.startsWith('/api/notificaciones'))throw new ApiError(403,'El administrador debe asignarte una sucursal antes de operar con este rol.');
+  if(['VENTAS','SUPERVISOR','CAJA'].includes(selected)&&!user.sucursalId&&!req.nextUrl.pathname.startsWith('/api/auth/')&&req.nextUrl.pathname!=='/api/comisiones'&&!req.nextUrl.pathname.startsWith('/api/notificaciones')&&!req.nextUrl.pathname.startsWith('/api/personal'))throw new ApiError(403,'El administrador debe asignarte una sucursal antes de operar con este rol.');
   if (roles && !roles.includes(selected)) throw new ApiError(403, "Tu rol no permite esta acción.");
   return {id:user.id,rol:selected,estado:user.estado,sucursalId:user.sucursalId};
 }
