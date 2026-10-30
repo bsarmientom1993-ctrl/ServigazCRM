@@ -363,3 +363,13 @@ input, textarea, select { scroll-margin-top: 100px; }
 .sidebar-section[open] .sidebar-section-chevron { transform:rotate(90deg); }
 .sidebar-section .sidebar-link { padding-left:16px; }
 @media (prefers-reduced-motion:reduce) { .sidebar-section-chevron { transition:none; } }
+
+.sidebar-search { display:flex; align-items:center; gap:8px; padding:10px; border:1px solid rgba(255,255,255,.14); border-radius:10px; background:rgba(255,255,255,.04); color:#cbd5e1; }
+.sidebar-search:focus-within { border-color:#f06529; }
+.sidebar-search input { width:100%; min-width:0; background:transparent; outline:none; color:#f1f5f9; font-size:12px; }
+.sidebar-search input::placeholder { color:#94a3b8; }
+.sidebar-search input::-webkit-search-cancel-button { display:none; }
+.sidebar-search > svg,.sidebar-search button { flex-shrink:0; }
+@media (max-width:1023px) { .sidebar-search input { font-size:16px; } }
+@media (max-width:639px) { .header-help { display:none; } }
+@media (max-width:639px) { .app-header h1 { white-space:normal; overflow:visible; font-size:12px; line-height:1.25; overflow-wrap:anywhere; }.app-header > div:last-child { flex-shrink:0; } }
