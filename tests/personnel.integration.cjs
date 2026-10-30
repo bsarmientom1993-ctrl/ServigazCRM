@@ -100,3 +100,18 @@ test('administrator payroll does not invent absence or lateness penalties when a
  const s=await prisma.$transaction(tx=>payrollSummary(tx,admin2.id,'2026-09'));
  assert.equal(s.asistenciaExenta,true);assert.equal(s.descuentos,'0.00');assert.equal(s.neto,'3000.00');assert.equal(s.incompletos,0);assert.ok(s.dias.every(d=>d.estado==='ASISTENCIA_NO_REQUERIDA'));
 });
+
+test('missing entrance blocks GPS, permits and reviews remain available, and administrator configuration restores marking',async()=>{
+ const b=await prisma.sucursal.create({data:{nombre:'Ingreso pendiente de prueba'}});
+ const u=await prisma.usuario.create({data:{nombre:'Persona punto pendiente',email:randomUUID()+'@example.invalid',passwordHash:'unused',rol:'TECNICO_FIJO',sucursalId:b.id}});
+ await body(await post(config,admin,'/api/personal/configuracion',{...laborData(u),sucursalesAutorizadas:[b.id],horaEntrada:'00:00',horaSalida:'23:59'}));
+ const before=await body(await view.GET(req(u)));assert.equal(before.sucursales[0].punto,null);
+ const denied=await body(await post(clock,u,'/api/personal/marcacion',{accion:'PREPARAR',tipo:'ENTRADA',sucursalId:b.id}),409);assert.match(denied.error,/punto de ingreso/);
+ const reviewId=randomUUID();await body(await post(incidents,u,'/api/personal/incidencias',{accion:'SOLICITAR',id:reviewId,fecha:today,descripcion:'No pude marcar porque el ingreso no está configurado'}));
+ const leaveId=randomUUID();await body(await post(leaves,u,'/api/personal/permisos',{accion:'SOLICITAR',id:leaveId,fecha:tomorrow,motivo:'Trámite justificado',descripcion:'Solicitud ficticia presentada desde la ventana de asistencia',comprobanteUrl:'https://example.invalid/comprobante',solicitaGoceHaberes:true}));
+ assert.equal((await prisma.permisoPersonal.findUnique({where:{id:leaveId}})).estado,'SOLICITADO');assert.equal(await prisma.asistenciaPersonal.count({where:{usuarioId:u.id}}),0);
+ await assert.rejects(require('../src/lib/auth.ts').requireSession(req(u,'/api/comisiones')),e=>e.status===428);
+ await body(await post(config,admin,'/api/personal/configuracion',center(b.id)));
+ const token=(await prepare(u,'ENTRADA',b.id)).token;await body(await post(clock,u,'/api/personal/marcacion',gps(token,'ENTRADA',b.id),randomUUID()));
+ assert.equal((await require('../src/lib/auth.ts').requireSession(req(u,'/api/comisiones'))).id,u.id);
+});

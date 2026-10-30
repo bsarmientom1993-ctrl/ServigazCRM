@@ -1,0 +1,12 @@
+'use client';
+export type AttendancePosition={latitud:number;longitud:number;precisionMetros:number;muestraAt:string};
+export function AttendanceProximityMap({position,point}:{position:AttendancePosition;point?:{latitud:string|number;longitud:string|number}|null}){
+ const lat=point?Number(point.latitud):position.latitud,lon=point?Number(point.longitud):position.longitud;
+ const north=(position.latitud-lat)*111195,east=(position.longitud-lon)*111195*Math.cos(lat*Math.PI/180);
+ const distance=Math.hypot(east,north),extent=Math.max(20,Math.abs(east)+position.precisionMetros,Math.abs(north)+position.precisionMetros),scale=70/extent,x=120+east*scale,y=80-north*scale;
+ return <figure className="rounded-xl border border-line overflow-hidden bg-canvas"><svg viewBox="0 0 240 160" role="img" aria-label={point?`Tu posición está aproximadamente a ${distance.toFixed(1)} metros del ingreso. Precisión ${position.precisionMetros.toFixed(1)} metros.`:'Tu ubicación actual. El ingreso todavía no fue configurado.'} className="block w-full max-h-40">
+  <defs><pattern id="attendance-map-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="currentColor" strokeOpacity=".1"/></pattern></defs><rect width="240" height="160" fill="url(#attendance-map-grid)"/>
+  {point&&<><circle cx="120" cy="80" r={10*scale} fill="#f06529" fillOpacity=".12" stroke="#f06529" strokeDasharray="4 3"/><line x1="120" y1="80" x2={x} y2={y} stroke="#f06529" strokeOpacity=".6"/><circle cx="120" cy="80" r="5" fill="#f06529"/><text x="112" y="100" textAnchor="end" fontSize="9" fill="currentColor">Ingreso · 10 m</text></>}
+  <circle cx={x} cy={y} r={Math.max(3,position.precisionMetros*scale)} fill="#38bdf8" fillOpacity=".15" stroke="#38bdf8" strokeOpacity=".5"/><circle cx={x} cy={y} r="5" fill="#38bdf8" stroke="white" strokeWidth="1.5"/><text x={x+8} y={y+15} fontSize="9" fill="currentColor">Tú</text><text x="222" y="17" fontSize="10" fill="currentColor">N ↑</text>
+ </svg><figcaption className="text-[11px] text-muted px-3 py-2 border-t border-line">Vista de proximidad · precisión ±{position.precisionMetros.toFixed(1)} m{point?` · distancia aproximada ${distance.toFixed(1)} m`:' · ingreso sin configurar'}<br/>{position.latitud.toFixed(6)}, {position.longitud.toFixed(6)} · lectura {new Date(position.muestraAt).toLocaleTimeString('es-BO',{timeZone:'America/La_Paz',hour:'2-digit',minute:'2-digit'})}</figcaption></figure>;
+}
