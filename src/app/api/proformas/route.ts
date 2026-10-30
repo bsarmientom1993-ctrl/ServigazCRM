@@ -1,3 +1,4 @@
+import {queueNotice} from '@/lib/notifications';
 import {assignedRoleWhere} from '@/lib/auth';
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
@@ -61,7 +62,7 @@ export async function POST(req:NextRequest){try{
     }
     if(input.tipo==='CLIENTE'){cents(Number(total));datos.total=String(total);}
     const doc=await tx.documentoProforma.create({data:{id:input.id,tipo:input.tipo,ubicacionId:location.id,clienteId:clientId,tecnicoId:techId,trabajoId:workId,creadoPorId:user.id,datos:datos as unknown as Prisma.InputJsonValue,validoHasta:until}});
-    await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:'PROFORMAS',accion:'CREATE',entidadTipo:'DocumentoProforma',entidadId:doc.id,valoresNuevos:{numero:doc.numero,tipo:doc.tipo,realizadoPor:author.nombre}}});return doc;
+    await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:'PROFORMAS',accion:'CREATE',entidadTipo:'DocumentoProforma',entidadId:doc.id,valoresNuevos:{numero:doc.numero,tipo:doc.tipo,realizadoPor:author.nombre}}});if(doc.tipo==='MATERIALES'){const recipients=await tx.usuario.findMany({where:{estado:'ACTIVO',OR:[assignedRoleWhere('ADMIN'),...(location.sucursalId?[{sucursalId:location.sucursalId,...assignedRoleWhere('ENCARGADO')}]:[]),...(location.tipo==='ALMACEN'?[{...(location.sucursalId?{sucursalId:location.sucursalId}:{}),...assignedRoleWhere('ALMACENERO')}]:[{...assignedRoleWhere('ENCARGADO_TIENDA')}])]},select:{id:true}});await queueNotice(tx,recipients.filter(r=>r.id!==user.id).map(r=>'personal:'+r.id),'solicitud-material:'+doc.id,'MATERIALES','Solicitud de materiales pendiente','Hay una solicitud de materiales para revisar en tu ámbito.','/proformas/'+doc.id);}return doc;
   },{timeout:15000});return NextResponse.json(result);
 }catch(e){return apiError(e);}}
 
@@ -75,6 +76,6 @@ export async function PATCH(req:NextRequest){try{
     if(await tx.entregaMaterial.count({where:{proformaId:doc.id}}))throw new ApiError(409,'Hay entregas registradas; concilia sus materiales sin anular el documento.');
     const actor=await tx.usuario.findUniqueOrThrow({where:{id:user.id},select:{nombre:true}});
     const updated=await tx.documentoProforma.update({where:{id:doc.id},data:{estado:input.estado,decisionMotivo:actor.nombre+': '+input.motivo,decididoPorId:user.id}});
-    await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:'PROFORMAS',accion:'UPDATE',entidadTipo:'DocumentoProforma',entidadId:doc.id,valoresAnteriores:{estado:doc.estado},valoresNuevos:{estado:input.estado,motivo:input.motivo,realizadoPor:actor.nombre}}});return updated;
+    await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:'PROFORMAS',accion:'UPDATE',entidadTipo:'DocumentoProforma',entidadId:doc.id,valoresAnteriores:{estado:doc.estado},valoresNuevos:{estado:input.estado,motivo:input.motivo,realizadoPor:actor.nombre}}});await queueNotice(tx,[doc.tecnicoId,doc.creadoPorId].filter((id):id is string=>!!id&&id!==user.id).map(id=>'personal:'+id),'proforma:'+doc.id+':'+updated.estado,'MATERIALES','Documento actualizado','Hay una decisión registrada para una solicitud vinculada a tu cuenta.','/proformas/'+doc.id);return updated;
   });return NextResponse.json(result);
 }catch(e){return apiError(e);}}

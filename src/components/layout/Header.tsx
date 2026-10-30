@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useHelp } from "@/components/help/HelpProvider";
 import { ThemeToggle } from "./ThemeToggle";
+import {NotificationCenter} from '@/components/NotificationCenter';
 
 export function Header({ title, onMenu }: { title?: string; onMenu?: () => void }) {
   const { user } = useAuth();
   const { openGuide } = useHelp();
   const pathname = usePathname();
-  const sections: Record<string, string> = { comisiones:"Comisiones", recepcion:"Recepción en sucursal", atencion:"Atención al cliente y ventas", supervision:"Supervisión técnica", caja:"Caja y conciliación", proformas: "Proformas y solicitudes", entregas: "Entrega de material", cotizaciones: "Cotizaciones pendientes", "gestion-tienda": "Tienda pública", fotos: "Registro fotográfico", proyectos: "Proyectos de gas", agenda: "Mi agenda", perfil: "Mi perfil y equipo", ayuda: "Ayuda y práctica", dashboard: "Resumen general", trabajos: "Trabajos y órdenes", clientes: "Clientes", cotizador: "Cotizador", inventario: "Almacenes y tiendas", sucursales: "Sucursales y ubicaciones", garantias: "Garantías", configuracion: "Precios y tarifas", asistencia: "Asistencia", finanzas: "Finanzas" };
+  const sections: Record<string, string> = { notificaciones:"Notificaciones", "empresas-instaladoras":"Empresas instaladoras", "pedidos-profesionales":"Pedidos profesionales", comisiones:"Comisiones", recepcion:"Recepción en sucursal", atencion:"Atención al cliente y ventas", supervision:"Supervisión técnica", caja:"Caja y conciliación", proformas: "Proformas y solicitudes", entregas: "Entrega de material", cotizaciones: "Cotizaciones pendientes", "gestion-tienda": "Tienda pública", fotos: "Registro fotográfico", proyectos: "Proyectos de gas", agenda: "Mi agenda", perfil: "Mi perfil y equipo", ayuda: "Ayuda y práctica", dashboard: "Resumen general", trabajos: "Trabajos y órdenes", clientes: "Clientes", cotizador: "Cotizador", inventario: "Almacenes y tiendas", sucursales: "Sucursales y ubicaciones", garantias: "Garantías", configuracion: "Precios y tarifas", asistencia: "Asistencia", finanzas: "Finanzas" };
   return <header className="app-header">
     <div className="flex items-center gap-3 min-w-0">
       <button type="button" onClick={onMenu} className="theme-toggle mobile-menu-toggle" aria-label="Abrir menú" aria-controls="main-navigation"><Menu size={20} /></button>
@@ -20,6 +21,7 @@ export function Header({ title, onMenu }: { title?: string; onMenu?: () => void 
       </div>
     </div>
     <div className="flex items-center gap-2 sm:gap-3">
+      {user&&<NotificationCenter key={user.id}/>}
       {["ADMIN","ENCARGADO","TECNICO_FIJO"].includes(user?.rol||"") && <button type="button" className="theme-toggle" aria-label="Abrir guía de ayuda" title="Ayuda y guía de bienvenida" onClick={openGuide}><CircleHelp size={18} /><span className="hidden lg:inline">Ayuda</span></button>}
       <ThemeToggle />
       {["ADMIN","ENCARGADO","TECNICO_FIJO"].includes(user?.rol||"") && <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>}

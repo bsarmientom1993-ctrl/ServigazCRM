@@ -2,6 +2,7 @@ import type {Prisma} from '@prisma/client';
 import {commercialOrigin} from './work-responsibility-data';
 import {commissionCents} from './commission-policy';
 import {money} from './workflow-policy';
+import {queueNotice} from './notifications';
 export async function generateWorkCommission(tx:Prisma.TransactionClient,work:{id:string;codigoCorrelativo:string;subtipoNombre:string;fechasSla?:unknown},profit:number,actor:{id:string;nombre:string}){
  const prior=await tx.comisionTrabajo.findUnique({where:{trabajoId:work.id}});if(prior)return prior;
  const origin=commercialOrigin(work);
@@ -13,5 +14,6 @@ export async function generateWorkCommission(tx:Prisma.TransactionClient,work:{i
  const reason=!person?'No se identificó a quien consiguió la venta.':profit<=0?'El cierre no tiene utilidad positiva.':!config?.activa||percentage===0?'Sin porcentaje de comisión activo al cierre.':amount===0?'El importe calculado es inferior a un centavo.':'';
  const row=await tx.comisionTrabajo.create({data:{trabajoId:work.id,codigoTrabajo:work.codigoCorrelativo,servicio:work.subtipoNombre,beneficiarioId:person?.id||null,beneficiarioNombre:person?.nombre||origin.nombre||'Sin identificar',utilidadBase:money(profit),porcentaje:percentage.toFixed(2),monto:money(reason?0:amount),estado:reason?'NO_GENERADA':'PENDIENTE',motivo:reason,generadaPorNombre:actor.nombre}});
  await tx.auditoriaLog.create({data:{usuarioId:actor.id,modulo:'COMISIONES',accion:'CREATE',entidadTipo:'ComisionTrabajo',entidadId:row.id,valoresNuevos:{trabajoId:work.id,beneficiarioId:person?.id||null,beneficiarioNombre:row.beneficiarioNombre,utilidadBase:money(profit),porcentaje:percentage,monto:money(reason?0:amount),estado:row.estado,motivo:reason,realizadoPor:actor.nombre}}});
+ if(person&&row.estado==='PENDIENTE')await queueNotice(tx,['personal:'+person.id],'comision:'+row.id+':PENDIENTE','COMISION','Nueva comisión registrada','Tienes una comisión pendiente de aprobación. Consulta Mis comisiones.','/comisiones');
  return row;
 }

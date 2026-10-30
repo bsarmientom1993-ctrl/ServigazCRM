@@ -1,6 +1,7 @@
 import { activeTeamMember } from "@/lib/work-responsibility";
 import { receptionSchema } from '@/lib/reception';
 import { rolesOf } from '@/lib/user-roles';
+import {queueWorkNotice} from '@/lib/notifications';
 import { Prisma } from "@prisma/client";
 import { technicalWorkSelect, technicalSchedule } from "@/lib/technical-work";
 import { newGasProject } from "@/lib/gas-data";
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
     const requestId = z.string().uuid("Clave de solicitud inválida.").optional().parse(req.headers.get("Idempotency-Key") || undefined);
     const body = z.object({
       sucursalId:z.string().min(1).max(100).optional(), recepcion:receptionSchema.optional(),
+      pedidoProfesionalId:z.string().uuid().optional(),
       modalidad: z.enum(["SERVICIO", "PROYECTO_INDEPENDIENTE"]).default("SERVICIO"),
       captadoPorId: z.string().trim().min(1).max(100).nullish(), responsableSeguimientoId: z.string().trim().min(1).max(100).nullish(),
       clienteId: z.string().min(1).nullish(),
@@ -81,8 +83,11 @@ export async function POST(req: NextRequest) {
         }
       }
       const branch=body.recepcion?await tx.sucursal.findFirst({where:{id:user.sucursalId!,activo:true},select:{nombre:true}}):null;
+      let professionalOrder=null;
+      if(body.pedidoProfesionalId){await tx.$queryRaw`SELECT id FROM "PedidoProfesional" WHERE id=${body.pedidoProfesionalId} FOR UPDATE`;professionalOrder=await tx.pedidoProfesional.findUnique({where:{id:body.pedidoProfesionalId}});if(!professionalOrder)throw new ApiError(404,'Pedido profesional no encontrado.');const account=await tx.cuentaProfesional.findUniqueOrThrow({where:{id:professionalOrder.cuentaId}});if(account.estado!=='APROBADA'||body.clienteId!==account.clienteId||user.sucursalId!==account.sucursalId)throw new ApiError(403,'Revisa la cuenta, el cliente y la sucursal del pedido profesional.');if(professionalOrder.trabajoId||professionalOrder.estado==='RECHAZADO')throw new ApiError(409,'Este pedido ya fue vinculado o rechazado.');if(!body.captadoPorId)throw new ApiError(400,'Identifica a la persona que consiguió o consolidó la venta.');}
       if(body.recepcion&&!branch)throw new ApiError(400,'Selecciona una sucursal activa.');
       const codes = independent ? ["PROYECTO.GAS"] : body.subtipoCodigos || body.subtipoCodigo.split("_");
+      if(professionalOrder&&(independent||codes.join('_')!==(professionalOrder.tipo==='PRODUCTOS'?'EQUIPO.PROVISION':professionalOrder.subtipoCodigo)))throw new ApiError(400,'El servicio debe corresponder al pedido profesional original.');
       if (new Set(codes).size !== codes.length || codes.join("_").length > 300) throw new ApiError(400, "Revisa los servicios seleccionados.");
       const subtypes = independent ? [{nombre:"Proyecto de gas independiente",categoria:{codigo:"GAS",activo:true,requiereVisita:false}}] : await tx.catalogoSubtipo.findMany({ where: { codigo: { in: codes }, activo: true }, include: { categoria: true } });
       if (subtypes.length !== codes.length || subtypes.some(s => !s.categoria.activo)) throw new ApiError(400, "Selecciona servicios activos del catálogo.");
@@ -119,7 +124,7 @@ export async function POST(req: NextRequest) {
         ...(requestId ? { id: requestId } : {}), codigoCorrelativo: prefix + String(sequence).padStart(4, "0"), clienteId: clientId!, encargadoId: coordinator?.id||user.id, sucursalId: user.sucursalId,
         tecnicoId: body.tecnicoId || null, tipoFlujo: direct ? "SIMPLIFICADO" : "COMPLETO", subtipoCodigo: codes.join("_"),
         subtipoNombre: subtypes.map(s => s.nombre).join(" + "), observaciones: [body.detallesCliente ? "Detalles del cliente: " + body.detallesCliente : "", body.observaciones || ""].filter(Boolean).join("\n\n"),
-        fechasSla: { modalidad: body.modalidad, captadoPor: origin, ...(body.recepcion?{recepcion:{motivo:body.recepcion.motivo,atendidoPorId:user.id,atendidoPorNombre:receptionActor!.nombre,sucursalNombre:branch!.nombre,fecha:new Date().toISOString(),seguimiento:{responsableId:contact!.id,responsableNombre:contact!.nombre,proximoContacto:body.recepcion.proximoContacto||'',nota:'',actualizado:new Date().toISOString()}}}:{}), ...(body.preferenciaCliente ? { preferenciaCliente: body.preferenciaCliente } : {}), ...(hasGas ? { gas: JSON.parse(JSON.stringify({ aplica: true, proyecto: {...newGasProject(independent || body.incluyeProyectoGas), ...(responsible ? {responsableId:responsible.id,responsable:responsible.nombre} : {})} })) } : {}) },
+        fechasSla: { modalidad: body.modalidad, captadoPor: origin, ...(professionalOrder?{pedidoProfesional:{id:professionalOrder.id,cuentaId:professionalOrder.cuentaId,tipo:professionalOrder.tipo,total:professionalOrder.total?String(professionalOrder.total):null,items:professionalOrder.items,descuentoPct:String(professionalOrder.descuentoPct)}}:{}), ...(body.recepcion?{recepcion:{motivo:body.recepcion.motivo,atendidoPorId:user.id,atendidoPorNombre:receptionActor!.nombre,sucursalNombre:branch!.nombre,fecha:new Date().toISOString(),seguimiento:{responsableId:contact!.id,responsableNombre:contact!.nombre,proximoContacto:body.recepcion.proximoContacto||'',nota:'',actualizado:new Date().toISOString()}}}:{}), ...(body.preferenciaCliente ? { preferenciaCliente: body.preferenciaCliente } : {}), ...(hasGas ? { gas: JSON.parse(JSON.stringify({ aplica: true, proyecto: {...newGasProject(independent || body.incluyeProyectoGas), ...(responsible ? {responsableId:responsible.id,responsable:responsible.nombre} : {})} })) } : {}) },
         dificultadNivel: body.dificultadNivel, requiereInstaladorExtra: body.dificultadNivel >= 4,
         estado: direct ? "EVALUADO" : body.tecnicoId ? "EVALUACION_PENDIENTE" : "BORRADOR",
       } });
@@ -132,6 +137,8 @@ export async function POST(req: NextRequest) {
       const actor = await tx.usuario.findUniqueOrThrow({ where: { id: user.id }, select: { nombre: true } });
       await tx.auditoriaLog.create({ data: { usuarioId: user.id, modulo: "TRABAJOS", accion: "CREATE", entidadTipo: "Trabajo", entidadId: trabajo.id,
         valoresNuevos: { realizadoPor: actor.nombre, captadoPor: origin, modalidad: body.modalidad, codigo: trabajo.codigoCorrelativo, estado: trabajo.estado, servicioDirecto: direct, ...(requestId ? { requestFingerprint: fingerprint } : {}) } } });
+      if(professionalOrder)await tx.pedidoProfesional.update({where:{id:professionalOrder.id},data:{trabajoId:trabajo.id,estado:'EN_ATENCION'}});
+      await queueWorkNotice(tx,trabajo,user.id);
       return trabajo;
     }, { timeout: 15000 });
     return NextResponse.json(work, { status: 201 });

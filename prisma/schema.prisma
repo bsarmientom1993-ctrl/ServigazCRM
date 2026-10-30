@@ -560,6 +560,101 @@ model MaterialEjecucion {
   @@index([trabajoId, tipoOrigen])
 }
 
+model CuentaProfesional {
+ id String @id @default(uuid())
+ email String @unique
+ passwordHash String
+ nombre String
+ empresa String
+ identificacionEmpresa String
+ telefono String
+ direccion String
+ estado String @default("PENDIENTE_DOCUMENTOS")
+ descuentoPct Decimal @default(0) @db.Decimal(5,2)
+ clienteId String? @unique
+ sucursalId String?
+ revisionNota String @default("")
+ aprobadaPorNombre String?
+ aprobadaAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+}
+model DocumentoProfesional {
+ id String @id @default(uuid())
+ cuentaId String
+ tipo String
+ nombre String
+ mediaType String
+ sha256 String
+ contenido Bytes?
+ objectKey String?
+ verificadoAt DateTime?
+ verificadoPorNombre String?
+ observacion String @default("")
+ createdAt DateTime @default(now())
+ @@unique([cuentaId,tipo,sha256])
+ @@index([cuentaId,createdAt])
+}
+model ConfiguracionProfesionales {
+ id String @id
+ documentosRequeridos Json
+ modificadoPorNombre String
+ updatedAt DateTime @updatedAt
+}
+model PedidoProfesional {
+ id String @id @default(uuid())
+ numero Int @unique @default(autoincrement())
+ cuentaId String
+ tipo String
+ subtipoCodigo String?
+ detalle String
+ items Json
+ total Decimal? @db.Decimal(12,2)
+ descuentoPct Decimal @db.Decimal(5,2)
+ estado String @default("PENDIENTE")
+ trabajoId String? @unique
+ solicitudHash String
+ notaGestion String @default("")
+ respuestaCliente Json?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([cuentaId,createdAt])
+}
+model AccesoProfesionalRate {
+ clave String @id
+ intentos Int @default(1)
+ venceAt DateTime
+}
+model Notificacion {
+ id String @id @default(uuid())
+ destinatario String
+ clave String
+ tipo String
+ titulo String
+ mensaje String
+ ruta String
+ leidaAt DateTime?
+ pushEstado String @default("PENDIENTE")
+ pushIntentos Int @default(0)
+ pushClaimAt DateTime?
+ createdAt DateTime @default(now())
+ @@unique([destinatario,clave])
+ @@index([destinatario,createdAt])
+ @@index([pushEstado,createdAt])
+}
+model DispositivoPush {
+ id String @id @default(uuid())
+ destinatario String
+ endpoint String @unique
+ p256dh String
+ auth String
+ nombre String
+ activa Boolean @default(true)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([destinatario,activa])
+}
+
 model ConfiguracionComision {
   usuarioId String @id
   porcentaje Decimal @db.Decimal(5,2)

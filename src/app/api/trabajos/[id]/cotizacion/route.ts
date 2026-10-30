@@ -30,13 +30,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         work.pagos.length > 0 || work.cotizaciones[0]?.estado === "APROBADA") throw new ApiError(409, "No puede reemplazarse el presupuesto de una orden aceptada, cobrada o cerrada.");
       if(roleRecord(roleRecord(roleRecord(work.fechasSla).gas).revisionTecnica).estado==="CORRECCION_SOLICITADA")throw new ApiError(409,"El supervisor solicitó corregir la evaluación antes de continuar con el presupuesto.");
       const gasCalculation = isGasWork(work) && !isIndependentProject(work) ? await approvedGasCalculation(tx, work) : null;
-      const material = gasCalculation ? cents(gasCalculation.subtotalMateriales) : cents(body.subtotalMateriales);
-      const labor = gasCalculation ? cents(gasCalculation.subtotalManoObra) : cents(body.subtotalManoObra);
+      const pedidoMeta=roleRecord(roleRecord(work.fechasSla).pedidoProfesional);
+      const pedido=typeof pedidoMeta.id==='string'?await tx.pedidoProfesional.findUnique({where:{id:pedidoMeta.id}}):null;
+      if(pedido&&(pedido.trabajoId!==work.id||pedido.cuentaId!==pedidoMeta.cuentaId))throw new ApiError(409,'Revisa el vínculo del pedido profesional.');
+      const productOrder=pedido?.tipo==='PRODUCTOS';
+      const material = productOrder?cents(pedido.total):gasCalculation ? cents(gasCalculation.subtotalMateriales) : cents(body.subtotalMateriales);
+      const labor = productOrder?0:gasCalculation ? cents(gasCalculation.subtotalManoObra) : cents(body.subtotalManoObra);
+      if(productOrder&&transport!==0)throw new ApiError(400,'El pedido de productos conserva su importe. Cotiza transporte o instalación en una solicitud separada.');
       const discountConfig = await tx.configuracionDescuento.findFirst({ where: { activo: true } });
       const limit = user.rol === "ADMIN" ? Number(discountConfig?.topeMaximoPct ?? 20) : Number(discountConfig?.pctMaxEncargado ?? 10);
-      if (body.porcentajeDescuento > limit) throw new ApiError(403, "El descuento supera el límite autorizado para tu rol.");
+      const discountPct=productOrder?0:pedido?Number(pedido.descuentoPct):body.porcentajeDescuento;
+      if (!pedido&&discountPct > limit) throw new ApiError(403, "El descuento supera el límite autorizado para tu rol.");
       const gross = material + labor + transport;
-      const discount = new Prisma.Decimal(gross).mul(body.porcentajeDescuento).div(100).toDecimalPlaces(0).toNumber();
+      const discount = new Prisma.Decimal(gross).mul(discountPct).div(100).toDecimalPlaces(0).toNumber();
       const total = gross - discount;
       if (total <= 0 || total > 999999999999) throw new ApiError(400, "Revisa el importe total de la cotización.");
       const deposit = await tx.configuracionAnticipo.findUnique({ where: { subtipoCodigo: work.subtipoCodigo } });
@@ -54,10 +60,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await tx.cotizacion.updateMany({ where: { trabajoId: id, estado: "VIGENTE" }, data: { estado: "SUPERADA" } });
       const cotizacion = await tx.cotizacion.create({ data: {
         trabajoId: id, numeroVersion: version, tipoVersion: version === 1 ? "ORIGINAL" : "CORRECCION",
-        datosFormularioJson: { ...body.datosFormulario, carta: { ...letter, formato } },
-        snapshotCalculoJson: { origen: gasCalculation ? "MEDICION_GAS_SUPERVISADA" : "PRESUPUESTO_MANUAL", ...(gasCalculation ? { gas: JSON.parse(JSON.stringify(gasCalculation)) } : {}), subtotalMateriales: money(material), subtotalManoObra: money(labor), montoTransporte: money(transport), porcentajeDescuento: body.porcentajeDescuento, porcentajeAnticipo: percentage },
+        datosFormularioJson: { ...body.datosFormulario, ...(pedido?{pedidoProfesional:{id:pedido.id,numero:pedido.numero,items:pedido.items}}:{}), carta: { ...letter, formato } },
+        snapshotCalculoJson: { origen: gasCalculation ? "MEDICION_GAS_SUPERVISADA" : "PRESUPUESTO_MANUAL", ...(gasCalculation ? { gas: JSON.parse(JSON.stringify(gasCalculation)) } : {}), subtotalMateriales: money(material), subtotalManoObra: money(labor), montoTransporte: money(transport), porcentajeDescuento: discountPct, ...(pedido?{pedidoProfesional:{id:pedido.id,descuentoPct:String(pedido.descuentoPct),preciosYaAplicados:!!productOrder,items:pedido.items}}:{}), porcentajeAnticipo: percentage },
         subtotalMateriales: money(material), subtotalManoObra: money(labor), montoTransporte: money(transport),
-        porcentajeDescuento: body.porcentajeDescuento, montoDescuento: money(discount),
+        porcentajeDescuento: discountPct, montoDescuento: money(discount),
         descuentoAprobadoPor: user.rol === "ADMIN" && body.porcentajeDescuento > Number(discountConfig?.pctMaxEncargado ?? 10) ? user.id : null,
         totalCotizado: money(total), anticipoMinimoRequerido: money(minimum), fechaVencimiento: expiry, estado: "VIGENTE",
       } });

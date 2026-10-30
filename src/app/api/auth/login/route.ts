@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const pushDevice=req.cookies.get('servigaz_push_device')?.value;if(pushDevice)await prisma.dispositivoPush.updateMany({where:{id:pushDevice},data:{activa:false}});
     stage = "TOKEN_SIGNING";
     const rol=activeRole(user);if(!rol)throw new ApiError(403,'La cuenta no tiene roles asignados. Contacta al administrador.');
     const token = jwt.sign(

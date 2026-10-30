@@ -1,0 +1,1 @@
+{"crons":[{"path":"/api/notificaciones/recordatorios","schedule":"0 12 * * *"}]}

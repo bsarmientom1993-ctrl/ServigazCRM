@@ -1,0 +1,15 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {z} from 'zod';
+import {prisma} from '@/lib/prisma';
+import {requireSession,intakeOperators} from '@/lib/auth';
+import {apiError,ApiError} from '@/lib/api';
+import {queueNotice} from '@/lib/notifications';
+import {boundedJson} from '@/lib/professional-policy';
+export async function GET(req:NextRequest){try{const user=await requireSession(req,intakeOperators);const accounts=await prisma.cuentaProfesional.findMany({where:user.rol==='ADMIN'?{}:{sucursalId:user.sucursalId},select:{id:true,nombre:true,empresa:true,clienteId:true,sucursalId:true,estado:true}});const orders=await prisma.pedidoProfesional.findMany({where:{cuentaId:{in:accounts.map(a=>a.id)}},orderBy:{createdAt:'desc'},take:200,select:{id:true,numero:true,cuentaId:true,tipo:true,subtipoCodigo:true,detalle:true,items:true,total:true,descuentoPct:true,estado:true,trabajoId:true,notaGestion:true,createdAt:true}});
+ return NextResponse.json({pedidos:orders.map(o=>({...o,cuenta:accounts.find(a=>a.id===o.cuentaId)}))},{headers:{'Cache-Control':'private, no-store'}});
+}catch(e){return apiError(e);}}
+export async function PATCH(req:NextRequest){try{const user=await requireSession(req,intakeOperators),body=z.object({id:z.string().uuid(),estado:z.enum(['EN_ATENCION','CONFIRMADO','RECHAZADO','ENTREGADO']),nota:z.string().trim().min(5).max(2000)}).strict().parse(await boundedJson(req));
+ const result=await prisma.$transaction(async tx=>{const rows=await tx.$queryRaw<{id:string}[]>`SELECT id FROM "PedidoProfesional" WHERE id=${body.id} FOR UPDATE`;if(!rows.length)throw new ApiError(404,'Pedido no encontrado.');const order=await tx.pedidoProfesional.findUniqueOrThrow({where:{id:body.id}}),account=await tx.cuentaProfesional.findUniqueOrThrow({where:{id:order.cuentaId}});if(user.rol!=='ADMIN'&&account.sucursalId!==user.sucursalId)throw new ApiError(403,'Pedido de otra sucursal.');if(order.estado===body.estado)return{success:true};if(['RECHAZADO','ENTREGADO'].includes(order.estado))throw new ApiError(409,'Este pedido ya tiene una resolución.');
+ if(body.estado==='ENTREGADO'){if(!order.trabajoId)throw new ApiError(409,'Vincula primero la venta o servicio a un trabajo.');const work=await tx.trabajo.findUnique({where:{id:order.trabajoId},select:{estado:true}});if(work?.estado!=='FINALIZADO_FINANCIERO')throw new ApiError(409,'Completa el trabajo, su cobro y cierre antes de marcar entregado.');}
+ const actor=await tx.usuario.findUniqueOrThrow({where:{id:user.id},select:{nombre:true}});await tx.pedidoProfesional.update({where:{id:order.id},data:{estado:body.estado,notaGestion:body.nota}});await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:'PEDIDOS_PROFESIONALES',accion:'UPDATE',entidadTipo:'PedidoProfesional',entidadId:order.id,valoresNuevos:{estado:body.estado,nota:body.nota,realizadoPor:actor.nombre}}});await queueNotice(tx,['profesional:'+account.id],'pedido-estado:'+order.id+':'+body.estado,'PEDIDO','Novedades de tu pedido','Servigaz actualizó el seguimiento de tu pedido.','/profesionales');return{success:true};});return NextResponse.json(result);
+}catch(e){return apiError(e);}}

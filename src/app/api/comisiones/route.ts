@@ -5,6 +5,7 @@ import {prisma} from '@/lib/prisma';
 import {requireSession} from '@/lib/auth';
 import {apiError,ApiError} from '@/lib/api';
 import {cents} from '@/lib/workflow-policy';
+import {queueNotice} from '@/lib/notifications';
 const states=['PENDIENTE','APROBADA','PAGADA','ANULADA','NO_GENERADA'] as const;
 function safeRow(row:any,admin:boolean){
  if(admin){const {pagoHuella,...safe}=row;return safe;}
@@ -53,6 +54,7 @@ export async function POST(req:NextRequest){try{
    }
  }
  await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:'COMISIONES',accion:'UPDATE',entidadTipo:'ComisionTrabajo',entidadId:row.id,valoresAnteriores:{estado:row.estado},valoresNuevos:{estado:saved.estado,realizadoPor:actor.nombre,...(input.accion==='ANULAR'?{motivo:input.motivo}:{}),...(input.accion==='PAGAR'?{medio:input.medio,referencia:input.referencia,egresoId:saved.egresoId}:{})}}});
+ if(saved.beneficiarioId)await queueNotice(tx,['personal:'+saved.beneficiarioId],'comision:'+saved.id+':'+saved.estado,'COMISION','Novedades de tu comisión','El administrador actualizó una comisión de tu cuenta.','/comisiones');
  return saved;
  });return NextResponse.json(safeRow(result,true));
 }catch(e){return apiError(e);}}

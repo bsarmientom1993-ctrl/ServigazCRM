@@ -167,6 +167,7 @@ export default function TrabajoDetallePage({
       }
 
       setTrabajo(dataTrb);
+      const pedido=dataTrb.fechasSla?.pedidoProfesional;if(pedido){setPresupuestoCalculo(p=>({...p,...(pedido.tipo==="PRODUCTOS"?{subtotalMateriales:String(pedido.total||0),subtotalManoObra:"0",montoTransporte:"0"}:{}),porcentajeDescuento:pedido.tipo==="PRODUCTOS"?0:Number(pedido.descuentoPct)}));if(pedido.tipo==="PRODUCTOS")setCarta(p=>({...p,alcance:p.alcance||pedido.items?.map((i:any)=>i.cantidad+" × "+i.descripcion+" · Bs. "+i.precio+" · Subtotal Bs. "+i.subtotal).join("\n")}));}
 
       // 2. Cargar Técnicos (Opcional seguro)
       try {
@@ -804,6 +805,7 @@ export default function TrabajoDetallePage({
                 </span>
               </div>
 
+              {trabajo.fechasSla?.pedidoProfesional&&<p className="module-note mb-4">Pedido profesional: {trabajo.fechasSla.pedidoProfesional.tipo==="PRODUCTOS"?"El importe de los productos ya incluye el descuento autorizado y se conservará al emitir.":"Se aplicará el descuento autorizado del "+Number(trabajo.fechasSla.pedidoProfesional.descuentoPct)+" % sobre el presupuesto."}</p>}
               <form id="cotizacion" onSubmit={handleEmitirCotizacion} className="space-y-4 text-xs">
                 <div className="grid sm:grid-cols-2 gap-4"><label className="form-label block">Asunto<input maxLength={300} className="module-input mt-2" value={carta.asunto} placeholder="Propuesta de servicios y equipos" onChange={e=>setCarta({...carta,asunto:e.target.value})}/></label><label className="form-label block">Proyecto o trabajo<input maxLength={500} className="module-input mt-2" value={carta.proyecto} placeholder={trabajo.subtipoNombre} onChange={e=>setCarta({...carta,proyecto:e.target.value})}/></label></div>
                 <label className="form-label block">Detalle y alcance del trabajo<textarea required minLength={10} maxLength={5000} rows={4} className="module-input mt-2" value={carta.alcance} placeholder={trabajo.subtipoNombre} onChange={e => setCarta({ ...carta, alcance: e.target.value })} /></label>
@@ -819,7 +821,7 @@ export default function TrabajoDetallePage({
                       min="0"
                       step="0.01"
                       required
-                      readOnly={isGas}
+                      readOnly={isGas || trabajo.fechasSla?.pedidoProfesional?.tipo==="PRODUCTOS"}
                       value={isGas ? gas.calculo?.subtotalMateriales || "" : presupuestoCalculo.subtotalMateriales}
                       onChange={(e) => setPresupuestoCalculo({ ...presupuestoCalculo, subtotalMateriales: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
@@ -832,7 +834,7 @@ export default function TrabajoDetallePage({
                       min="0"
                       step="0.01"
                       required
-                      readOnly={isGas}
+                      readOnly={isGas || trabajo.fechasSla?.pedidoProfesional?.tipo==="PRODUCTOS"}
                       value={isGas ? gas.calculo?.subtotalManoObra || "" : presupuestoCalculo.subtotalManoObra}
                       onChange={(e) => setPresupuestoCalculo({ ...presupuestoCalculo, subtotalManoObra: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"
@@ -845,6 +847,7 @@ export default function TrabajoDetallePage({
                       min="0"
                       step="0.01"
                       required
+                      readOnly={trabajo.fechasSla?.pedidoProfesional?.tipo==="PRODUCTOS"}
                       value={presupuestoCalculo.montoTransporte}
                       onChange={(e) => setPresupuestoCalculo({ ...presupuestoCalculo, montoTransporte: e.target.value })}
                       className="w-full p-2.5 bg-canvas border border-line rounded-xl font-bold outline-none"

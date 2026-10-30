@@ -83,7 +83,7 @@ test("welcome guide is scoped per user, can be skipped and distinguishes technic
   assert.equal(hasSeenGuide(null), false); assert.equal(hasSeenGuide("unexpected"), false);
   assert.equal(hasSeenGuide("dismissed"), true); assert.equal(hasSeenGuide("completed"), true);
   const tech = guideSteps("TECNICO_FIJO"), manager = guideSteps("ENCARGADO"), admin = guideSteps("ADMIN");
-  assert.equal(tech.length, 6); assert.equal(manager.length, 6); assert.equal(admin.length, 6);
+  assert.equal(tech.length, 7); assert.equal(manager.length, 7); assert.equal(admin.length, 7);
   assert.match(tech[1].description, /asignadas/); assert.match(manager[1].description, /Nuevo trabajo/);
   assert.match(tech[4].description, /encargado/); assert.match(manager[4].points.join(" "), /saldo cero/);
 });

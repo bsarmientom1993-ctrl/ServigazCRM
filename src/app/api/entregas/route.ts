@@ -1,3 +1,4 @@
+import {queueNotice} from '@/lib/notifications';
 import {hasAssignedRole} from '@/lib/user-roles';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@prisma/client';
@@ -49,6 +50,7 @@ export async function POST(req:NextRequest){try{
       await tx.movimientoInventario.create({data:{productoId:product.id,tipoMovimiento:'TRASPASO',evento:'ENTREGA_TECNICO',cantidad:amount,stockAnterior:balance.before,stockNuevo:balance.after,usuarioId:user.id,ubicacionOrigenId:location.id,origenSucursalId:location.sucursalId,observaciones:'Entrega ENT-'+delivery.numero+' · '+tech.nombre+' · '+(doc.datos as unknown as DocumentData).trabajo}});
     }
     await tx.auditoriaLog.create({data:{usuarioId:user.id,modulo:'ENTREGAS',accion:'CREATE',entidadTipo:'EntregaMaterial',entidadId:delivery.id,valoresNuevos:{numero:delivery.numero,proformaId:doc.id,realizadoPor:author.nombre}}});
+    await queueNotice(tx,['personal:'+tech.id],'entrega:'+delivery.id,'MATERIALES','Materiales entregados a tu cargo','Hay una entrega de materiales para confirmar en tu cuenta.','/entregas/'+delivery.id);
     return tx.entregaMaterial.findUniqueOrThrow({where:{id:delivery.id},include:{items:true}});
   },{timeout:20000});return NextResponse.json(result);
 }catch(e){return apiError(e);}}

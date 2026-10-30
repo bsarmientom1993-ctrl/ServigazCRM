@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 export const metadata: Metadata = {
   title: "Servigaz CRM — Equipos e Instalaciones",
   description: "Sistema de Gestión Integral de Servicios de Instalación, Equipos y Mantenimiento",
+  manifest:'/manifest.webmanifest',
   icons: {
     icon: "/logo.jpg",
   },

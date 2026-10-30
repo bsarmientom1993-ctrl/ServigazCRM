@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { ApiError } from "./api";
 import { assertWorkAccess, Session } from "./auth";
+import {queueWorkNotice} from './notifications';
 
 export async function withWork<T>(id: string, user: Session, action: (tx: Prisma.TransactionClient, actor: { id: string; nombre: string }) => Promise<T>, checkAccess: typeof assertWorkAccess = assertWorkAccess) {
   return prisma.$transaction(async (tx) => {
@@ -11,7 +12,10 @@ export async function withWork<T>(id: string, user: Session, action: (tx: Prisma
     const work = await tx.trabajo.findUniqueOrThrow({ where: { id } });
     checkAccess(user, work);
     const actor = await tx.usuario.findUniqueOrThrow({ where: { id: user.id }, select: { id: true, nombre: true } });
-    return action(tx, actor);
+    const result=await action(tx, actor);
+    const current=await tx.trabajo.findUniqueOrThrow({where:{id}});
+    await queueWorkNotice(tx,current,user.id);
+    return result;
   }, { timeout: 15000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
 }
 
