@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { HelpProvider } from "@/components/help/HelpProvider";
+import {LoginNotifications} from '@/components/LoginNotifications';
 import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <Sidebar open={sidebarOpen} onClose={closeSidebar} />
     <div className="flex-1 flex flex-col min-w-0" inert={sidebarOpen}>
       <Header onMenu={() => setSidebarOpen(true)} />
-      <main id="main-content" className="app-content">{children}</main>
+      <main id="main-content" className="app-content"><LoginNotifications key={user.id+':'+user.rol} user={user}/>{children}</main>
       <footer className="app-footer"><span>Servigaz · Gestión de servicios</span><span>Todo conectado. Cada día.</span></footer>
     </div>
   </div></HelpProvider>;

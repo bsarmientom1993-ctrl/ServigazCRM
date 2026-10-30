@@ -10,7 +10,8 @@ import {boundedJson} from '@/lib/professional-policy';
 export async function GET(req:NextRequest){try{const owner=await notificationOwner(req);
  if(owner.startsWith('personal:'))await reconcileReminders(owner.slice(9));
  try{after(()=>deliverPushBatch());}catch{}
- const [notificaciones,noLeidas]=await Promise.all([prisma.notificacion.findMany({where:{destinatario:owner},orderBy:[{createdAt:'desc'},{id:'desc'}],take:50,select:{id:true,tipo:true,titulo:true,mensaje:true,ruta:true,leidaAt:true,createdAt:true}}),prisma.notificacion.count({where:{destinatario:owner,leidaAt:null}})]);
+ const pendientes=req.nextUrl.searchParams.get('pendientes')==='1';
+ const [notificaciones,noLeidas]=await Promise.all([prisma.notificacion.findMany({where:{destinatario:owner,...(pendientes?{leidaAt:null}:{})},orderBy:[{createdAt:'desc'},{id:'desc'}],take:50,select:{id:true,tipo:true,titulo:true,mensaje:true,ruta:true,leidaAt:true,createdAt:true}}),prisma.notificacion.count({where:{destinatario:owner,leidaAt:null}})]);
  return NextResponse.json({notificaciones,noLeidas,dispositivoActivo:!!(req.cookies.get('servigaz_push_device')?.value&&await prisma.dispositivoPush.findFirst({where:{id:req.cookies.get('servigaz_push_device')!.value,destinatario:owner,activa:true},select:{id:true}})),publicKey:vapidKeys().publicKey},{headers:{'Cache-Control':'private, no-store'}});
 }catch(e){return apiError(e);}}
 export async function PATCH(req:NextRequest){try{const owner=await notificationOwner(req),body=z.object({id:z.string().uuid().optional(),todas:z.literal(true).optional()}).strict().refine(v=>!!v.id||v.todas,'Selecciona una notificación.').parse(await boundedJson(req));

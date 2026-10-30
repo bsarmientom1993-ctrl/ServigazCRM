@@ -6,6 +6,8 @@ Las cuentas pendientes consultan precios públicos. Las aprobadas reciben precio
 
 Los documentos se almacenan en el R2 privado ya configurado, bajo `profesionales/…/documentos/…`; en desarrollo sin R2 se guardan como bytes en la base. Solo su titular y el administrador pueden descargarlos mediante una ruta autenticada. No se publican objetos ni enlaces permanentes de acceso.
 
+Al ingresar al CRM, todos los roles del personal ven un resumen con su nombre, rol activo y hasta tres notificaciones propias pendientes. Si no hay avisos pendientes, se indica expresamente. Cambiar de rol vuelve a mostrar el resumen. Cerrarlo permite seguir trabajando y no marca los avisos como leídos; el resumen no se repite al navegar dentro de la misma sesión de página.
+
 En **Notificaciones**, cada persona habilita sus propios dispositivos (hasta diez), concede permiso al navegador y puede enviar un aviso de prueba. El sonido de Servigaz, **Toque limpio**, funciona dentro de la aplicación después de pulsar Activar sonido. Los avisos con la aplicación cerrada usan Web Push y el sonido que permita el sistema operativo; la web no puede imponer un tono de fondo propio. En iPhone/iPad se necesita instalar el sitio en la pantalla de inicio. No se guardan páginas privadas para uso sin conexión.
 
 Las notificaciones se guardan antes de enviarse y tienen una clave que evita duplicados. Avisan de cambios de trabajos asignados, visitas próximas, seguimientos comerciales vencidos, proyectos pendientes, solicitudes/entregas de material, comisiones propias y pedidos profesionales. Los avisos visibles en la pantalla bloqueada no incluyen precios, documentos ni datos de contacto del cliente. Al cerrar sesión se desactiva la vinculación del navegador con la cuenta.
