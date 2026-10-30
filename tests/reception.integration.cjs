@@ -84,3 +84,29 @@ test('sales can access only initial equipment photos and cannot retrieve final p
 });
 
 require('./fixtures/staff-attendance.cjs')(prisma);
+
+test('reception groups duplicate customer cards and returns the complete scoped history from any source ID',async()=>{
+ const make=(nombreCompleto,telefonos,sucursalId=branch.id)=>prisma.cliente.create({data:{nombreCompleto,telefonos,direccion:'Dirección de prueba',sucursalId}});
+ const first=await make('Ejemplo Agrupado',['+591 78887776']);
+ const duplicate=await make('ejemplo agrupado',['78887776']);
+ const homonym=await make('Ejemplo Agrupado',['78887777']);
+ const sharedPhone=await make('Otra Persona',['78887776']);
+ const foreign=await make('Ejemplo Agrupado',['78887776'],otherBranch.id);
+ const firstWork=await body(await works.POST(req(sales,'/api/trabajos','POST',payload({clienteId:first.id,recepcion:{motivo:'REVISION'}}))),201);
+ const secondWork=await body(await works.POST(req(sales,'/api/trabajos','POST',payload({clienteId:duplicate.id,recepcion:{motivo:'REVISION'}}))),201);
+ const directory=await body(await intake.GET(req(sales,'/api/recepcion?q=ejemplo agrupado')));
+ assert.equal(directory.clientes.length,2);
+ const group=directory.clientes.find(c=>c.registrosIds.includes(first.id));
+ assert.deepEqual(new Set(group.registrosIds),new Set([first.id,duplicate.id]));
+ assert.equal(group._count.trabajos,2);assert.equal(group.telefonos.length,1);
+ assert.ok(directory.clientes.some(c=>c.id===homonym.id));assert.ok(!group.registrosIds.includes(foreign.id));
+ const byPhone=await body(await intake.GET(req(sales,'/api/recepcion?q=78887776')));
+ assert.equal(byPhone.clientes.length,2);assert.ok(byPhone.clientes.some(c=>c.id===sharedPhone.id));
+ for(const id of [first.id,duplicate.id]){
+  const history=await body(await intake.GET(req(sales,'/api/recepcion?clienteId='+id)));
+  assert.deepEqual(new Set(history.trabajos.map(w=>w.id)),new Set([firstWork.id,secondWork.id]));
+ }
+ const forbidden=await body(await intake.GET(req(sales,'/api/recepcion?clienteId='+foreign.id)));assert.equal(forbidden.trabajos.length,0);
+ const unrelated=await body(await intake.GET(req(outsider,'/api/recepcion?clienteId='+first.id)));assert.equal(unrelated.trabajos.length,0);
+ assert.equal(await prisma.cliente.count({where:{id:{in:[first.id,duplicate.id,homonym.id,sharedPhone.id,foreign.id]}}}),5);
+});
