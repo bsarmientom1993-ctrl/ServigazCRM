@@ -13,9 +13,9 @@ Los cambios requieren motivo y quedan en auditoría con su autor. Los períodos 
 
 ## Acceso obligatorio y horario de marcación
 
-Cada cuenta interna debe tener una entrada del día de Bolivia para abrir los módulos operativos. Se comprueba en el servidor en cada solicitud protegida, sin depender del rol ni del dispositivo. Una entrada habilita todos los roles asignados durante ese día; la del día anterior no sirve. Al cambiar de día se vuelve a solicitar asistencia.
+Cada cuenta interna, salvo las que tengan asignado el rol ADMIN, debe tener una entrada del día de Bolivia para abrir los módulos operativos. Se comprueba en el servidor en cada solicitud protegida, sin depender del rol ni del dispositivo. Una entrada habilita todos los roles asignados durante ese día; la del día anterior no sirve. Al cambiar de día se vuelve a solicitar asistencia.
 
-Antes de marcar siguen disponibles la asistencia, los permisos/revisiones propios y las notificaciones. El administrador puede configurar Personal para preparar horarios y puntos de ingreso sin quedar bloqueado. No hay excepción de acceso operativo por ser administrador.
+Antes de marcar siguen disponibles la asistencia, los permisos/revisiones propios y las notificaciones. El administrador puede configurar Personal para preparar horarios y puntos de ingreso sin quedar bloqueado. El administrador general tiene acceso permanente sin registrar asistencia, incluso al cambiar de rol activo. La excepción se comprueba con los roles vigentes de la base de datos y se revoca inmediatamente al quitar ADMIN. Su nómina no genera descuentos automáticos por falta o tardanza; las liquidaciones ya cerradas conservan su copia original. Los permisos sin goce aprobados mantienen el descuento explícito correspondiente.
 
 En la configuración laboral de cada persona, el administrador define **margen antes de la entrada** y **margen después de la salida**, de 0 a 240 minutos. Por defecto son 0. La ventana se limita al mismo día y a los días laborales, excluyendo las fechas no laborables. Por ejemplo, horario 08:30–18:00 y márgenes 15/30 permite marcar 08:15–18:30, incluyendo el minuto final. La tolerancia para tardanzas es independiente de estos márgenes. Preparar y guardar una marcación fuera de la ventana se rechaza en el servidor; cambiar la hora del teléfono no altera el horario permitido.
 
@@ -50,3 +50,5 @@ El administrador dispone de una bandeja de solicitudes pendientes de todo el equ
 El administrador puede liquidar únicamente meses terminados con reglas configuradas y revisiones resueltas. El cierre conserva una copia inmutable del cálculo y su autor. Anular exige motivo, conserva la versión anterior y permite emitir otra. El módulo no registra un pago bancario ni un egreso automáticamente. Las comisiones continúan en su apartado independiente.
 
 Pruebas aisladas: `node --require ./tests/register.cjs --test tests/personnel.integration.cjs`, con `TEST_DATABASE_URL` de PostgreSQL local y nombre de base terminado en `_test`. No utilizar producción como base de pruebas.
+
+La pantalla de asistencia incluye saludo con el nombre, reloj y fecha de Bolivia, estado real de la jornada, mensajes motivadores que se pueden cambiar y acceso directo a la marcación. El reloj informativo nunca sustituye la hora del servidor para validar ni guardar asistencia. No se solicita ubicación hasta que la persona pulsa el botón de marcar.

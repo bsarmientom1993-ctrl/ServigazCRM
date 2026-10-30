@@ -1,5 +1,5 @@
 import {roleApiAllowed} from "./role-access";
-import { activeRole, UserRole } from './user-roles';
+import { activeRole, hasAssignedRole, UserRole } from './user-roles';
 import { NextRequest } from "next/server";
 import * as jwt from "jsonwebtoken";
 import { RolUsuario, Prisma } from "@prisma/client";
@@ -35,7 +35,7 @@ export async function requireSession(req: NextRequest, roles?: RolUsuario[]) {
   if (!roleApiAllowed(selected,req.nextUrl.pathname,req.method)) throw new ApiError(403,"Tu rol activo no permite acceder a este apartado.");
   if(['VENTAS','SUPERVISOR','CAJA'].includes(selected)&&!user.sucursalId&&!req.nextUrl.pathname.startsWith('/api/auth/')&&req.nextUrl.pathname!=='/api/comisiones'&&!req.nextUrl.pathname.startsWith('/api/notificaciones')&&!req.nextUrl.pathname.startsWith('/api/personal'))throw new ApiError(403,'El administrador debe asignarte una sucursal antes de operar con este rol.');
   if (roles && !roles.includes(selected)) throw new ApiError(403, "Tu rol no permite esta acción.");
-  if(!attendanceSetupPath(req.nextUrl.pathname)&&!await hasDailyEntry(prisma,user.id))throw new ApiError(428,'Registra tu entrada de hoy en Asistencia antes de acceder al sistema.');
+  if(!hasAssignedRole(user,'ADMIN')&&!attendanceSetupPath(req.nextUrl.pathname)&&!await hasDailyEntry(prisma,user.id))throw new ApiError(428,'Registra tu entrada de hoy en Asistencia antes de acceder al sistema.');
   return {id:user.id,rol:selected,estado:user.estado,sucursalId:user.sucursalId};
 }
 

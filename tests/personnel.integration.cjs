@@ -41,9 +41,9 @@ test('pending reviews and incomplete attendance block closing; capped deductions
  const adminView=await body(await view.GET(req(admin)));assert.ok(Array.isArray(adminView.pendientesPersonal));
 });
 
-test('mandatory attendance applies to every role and direct APIs, while HR, notifications and setup remain accessible',async()=>{
+test('mandatory attendance applies to non-administrator roles and direct APIs, while HR and notifications remain accessible',async()=>{
  const {requireSession}=require('../src/lib/auth.ts'),access=require('../src/app/api/personal/acceso/route.ts');
- for(const worker of [admin,...workers]){
+ for(const worker of workers){
   const present=await prisma.asistenciaPersonal.findUnique({where:{usuarioId_fecha:{usuarioId:worker.id,fecha:dateValue(today)}}});
   if(!present?.horaEntrada)await assert.rejects(requireSession(req(worker,'/api/comisiones')),e=>e.status===428);
   assert.equal((await body(await access.GET(req(worker,'/api/personal/acceso')))).marcada,!!present?.horaEntrada);
@@ -74,4 +74,29 @@ test('server window respects administrator margins, actual Bolivia day and non-w
  await prisma.reglaNomina.update({where:{vigenteDesde:period},data:{diasNoLaborables:[]}});
  await prisma.configuracionLaboral.update({where:{usuarioId_vigenteDesde:{usuarioId:tech.id,vigenteDesde:period}},data:{diasLaborales:[]}});
  assert.equal((await access('10:00')).puedeMarcar,false);
+});
+
+test('administrator accounts enter without attendance at any time, preserve active-role restrictions and lose exemption on revocation',async()=>{
+ const {requireSession}=require('../src/lib/auth.ts'),{attendanceAccess}=require('../src/lib/attendance-access.ts');
+ assert.equal(await prisma.asistenciaPersonal.count({where:{usuarioId:admin2.id}}),0);
+ assert.equal((await requireSession(req(admin2,'/api/comisiones'))).rol,'ADMIN');
+ const status=await attendanceAccess(prisma,admin2.id,new Date('2026-10-25T06:00:00Z'));
+ assert.equal(status.exenta,true);assert.equal(status.marcada,false);assert.equal(status.requiereAsistencia,false);
+ await prisma.usuario.update({where:{id:admin2.id},data:{rolesAsignados:['ADMIN','CAJA']}});
+ const cash=new NextRequest('http://localhost/api/comisiones',{headers:{Cookie:req(admin2).headers.get('Cookie')+'; servigaz_rol=CAJA'}});
+ assert.equal((await requireSession(cash)).rol,'CAJA');
+ const denied=new NextRequest('http://localhost/api/usuarios',{headers:{Cookie:cash.headers.get('Cookie')}});await assert.rejects(requireSession(denied),e=>e.status===403);
+ await prisma.usuario.update({where:{id:admin2.id},data:{rol:'CAJA',rolesAsignados:['CAJA']}});
+ await assert.rejects(requireSession(cash),e=>e.status===428);
+ const forged=new NextRequest('http://localhost/api/comisiones',{headers:{Cookie:'servigaz_token='+jwt.sign({id:admin2.id,rol:'ADMIN'},process.env.JWT_SECRET)}});await assert.rejects(requireSession(forged),e=>e.status===428);
+ await prisma.usuario.update({where:{id:admin2.id},data:{rol:'ADMIN',rolesAsignados:['ADMIN'],estado:'INACTIVO'}});
+ await assert.rejects(requireSession(req(admin2,'/api/comisiones')),e=>e.status===401);
+ await prisma.usuario.update({where:{id:admin2.id},data:{estado:'ACTIVO'}});
+});
+
+test('administrator payroll does not invent absence or lateness penalties when attendance is optional',async()=>{
+ await prisma.configuracionLaboral.create({data:{usuarioId:admin2.id,vigenteDesde:'2026-09',sueldoMensual:3000,fechaIngreso:dateValue('2026-09-01'),horaEntrada:'08:30',horaSalida:'18:00',toleranciaMinutos:15,diasLaborales:[0,1,2,3,4,5,6],sucursalesAutorizadas:[branch.id],modificadoPorNombre:'Prueba ficticia'}});
+ await prisma.asistenciaPersonal.create({data:{usuarioId:admin2.id,fecha:dateValue('2026-09-29'),horaEntrada:localTime('2026-09-29','10:00'),estado:'TARDE'}});
+ const s=await prisma.$transaction(tx=>payrollSummary(tx,admin2.id,'2026-09'));
+ assert.equal(s.asistenciaExenta,true);assert.equal(s.descuentos,'0.00');assert.equal(s.neto,'3000.00');assert.equal(s.incompletos,0);assert.ok(s.dias.every(d=>d.estado==='ASISTENCIA_NO_REQUERIDA'));
 });
