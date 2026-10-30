@@ -55,16 +55,22 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     { name: "Proyectos", href: "/proyectos", icon: FolderClock, show: manager || tech || user.rol==="GESTOR_PROYECTOS", group: "principal" },
     { name: "Clientes", href: "/clientes", icon: Users, show: manager||sales, group: "principal" },
     { name: "Cotizador", href: "/cotizador", icon: Calculator, show: manager, group: "principal" },
-    { name: "Tienda pública", href: "/gestion-tienda", icon: ShoppingBag, show: user.rol === "ADMIN", group: "gestion" },
+    { name: "Catálogo de tienda pública", href: "/gestion-tienda", icon: ShoppingBag, show: user.rol === "ADMIN", group: "gestion" },
     { name: "Sucursales y ubicaciones", href: "/sucursales", icon: Building2, show: manager, group: "gestion" },
     { name: store ? "Inventario de tiendas" : "Almacenes y tiendas", href: "/inventario", icon: Package, show: manager || store || warehouse, group: "gestion" },
-    { name: "Finanzas", href: "/finanzas", icon: Wallet, show: user.rol === "ADMIN", group: "gestion" },
+    { name: "Balance y gastos", href: "/finanzas", icon: Wallet, show: user.rol === "ADMIN", group: "gestion" },
     { name: "Garantías", href: "/garantias", icon: Award, show: manager, group: "gestion" },
     { name: "Ayuda y práctica", href: "/ayuda", icon: CircleHelp, show: manager||tech, group: "gestion" },
     { name: user.rol === "ADMIN" ? "Usuarios y roles" : "Mi perfil", href: "/perfil", icon: Users, show: true, group: "gestion" },
     { name: user.rol === "ADMIN" ? "Personal, sueldos y asistencia" : "Mi personal y asistencia", href: "/personal", icon: Clock3, show: true, group: "gestion" },
     { name: "Precios y tarifas", href: "/configuracion", icon: Settings2, show: manager, group: "gestion" },
   ];
+  const adminGroups=[{id:'inicio',label:'INICIO'},{id:'ventas',label:'Clientes y ventas'},{id:'operacion',label:'Trabajos y proyectos'},{id:'inventario',label:'Inventario y tienda'},{id:'finanzas',label:'Caja y finanzas'},{id:'administracion',label:'Personal y configuración'},{id:'equipo',label:'Vistas del equipo'},{id:'ayuda',label:'AYUDA Y AVISOS'}];
+  const adminAreas:Record<string,string>={'/dashboard':'inicio','/recepcion':'ventas','/clientes':'ventas','/cotizaciones':'ventas','/cotizador':'ventas','/proformas':'ventas','/pedidos-profesionales':'ventas','/empresas-instaladoras':'ventas','/trabajos':'operacion','/proyectos':'operacion','/garantias':'operacion','/inventario':'inventario','/entregas':'inventario','/gestion-tienda':'inventario','/finanzas':'finanzas','/caja':'finanzas','/comisiones':'finanzas','/personal':'administracion','/perfil':'administracion','/sucursales':'administracion','/configuracion':'administracion','/atencion':'equipo','/supervision':'equipo','/notificaciones':'ayuda','/ayuda':'ayuda'};
+  const admin=user.rol==='ADMIN';
+  const adminOrder=['/dashboard','/recepcion','/clientes','/cotizaciones','/cotizador','/proformas','/pedidos-profesionales','/empresas-instaladoras','/trabajos','/proyectos','/garantias','/inventario','/entregas','/gestion-tienda','/caja','/finanzas','/comisiones','/personal','/perfil','/sucursales','/configuracion','/atencion','/supervision','/notificaciones','/ayuda'];
+  const menu=admin?navigation.map(item=>({...item,group:adminAreas[item.href]||item.group})).sort((a,b)=>adminOrder.indexOf(a.href)-adminOrder.indexOf(b.href)):navigation;
+  const groups=admin?adminGroups:[{id:'principal',label:'ESPACIO DE TRABAJO'},{id:'gestion',label:'GESTIÓN'}];
   const roles = roleLabels;
   return <>
     {open && <button type="button" className="sidebar-backdrop lg:hidden" onClick={onClose} aria-label="Cerrar menú" tabIndex={-1} />}
@@ -75,13 +81,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
       </div>
       <div className="px-5 pb-2"><RoleSwitcher/></div>
       <nav className="sidebar-nav">
-        {[{ id: "principal", label: "ESPACIO DE TRABAJO" }, { id: "gestion", label: "GESTIÓN" }].map(group => <div key={group.id} className="sidebar-group">
-          <p>{group.label}</p>
-          {navigation.filter(item => item.show && item.group === group.id).map(item => {
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            return <Link key={item.href} href={item.href} onClick={onClose} aria-current={active ? "page" : undefined} className={"sidebar-link" + (active ? " active" : "")}><item.icon size={19} strokeWidth={1.7} /><span>{item.name}</span>{active && <ChevronRight size={15} className="ml-auto" />}</Link>;
-          })}
-        </div>)}
+        {groups.map(group=>{const items=menu.filter(item=>item.show&&item.group===group.id);const current=items.some(item=>pathname===item.href||pathname.startsWith(item.href+'/'));const links=items.map(item=>{const active=pathname===item.href||pathname.startsWith(item.href+'/');return <Link key={item.href} href={item.href} onClick={onClose} aria-current={active?'page':undefined} className={'sidebar-link'+(active?' active':'')}><item.icon size={19} strokeWidth={1.7}/><span>{item.name}</span>{active&&<ChevronRight size={15} className="ml-auto"/>}</Link>;});if(!items.length)return null;return admin&&!['inicio','ayuda'].includes(group.id)?<details key={group.id+pathname} open={current} className="sidebar-section"><summary><span>{group.label}</span><ChevronRight size={15} className="sidebar-section-chevron"/></summary><div className="pt-1">{links}</div></details>:<div key={group.id} className="sidebar-group"><p>{group.label}</p>{links}</div>;})}
       </nav>
       <div className="sidebar-account">
         <div className="account-avatar" aria-hidden="true">{user.nombre.trim().split(/\s+/).slice(0,2).map(name => name[0]).join("")}</div>

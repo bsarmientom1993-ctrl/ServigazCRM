@@ -24,7 +24,7 @@ export function Header({ title, onMenu }: { title?: string; onMenu?: () => void 
       {user&&<NotificationCenter key={user.id}/>}
       {["ADMIN","ENCARGADO","TECNICO_FIJO"].includes(user?.rol||"") && <button type="button" className="theme-toggle" aria-label="Abrir guía de ayuda" title="Ayuda y guía de bienvenida" onClick={openGuide}><CircleHelp size={18} /><span className="hidden lg:inline">Ayuda</span></button>}
       <ThemeToggle />
-      {user && <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>}
+      {user && user.rol!=="ADMIN" && !user.roles?.includes("ADMIN") && <Link href="/asistencia" className="theme-toggle attendance-shortcut" title="Marcar asistencia"><Clock3 size={17} /><span>Asistencia</span></Link>}
       {(user?.rol === "ADMIN" || user?.rol === "ENCARGADO" || user?.rol === "VENTAS") &&
         <Link href="/trabajos/nuevo" className="primary-action"><Plus size={17} /><span className="hidden sm:inline">Nuevo trabajo</span><span className="sm:hidden">Nuevo</span></Link>}
     </div>

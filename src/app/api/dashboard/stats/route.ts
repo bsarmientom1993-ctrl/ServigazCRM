@@ -1,3 +1,4 @@
+import {boliviaDay,dateValue} from "@/lib/personnel-policy";
 import { locationScope } from "@/lib/inventory";
 import { requireSession, workScope } from "@/lib/auth";
 import { apiError, ApiError } from "@/lib/api";
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
       where: {
         AND: [scope],
         estado: {
-          in: ["EN_PROCESO", "ANTICIPO_RECIBIDO", "EVALUACION_PENDIENTE", "EVALUADO", "COTIZADO", "APROBADO"],
+          notIn: ["RECHAZADO", "CANCELADO", "FINALIZADO_FINANCIERO", "ARCHIVADO"],
         },
       },
     });
@@ -44,10 +45,9 @@ export async function GET(req: NextRequest) {
     });
 
     // Asistencia de hoy
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = dateValue(boliviaDay());
     const asistenciasHoy = await prisma.asistenciaPersonal.count({
-      where: { fecha: { gte: today }, ...(session.rol === "ADMIN" ? {} : { usuarioId: session.id }) },
+      where: { fecha: today, horaEntrada: { not: null }, ...(session.rol === "ADMIN" ? {} : { usuarioId: session.id }) },
     });
 
     return NextResponse.json({
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
         asistenciasHoy,
       },
       ultimosTrabajos,
-    });
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error: any) {
     if (error instanceof ApiError) return apiError(error);
     console.error("Dashboard stats error:", error);
