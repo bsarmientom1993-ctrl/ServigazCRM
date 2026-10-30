@@ -1,5 +1,6 @@
 import {storeApiAllowed,storePageAllowed} from './store-role';
 export function roleApiAllowed(role:string,path:string,method:string){
+  if(path==='/api/personal/acceso'&&method==='GET')return true;
   if(path==='/api/personal'&&method==='GET'||['/api/personal/marcacion','/api/personal/permisos','/api/personal/incidencias'].includes(path)&&method==='POST')return true;
   if(path==='/api/notificaciones'&&['GET','POST','PATCH'].includes(method)||path==='/api/notificaciones/dispositivos'&&['POST','DELETE'].includes(method))return true;
   if(path==='/api/comisiones'&&method==='GET')return true;

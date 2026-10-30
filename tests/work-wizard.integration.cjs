@@ -119,3 +119,5 @@ test("suggestions stay inside the client preference and allow only visits that f
   const noFit = await result(await agenda(manager, 11, { desde: at(11, 14), hasta: at(11, 15), duracionMinutos: "120" }), 200);
   assert.ok(noFit.tecnicos.every(t => t.horarios.length === 0));
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

@@ -7,17 +7,18 @@ import {apiError,ApiError} from '@/lib/api';
 import {boundedJson} from '@/lib/professional-policy';
 import {boliviaDay,dateValue,locationSchema,validateLocation,lateMinutes} from '@/lib/personnel-policy';
 import {attendanceBranch,personnelLock,editablePeriod,clockToken,verifyClockToken} from '@/lib/personnel';
+import {assertAttendanceWindow} from '@/lib/attendance-access';
 export async function POST(req:NextRequest){try{
  const user=await requireSession(req),base=z.object({accion:z.enum(['PREPARAR','MARCAR']),sucursalId:z.string().trim().min(1).max(100),tipo:z.enum(['ENTRADA','SALIDA'])}),raw=await boundedJson(req),kind=base.parse(raw),day=boliviaDay();
  if(kind.accion==='PREPARAR'){
-  base.strict().parse(raw);await prisma.$transaction(async tx=>{await attendanceBranch(tx,user.id,kind.sucursalId,day);await editablePeriod(tx,user.id,day.slice(0,7));});return NextResponse.json({token:clockToken(user.id,kind.sucursalId,kind.tipo),radioMetros:10},{headers:{'Cache-Control':'private, no-store'}});
+  base.strict().parse(raw);await prisma.$transaction(async tx=>{await assertAttendanceWindow(tx,user.id);await attendanceBranch(tx,user.id,kind.sucursalId,day);await editablePeriod(tx,user.id,day.slice(0,7));});return NextResponse.json({token:clockToken(user.id,kind.sucursalId,kind.tipo),radioMetros:10},{headers:{'Cache-Control':'private, no-store'}});
  }
  const body=base.extend({accion:z.literal('MARCAR'),token:z.string().min(20).max(2000),ubicacion:locationSchema}).strict().parse(raw),key=z.string().uuid().parse(req.headers.get('Idempotency-Key'));
  const fingerprint=createHash('sha256').update(JSON.stringify(body)).digest('hex');
  const result=await prisma.$transaction(async tx=>{
   await personnelLock(tx,user.id);const prior=await tx.marcacionPersonal.findUnique({where:{id:key}});if(prior){if(prior.usuarioId!==user.id||prior.solicitudHash!==fingerprint)throw new ApiError(409,'La clave corresponde a otra marcación.');return{success:true,tipo:prior.tipo,registradoAt:prior.registradoAt};}
   const issued=verifyClockToken(body.token,user.id,body.sucursalId,body.tipo),now=new Date(),today=boliviaDay(now);if(day!==today)throw new ApiError(409,'Cambió el día. Vuelve a iniciar la marcación.');
-  await editablePeriod(tx,user.id,today.slice(0,7));const {config,center}=await attendanceBranch(tx,user.id,body.sucursalId,today);const distance=validateLocation(body.ubicacion,center,issued,now);
+  await assertAttendanceWindow(tx,user.id,now);await editablePeriod(tx,user.id,today.slice(0,7));const {config,center}=await attendanceBranch(tx,user.id,body.sucursalId,today);const distance=validateLocation(body.ubicacion,center,issued,now);
   if(await tx.permisoPersonal.count({where:{usuarioId:user.id,fechaPermiso:dateValue(today),estado:'APROBADO'}}))throw new ApiError(409,'Tienes un permiso aprobado para todo el día. Coordina su revisión antes de marcar.');
   const existing=await tx.asistenciaPersonal.findUnique({where:{usuarioId_fecha:{usuarioId:user.id,fecha:dateValue(today)}}});
   if(body.tipo==='ENTRADA'&&existing?.horaEntrada||body.tipo==='SALIDA'&&existing?.horaSalida)throw new ApiError(409,'Esta marcación ya está registrada. Actualiza tu asistencia.');

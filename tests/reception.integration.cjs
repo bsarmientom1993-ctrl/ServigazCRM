@@ -82,3 +82,5 @@ test('sales can access only initial equipment photos and cannot retrieve final p
  const final=await prisma.fotoTrabajo.findFirst({where:{trabajoId:work.id,etapa:'FINAL'}});
  await body(await photo.GET(req(sales,'/api/trabajos/'+work.id+'/fotos/'+final.id),{params:Promise.resolve({id:work.id,fotoId:final.id})}),403);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

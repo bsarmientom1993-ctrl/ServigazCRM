@@ -10,3 +10,6 @@ CREATE TABLE IF NOT EXISTS "IncidenciaPersonal" ("id" TEXT PRIMARY KEY,"usuarioI
 CREATE INDEX IF NOT EXISTS "IncidenciaPersonal_usuarioId_fecha_idx" ON "IncidenciaPersonal"("usuarioId","fecha");
 CREATE TABLE IF NOT EXISTS "LiquidacionPersonal" ("id" TEXT PRIMARY KEY,"usuarioId" TEXT NOT NULL REFERENCES "Usuario"("id"),"periodo" TEXT NOT NULL,"version" INTEGER NOT NULL,"estado" TEXT NOT NULL DEFAULT 'CERRADA',"snapshot" JSONB NOT NULL,"totalBruto" DECIMAL(12,2) NOT NULL,"totalDescuentos" DECIMAL(12,2) NOT NULL,"totalNeto" DECIMAL(12,2) NOT NULL,"creadoPorNombre" TEXT NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"motivoAnulacion" TEXT NOT NULL DEFAULT '',"anuladaAt" TIMESTAMP(3),UNIQUE("usuarioId","periodo","version"));
 CREATE UNIQUE INDEX IF NOT EXISTS "LiquidacionPersonal_activa_key" ON "LiquidacionPersonal"("usuarioId","periodo") WHERE "estado"='CERRADA';
+
+ALTER TABLE "ConfiguracionLaboral" ADD COLUMN IF NOT EXISTS "margenEntradaMinutos" INTEGER NOT NULL DEFAULT 0 CHECK ("margenEntradaMinutos" BETWEEN 0 AND 240);
+ALTER TABLE "ConfiguracionLaboral" ADD COLUMN IF NOT EXISTS "margenSalidaMinutos" INTEGER NOT NULL DEFAULT 0 CHECK ("margenSalidaMinutos" BETWEEN 0 AND 240);

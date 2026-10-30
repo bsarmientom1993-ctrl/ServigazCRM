@@ -4,6 +4,7 @@ import {requireSession} from '@/lib/auth';
 import {apiError,ApiError} from '@/lib/api';
 import {boliviaDay,monthSchema} from '@/lib/personnel-policy';
 import {laborConfig,payrollSummary} from '@/lib/personnel';
+import {attendanceAccess} from '@/lib/attendance-access';
 export async function GET(req:NextRequest){try{
  const actor=await requireSession(req),admin=actor.rol==='ADMIN',target=req.nextUrl.searchParams.get('usuarioId')||actor.id;
  if(!admin&&target!==actor.id)throw new ApiError(403,'Solo puedes consultar tu propia información laboral.');
@@ -19,7 +20,7 @@ export async function GET(req:NextRequest){try{
    ...(await tx.permisoPersonal.findMany({where:{estado:'SOLICITADO'},orderBy:{fechaSolicitud:'asc'},take:100,select:{id:true,usuarioId:true,fechaPermiso:true}})).map(p=>({id:p.id,usuarioId:p.usuarioId,fecha:p.fechaPermiso,tipo:'Permiso'})),
    ...(await tx.incidenciaPersonal.findMany({where:{estado:'PENDIENTE'},orderBy:{createdAt:'asc'},take:100,select:{id:true,usuarioId:true,fecha:true}})).map(p=>({...p,tipo:'Revisión de asistencia'})),
   ]:undefined;
-  return{persona:person,resumen:summary,configuracion:config,sucursales:branches,asistencias:attendance.map(a=>({id:a.id,fecha:a.fecha,horaEntrada:a.horaEntrada,horaSalida:a.horaSalida,estado:a.estado})),permisos:leaves.map(p=>({...p,gestion:leaveMeta.find(m=>m.permisoId===p.id)||null})),incidencias:incidents,liquidaciones:history,...extra,...(admin?{pendientesPersonal}:{})};
+  return{acceso:await attendanceAccess(tx,target),persona:person,resumen:summary,configuracion:config,sucursales:branches,asistencias:attendance.map(a=>({id:a.id,fecha:a.fecha,horaEntrada:a.horaEntrada,horaSalida:a.horaSalida,estado:a.estado})),permisos:leaves.map(p=>({...p,gestion:leaveMeta.find(m=>m.permisoId===p.id)||null})),incidencias:incidents,liquidaciones:history,...extra,...(admin?{pendientesPersonal}:{})};
  },{timeout:20000});
  return NextResponse.json(result,{headers:{'Cache-Control':'private, no-store'}});
 }catch(e){return apiError(e);}}

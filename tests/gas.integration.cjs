@@ -284,6 +284,7 @@ const responsibilities=require('../src/app/api/trabajos/[id]/responsables/route.
 const executionRoute=require('../src/app/api/trabajos/[id]/ejecucion/route.ts');
 test('independent project separates commercial origin, follow-up and installation through quotation and closure',async()=>{
  const follower=await prisma.usuario.create({data:{nombre:'Ana seguimiento',email:randomUUID()+'@example.invalid',passwordHash:'unused',rol:'TECNICO_FIJO',sucursalId:branch.id}});
+ await require('./fixtures/staff-attendance.cjs').markPresent(prisma);
  await prisma.usuario.update({where:{id:technician.id},data:{nombre:'Blas comercial'}});
  const input={modalidad:'PROYECTO_INDEPENDIENTE',clienteId:client.id,subtipoCodigo:'PROYECTO.GAS',subtipoNombre:'Proyecto',captadoPorId:technician.id,responsableSeguimientoId:follower.id,incluyeProyectoGas:true};
  const work=await body(await works.POST(req(manager,input)),201);assert.equal(work.estado,'EVALUADO');assert.equal(work.tecnicoId,null);assert.equal(work.fechasSla.captadoPor.nombre,'Blas comercial');assert.equal(work.fechasSla.gas.proyecto.responsableId,follower.id);assert.equal(await prisma.visitaTecnica.count({where:{trabajoId:work.id}}),0);
@@ -316,3 +317,5 @@ test('adding commercial origin preserves a legacy free-text project responsible'
  await body(await responsibilities.POST(req(manager,{captadoPorId:technician.id,responsableId:''}),context(work)));
  assert.equal((await prisma.trabajo.findUnique({where:{id:work.id}})).fechasSla.gas.proyecto.responsable,'Responsable anterior');
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

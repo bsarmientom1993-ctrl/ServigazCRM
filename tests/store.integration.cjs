@@ -50,3 +50,5 @@ test('shop rejects invalid prices, phone and executable image sources',async()=>
  await body(await adminRoute.PUT(req(admin,{...publish(),imagen:'data:image/svg+xml;base64,PHN2Zz4='})),400);
  await body(await adminRoute.PUT(req(admin,{...publish(),imagen:'data:image/png;base64,YmFk'})),400);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

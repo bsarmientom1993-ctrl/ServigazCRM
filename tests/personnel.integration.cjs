@@ -40,3 +40,38 @@ test('pending reviews and incomplete attendance block closing; capped deductions
  const ordinary=await body(await view.GET(req(tech)));assert.equal(ordinary.pendientesPersonal,undefined);
  const adminView=await body(await view.GET(req(admin)));assert.ok(Array.isArray(adminView.pendientesPersonal));
 });
+
+test('mandatory attendance applies to every role and direct APIs, while HR, notifications and setup remain accessible',async()=>{
+ const {requireSession}=require('../src/lib/auth.ts'),access=require('../src/app/api/personal/acceso/route.ts');
+ for(const worker of [admin,...workers]){
+  const present=await prisma.asistenciaPersonal.findUnique({where:{usuarioId_fecha:{usuarioId:worker.id,fecha:dateValue(today)}}});
+  if(!present?.horaEntrada)await assert.rejects(requireSession(req(worker,'/api/comisiones')),e=>e.status===428);
+  assert.equal((await body(await access.GET(req(worker,'/api/personal/acceso')))).marcada,!!present?.horaEntrada);
+  assert.equal((await requireSession(req(worker,'/api/notificaciones'))).id,worker.id);
+  await body(await view.GET(req(worker)));
+  if(!present)await prisma.asistenciaPersonal.create({data:{usuarioId:worker.id,fecha:dateValue(today),horaEntrada:new Date(),estado:'PRESENTE'}});
+  assert.equal((await requireSession(req(worker,'/api/comisiones'))).id,worker.id);
+ }
+ const absent=await prisma.usuario.create({data:{nombre:'Persona sin entrada de hoy',email:randomUUID()+'@example.invalid',passwordHash:'unused',rol:'TECNICO_FIJO'}});
+ await prisma.asistenciaPersonal.create({data:{usuarioId:absent.id,fecha:dateValue('2026-10-01'),horaEntrada:localTime('2026-10-01','08:30'),estado:'PRESENTE'}});
+ await assert.rejects(requireSession(req(absent,'/api/comisiones')),e=>e.status===428);
+});
+
+test('server window respects administrator margins, actual Bolivia day and non-working dates without changing tardiness tolerance',async()=>{
+ const {attendanceAccess,assertAttendanceWindow}=require('../src/lib/attendance-access.ts');
+ await body(await post(config,admin,'/api/personal/configuracion',{...laborData(tech),margenEntradaMinutos:20,margenSalidaMinutos:30}));
+ const access=async(time)=>attendanceAccess(prisma,tech.id,localTime(today,time));
+ assert.equal((await access('08:09')).puedeMarcar,false);assert.equal((await access('08:10')).puedeMarcar,true);
+ assert.equal((await access('18:30')).puedeMarcar,true);assert.equal((await access('18:31')).puedeMarcar,false);
+ await assert.rejects(assertAttendanceWindow(prisma,tech.id,localTime(today,'07:00')),e=>e.status===409);
+ assert.equal((await access('08:10')).horario.margenEntradaMinutos,20);
+ assert.equal(lateMinutes(today,localTime(today,'08:46'),'08:30',15),1);
+ await body(await post(config,tech,'/api/personal/configuracion',{...laborData(tech),margenEntradaMinutos:240}),403);
+ await body(await post(config,admin,'/api/personal/configuracion',{...laborData(tech),margenEntradaMinutos:241}),400);
+ await prisma.reglaNomina.update({where:{vigenteDesde:period},data:{diasNoLaborables:[today]}});
+ assert.equal((await access('10:00')).puedeMarcar,false);
+ const blocked=await post(clock,tech,'/api/personal/marcacion',{accion:'PREPARAR',tipo:'ENTRADA',sucursalId:branch.id});await body(blocked,409);
+ await prisma.reglaNomina.update({where:{vigenteDesde:period},data:{diasNoLaborables:[]}});
+ await prisma.configuracionLaboral.update({where:{usuarioId_vigenteDesde:{usuarioId:tech.id,vigenteDesde:period}},data:{diasLaborales:[]}});
+ assert.equal((await access('10:00')).puedeMarcar,false);
+});

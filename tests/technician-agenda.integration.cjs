@@ -163,3 +163,5 @@ test("technicians cannot retrieve prices through commercial endpoints", async ()
     await result(await route[method](request(techA, {}, undefined, method), { params: Promise.resolve({ id: randomUUID() }) }), 403);
   }
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

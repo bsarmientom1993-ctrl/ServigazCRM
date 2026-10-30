@@ -1,5 +1,5 @@
 const {test,beforeEach}=require('node:test');const assert=require('node:assert/strict');const Module=require('node:module');const {NextRequest}=require('next/server');const jwt=require('jsonwebtoken');
-const db={};const load=Module._load;Module._load=function(request,parent,...args){if(request==='@/lib/prisma'||(parent?.filename.endsWith('auth.ts')&&request==='./prisma'))return{prisma:db};return load.call(this,request,parent,...args);};
+const db={asistenciaPersonal:{findUnique:async()=>({horaEntrada:new Date()})}};const load=Module._load;Module._load=function(request,parent,...args){if(request==='@/lib/prisma'||(parent?.filename.endsWith('auth.ts')&&request==='./prisma'))return{prisma:db};return load.call(this,request,parent,...args);};
 process.env.JWT_SECRET='store-unit-route-testing-secret-only';process.env.PHOTO_STORAGE='postgres';
 const {defaultStoreConfig}=require('../src/lib/store.ts');const route=require('../src/app/api/tienda/route.ts');const admin=require('../src/app/api/gestion-tienda/route.ts');const imageRoute=require('../src/app/api/tienda/imagenes/[id]/route.ts');
 const id='00000000-0000-4000-8000-000000000001';let actor,config,published,photo,writes,queries;

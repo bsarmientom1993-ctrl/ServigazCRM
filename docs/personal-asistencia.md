@@ -11,6 +11,18 @@ Acceso: `/personal`. Todos los roles internos consultan únicamente su propia in
 
 Los cambios requieren motivo y quedan en auditoría con su autor. Los períodos liquidados impiden cambios que afecten su resultado. Las versiones de sueldo y reglas solo se crean o modifican desde el mes actual en adelante.
 
+## Acceso obligatorio y horario de marcación
+
+Cada cuenta interna debe tener una entrada del día de Bolivia para abrir los módulos operativos. Se comprueba en el servidor en cada solicitud protegida, sin depender del rol ni del dispositivo. Una entrada habilita todos los roles asignados durante ese día; la del día anterior no sirve. Al cambiar de día se vuelve a solicitar asistencia.
+
+Antes de marcar siguen disponibles la asistencia, los permisos/revisiones propios y las notificaciones. El administrador puede configurar Personal para preparar horarios y puntos de ingreso sin quedar bloqueado. No hay excepción de acceso operativo por ser administrador.
+
+En la configuración laboral de cada persona, el administrador define **margen antes de la entrada** y **margen después de la salida**, de 0 a 240 minutos. Por defecto son 0. La ventana se limita al mismo día y a los días laborales, excluyendo las fechas no laborables. Por ejemplo, horario 08:30–18:00 y márgenes 15/30 permite marcar 08:15–18:30, incluyendo el minuto final. La tolerancia para tardanzas es independiente de estos márgenes. Preparar y guardar una marcación fuera de la ventana se rechaza en el servidor; cambiar la hora del teléfono no altera el horario permitido.
+
+Si una persona no pudo marcar, solicita revisión y el administrador puede regularizarla con motivo. Los permisos de día completo no crean una asistencia automática.
+
+Las notificaciones se consultan en su apartado o abriendo la campana. Ya no aparece un resumen automático al entrar al dashboard. Se conserva el sonido opcional elegido por el usuario y los avisos de dispositivo que haya activado.
+
 ## Jornada desde el teléfono
 
 El trabajador elige una sucursal autorizada y pulsa Marcar entrada o Marcar salida. Debe permitir ubicación precisa. Se comprueba en el servidor una muestra reciente, ligada a una solicitud de 90 segundos, y que distancia al ingreso más precisión reportada no supere 10 metros. La salida requiere entrada en la misma sucursal. Los reintentos no duplican registros. Se guarda la hora del servidor en horario de Bolivia.

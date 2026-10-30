@@ -1141,6 +1141,8 @@ model ConfiguracionLaboral {
  horaEntrada String
  horaSalida String
  toleranciaMinutos Int
+ margenEntradaMinutos Int @default(0)
+ margenSalidaMinutos Int @default(0)
  diasLaborales Json
  sucursalesAutorizadas Json
  activo Boolean @default(true)

@@ -106,3 +106,5 @@ test("upgrade from v1 adds only new services without restoring removed original 
   assert.equal(await prisma.catalogoSubtipo.findUnique({ where: { codigo: "OTR.REVISION" } }), null);
   assert.equal((await configureExampleCatalog(prisma, { once: true })).yaConfigurado, true);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

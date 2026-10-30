@@ -6,7 +6,7 @@ const { randomUUID } = require("node:crypto");
 const { NextRequest } = require("next/server");
 const jwt = require("jsonwebtoken");
 const { Prisma } = require("@prisma/client");
-const db = {};
+const db = { asistenciaPersonal:{findUnique:async()=>({horaEntrada:new Date()})} };
 const load = Module._load;
 Module._load = function(request, parent, ...args) {
   if (request === "@/lib/prisma" || (parent?.filename.endsWith(path.join("lib", "auth.ts")) && request === "./prisma") ||

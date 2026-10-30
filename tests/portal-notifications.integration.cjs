@@ -57,3 +57,5 @@ test('cron denies anonymous and non-administrator requests; suspended accounts l
  const result=await body(await notices.GET(req(otherManager,'/api/notificaciones?pendientes=1')));assert.equal(result.noLeidas,1);assert.deepEqual(result.notificaciones.map(n=>n.id),[pending.id]);assert.equal((await prisma.notificacion.findUnique({where:{id:pending.id}})).leidaAt,null);
  for(const employee of [admin,manager,...workers]){const own='personal:'+employee.id;const expected=await prisma.notificacion.findMany({where:{destinatario:own,leidaAt:null},orderBy:[{createdAt:'desc'},{id:'desc'}],take:50,select:{id:true}});const data=await body(await notices.GET(req(employee,'/api/notificaciones?pendientes=1')));assert.deepEqual(data.notificaciones.map(n=>n.id),expected.map(n=>n.id));assert.ok(data.notificaciones.every(n=>n.leidaAt===null));}
  });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

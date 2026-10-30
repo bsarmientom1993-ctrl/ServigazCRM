@@ -123,3 +123,5 @@ test('client directory groups duplicate records, returns pending work only and o
  await body(await clientDirectory.GET(directoryReq(outsider,first.id)),404);
  const raw=await body(await clientDirectory.GET(req(manager,undefined,'GET')));assert.ok(raw.some(c=>c.id===first.id));assert.ok(raw.some(c=>c.id===duplicate.id));assert.equal(await prisma.cliente.count({where:{id:{in:[first.id,duplicate.id]}}}),2);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

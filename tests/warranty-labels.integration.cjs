@@ -91,3 +91,5 @@ test('labels cannot be issued for cancelled jobs or independent projects and can
   await prisma.trabajo.update({where:{id:work.id},data:{tipoFlujo:'PROYECTO',estado:'EVALUADO',fechasSla:{modalidad:'PROYECTO_INDEPENDIENTE'}}});
   await body(await routes.POST(req(manager,'POST',{...payload,serie:'PROJECT'}),ctx()),409);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

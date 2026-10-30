@@ -99,7 +99,7 @@ test("quote, sale, payment, execution and closure retain their authors across la
 const switchRole=require('../src/app/api/auth/rol/route.ts');
 const {requireSession}=require('../src/lib/auth.ts');
 function roleReq(user,path,body,method='POST',role){return new NextRequest('http://localhost/api/'+path,{method,headers:{'Content-Type':'application/json',...(user?{Cookie:'servigaz_token='+jwt.sign({id:user.id,rol:'ADMIN'},process.env.JWT_SECRET)+(role?'; servigaz_rol='+role:'')}:{})},...(method==='GET'?{}:{body:JSON.stringify(body)})});}
-async function member(name='Persona con roles'){return prisma.usuario.create({data:{nombre:name,email:randomUUID()+'@example.invalid',passwordHash:'not-a-password',rol:'TECNICO_FIJO',sucursalId:branch.id}});}
+async function member(name='Persona con roles'){const person=await prisma.usuario.create({data:{nombre:name,email:randomUUID()+'@example.invalid',passwordHash:'not-a-password',rol:'TECNICO_FIJO',sucursalId:branch.id}});await require('./fixtures/staff-attendance.cjs').markPresent(prisma);return person;}
 
 test('administrator assigns multiple checkbox roles and each role keeps its own server restrictions',async()=>{
  const person=await member();const changes={roles:['TECNICO_FIJO','ENCARGADO_TIENDA']};
@@ -149,3 +149,5 @@ test('concurrent administrator removals cannot leave the system without an activ
  assert.equal(results.filter(r=>r.status===200).length,1);assert.ok(results.every(r=>[200,403,409].includes(r.status)));
  const {rolesOf}=require('../src/lib/user-roles.ts');const remaining=await prisma.usuario.findMany({where:{estado:'ACTIVO'}});assert.equal(remaining.filter(u=>rolesOf(u).includes('ADMIN')).length,1);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

@@ -232,6 +232,7 @@ test("a new branch is also a store and can receive warehouse shipments", async (
 
 test('store operator works across shops but cannot operate warehouses or access other CRM modules',async()=>{
  const store=await prisma.usuario.create({data:{nombre:'Encargada de tiendas',email:randomUUID()+'@example.invalid',passwordHash:'test-only',rol:'ENCARGADO_TIENDA'}});
+ await require('./fixtures/staff-attendance.cjs').markPresent(prisma);
  function storeReq(route,data,method='POST',key=randomUUID()){return new NextRequest('http://localhost/api/'+route,{method,headers:{'Content-Type':'application/json',Cookie:'servigaz_token='+jwt.sign({id:store.id},process.env.JWT_SECRET),'Idempotency-Key':key},...(method==='GET'?{}:{body:JSON.stringify(data)})});}
  const locations=await body(await locationRoutes.GET(storeReq('ubicaciones',null,'GET')));assert.ok(locations.ubicaciones.some(item=>item.id===shopA.id));assert.ok(locations.ubicaciones.some(item=>item.id===shopB.id));assert.ok(locations.ubicaciones.every(item=>item.tipo==='TIENDA'&&!item.esInicial));
  await body(await inventories.GET(storeReq('inventario',null,'GET')));await body(await require('../src/app/api/inventario/movimientos/route.ts').GET(storeReq('inventario/movimientos',null,'GET')));
@@ -254,6 +255,7 @@ function docReq(user,route,data,method='POST',key=randomUUID()){
 async function documentFixture(){
  const tech=await prisma.usuario.create({data:{nombre:'Técnico de materiales',email:randomUUID()+'@example.invalid',passwordHash:'test-only',rol:'TECNICO_FIJO',sucursalId:branchA.id}});
  const store=await prisma.usuario.create({data:{nombre:'Encargada de materiales',email:randomUUID()+'@example.invalid',passwordHash:'test-only',rol:'ENCARGADO_TIENDA'}});
+ await require('./fixtures/staff-attendance.cjs').markPresent(prisma);
  const client=await prisma.cliente.create({data:{nombreCompleto:'Cliente de proforma',telefonos:['76543210'],direccion:'Prueba',sucursalId:branchA.id}});
  const work=await prisma.trabajo.create({data:{codigoCorrelativo:randomUUID(),clienteId:client.id,encargadoId:managerA.id,tecnicoId:tech.id,sucursalId:branchA.id,estado:'EN_PROCESO',tipoFlujo:'COMPLETO',subtipoCodigo:'3.3',subtipoNombre:'Mantenimiento'}});
  const p=await product();await buy(p,10,shopA,admin);
@@ -346,3 +348,5 @@ test('locations cannot be deactivated while their material is still held by a te
  await body(await locationEdit.PATCH(docReq(admin,'ubicaciones/'+isolated.id,{activo:false},'PATCH'),{params:Promise.resolve({id:isolated.id})}),409);
  await body(await deliveryAction(f,delivery,'DEVOLVER',10,f.store));await invariant(f.p);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);

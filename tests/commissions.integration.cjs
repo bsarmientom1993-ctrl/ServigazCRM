@@ -68,3 +68,5 @@ test('annulment keeps original amount and audit while zero commissions cannot be
  const zero=await prisma.comisionTrabajo.findFirst({where:{estado:'NO_GENERADA'}});await body(await commissions.POST(req(admin,'/api/comisiones','POST',{id:zero.id,accion:'APROBAR'})),409);
  const records=await prisma.auditoriaLog.findMany({where:{entidadId:commission.id,modulo:'COMISIONES'}});assert.equal(records.length,3);
 });
+
+require('./fixtures/staff-attendance.cjs')(prisma);
